@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, redirect, url_for
 import json
 from collections import defaultdict
 from flask import jsonify
+from datetime import datetime, timedelta
 
 # config.py 또는 main.py 상단
 from dotenv import load_dotenv
@@ -11,16 +12,31 @@ from utils.user_crawler import crawl_user
 
 load_dotenv()
 
-USERNAME = os.getenv("USERNAME")
-PASSWORD = os.getenv("PASSWORD")
+# USERNAME = os.getenv("USERNAME")
+# PASSWORD = os.getenv("PASSWORD")
 
-app = Flask(__name__)
+# app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROBLEM_DIR = os.path.join(BASE_DIR, "problems_data")
 USER_DATA_DIR = os.path.join(BASE_DIR, "students_data")
+
+COOKIE_PATH = "cookies.json"
+
+
+def is_cookie_valid():
+    if not os.path.exists(COOKIE_PATH):
+        return False
+    try:
+        with open(COOKIE_PATH, "r") as f:
+            cookies = json.load(f)
+        ts = datetime.fromisoformat(cookies.get("timestamp"))
+        return datetime.now() - ts < timedelta(hours=12)
+    except:
+        return False
 
 
 def get_progress(solved_list, problem_info):
@@ -60,11 +76,35 @@ def calculate_progress(solved_list, chapter_json):
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    if not is_cookie_valid():
+        return redirect("/login")
+
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         if username:
             return redirect(url_for("user_overview", username=username))
+
     return render_template("index.html", username="", progress_data=[])
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        from login import do_login  # 쿠키 발급 로직 따로 작성
+
+        success, session_or_msg = do_login(username, password)
+
+        if success:
+            # 로그인 성공 시 index 페이지로 리디렉션
+            return redirect(url_for("index"))
+        else:
+            print("로그인 실패:", session_or_msg)
+            return render_template("login.html", error="로그인에 실패했습니다.")
+
+    return render_template("login.html")
 
 
 @app.route("/api/overview/<username>", methods=["GET"])

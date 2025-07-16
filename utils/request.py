@@ -103,13 +103,13 @@ res = session.get(LOGIN_URL)
 # print(f"👤 사용자 프로필 정보:\n{res.text}")
 
 
-user = "원용우1023"
-# res = session.get(f"http://edu.doingcoding.com/api/profile?username={user}")
-res = session.get(
-    f"http://edu.doingcoding.com/api/submissions?myself=0&starred=0&result=&username={user}&page=1&limit=12&offset=0"
-)
+# user = "원용우1023"
+# # res = session.get(f"http://edu.doingcoding.com/api/profile?username={user}")
+# res = session.get(
+#     f"http://edu.doingcoding.com/api/submissions?myself=0&starred=0&result=&username={user}&page=1&limit=12&offset=0"
+# )
 
-print(f"👤 {user} 프로필 응답:", res.text)
+# print(f"👤 {user} 프로필 응답:", res.text)
 # http://edu.doingcoding.com/api/profile?username=%EC%9B%90%EC%9A%A9%EC%9A%B01023
 
 # # JSON 파싱

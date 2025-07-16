@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>로그인 | 학습 진도 시각화</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="login-card">
+        <h2>🔐 로그인</h2>
+        {% if error %}
+        <p style="color: red">{{ error }}</p>
+        {% endif %}
+        <form method="post">
+          <input type="text" name="username" placeholder="아이디" required />
+          <input
+            type="password"
+            name="password"
+            placeholder="비밀번호"
+            required
+          />
+          <button type="submit">로그인</button>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
