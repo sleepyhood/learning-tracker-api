@@ -13,7 +13,7 @@ load_dotenv()
 
 USERNAME = os.getenv("USERNAME")
 PASSWORD = os.getenv("PASSWORD")
-BASE_URL = os.getenv("BASE_URL")
+BASE_URL = "http://edu.doingcoding.com"
 
 
 def crawl_problems(your_id, your_password, user_name):
