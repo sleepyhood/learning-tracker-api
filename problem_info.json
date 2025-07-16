@@ -1,0 +1,126 @@
+{
+    "P101v01": {
+        "title": "Lv1 출력",
+        "total": 20
+    },
+    "P101v02": {
+        "title": "Lv2 변수",
+        "total": 14
+    },
+    "P101v03": {
+        "title": "Lv3 입력",
+        "total": 20
+    },
+    "P101v04": {
+        "title": "Lv4 연산자 C",
+        "total": 20
+    },
+    "P101v04J": {
+        "title": "Lv4 연산자 Java",
+        "total": 15
+    },
+    "P101v04P": {
+        "title": "Lv4 연산자 Python",
+        "total": 15
+    },
+    "P101v05": {
+        "title": "Lv5 자료형변환",
+        "total": 6
+    },
+    "P101v06": {
+        "title": "Lv6 조건",
+        "total": 21
+    },
+    "P101v07": {
+        "title": "Lv7 반복1(for)",
+        "total": 35
+    },
+    "P101v08": {
+        "title": "Lv8 반복2(while)",
+        "total": 20
+    },
+    "P101v09": {
+        "title": "Lv9 반복3(다중for)",
+        "total": 17
+    },
+    "P101v10": {
+        "title": "Lv10 배열(1차)",
+        "total": 62
+    },
+    "P101v11": {
+        "title": "Lv11 문자",
+        "total": 4
+    },
+    "P101v12": {
+        "title": "Lv12 문자열1(기초)",
+        "total": 12
+    },
+    "P101v13": {
+        "title": "Lv13 COS PRO 3급",
+        "total": 40
+    },
+    "P101v14": {
+        "title": "Lv14 기초1종합50제",
+        "total": 50
+    },
+    "S101v01": {
+        "title": "SLv1 출력",
+        "total": 20
+    },
+    "S101v02": {
+        "title": "SLv2 변수",
+        "total": 14
+    },
+    "S101v04": {
+        "title": "SLv4 연산자 C",
+        "total": 14
+    },
+    "S101v04J": {
+        "title": "SLv4 연산자 Java",
+        "total": 14
+    },
+    "S101v04P": {
+        "title": "SLv4 연산자 Python",
+        "total": 13
+    },
+    "S101v05": {
+        "title": "SLv5 자료형변환",
+        "total": 6
+    },
+    "SP101v06": {
+        "title": "SLv6 조건",
+        "total": 10
+    },
+    "SP101v07": {
+        "title": "SLv7 반복1(for)",
+        "total": 23
+    },
+    "SP101v08": {
+        "title": "SLv8 반복2(while)",
+        "total": 12
+    },
+    "SP101v09": {
+        "title": "SLv9 반복3(다중for)",
+        "total": 15
+    },
+    "SP101v10": {
+        "title": "SLv10 배열(1차)",
+        "total": 19
+    },
+    "SP101v11": {
+        "title": "SLv11 문자",
+        "total": 3
+    },
+    "SP101v12": {
+        "title": "SLv12 문자열1(기초)",
+        "total": 7
+    },
+    "SP101v13": {
+        "title": "SLv13 COS PRO 3급",
+        "total": 40
+    },
+    "SP101v14": {
+        "title": "SLv14 기초1종합50제",
+        "total": 50
+    }
+}

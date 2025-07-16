@@ -1,0 +1,4 @@
+# .gitignore에 추가
+.env
+cookies.json
+students_data/

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ username }}님의 {{ group_title }} 문제별 풀이 현황</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      background: #f9f9f9;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .problem-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .problem {
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .solved {
+      background-color: #d0f5d0;
+      border-left: 6px solid #4CAF50;
+      color: #2e7d32;
+    }
+    .unsolved {
+      background-color: #f9d6d5;
+      border-left: 6px solid #f44336;
+      color: #b71c1c;
+    }
+    .problem a {
+      text-decoration: none;
+      color: inherit;
+    }
+    .copy-btn {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #444;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 9999;
+}
+.toast.show {
+  opacity: 1;
+}
+.copy-btn:disabled {
+  opacity: 0.5;
+  /* cursor: not-allowed; */
+}
+.problem:hover {
+  background-color: #e8f5e9; /* solved용 */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+.unsolved:hover {
+  background-color: #fcebea; /* unsolved용 */
+}
+
+.problem-link {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.problem-link:hover {
+  /* color: #0d47a1; 파란색 계열 강조 */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+  </style>
+</head>
+<body>
+  <h2>{{ username }} 님의 {{ group_title }} 문제별 풀이 현황</h2>
+  <div class="problem-list">
+    {% for pid, title in problem_names.items() %}
+      <div class="problem {% if pid in solved_problems %}solved{% else %}unsolved{% endif %}">
+        <a href="http://edu.doingcoding.com/problem/{{ pid }}" target="_blank" class="problem-link">
+            {{ title }}
+        </a>
+        <button class="copy-btn" data-title="{{ title }}" data-url="http://edu.doingcoding.com/problem/{{ pid }}">복사</button>
+    </div>
+
+    {% endfor %}
+  </div>
+
+  <script>
+    function showToast(message) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerText = message;
+  document.body.appendChild(toast);
+
+  // 보여주기
+  setTimeout(() => toast.classList.add('show'), 100);
+
+  // 2초 후 제거
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => document.body.removeChild(toast), 400);
+  }, 2000);
+}
+
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const title = btn.dataset.title;
+    const url = btn.dataset.url;
+    const text = `${title}\n${url}`;
+
+    try {
+      await navigator.clipboard.writeText(text);
+
+      btn.disabled = true;
+      showToast(`${text}\n\n📋 복사되었습니다!`);
+      setTimeout(() => btn.disabled = false, 1000);
+    } catch (err) {
+      showToast("❌ 복사에 실패했습니다.");
+    }
+  });
+});
+  </script>
+</body>
+</html>

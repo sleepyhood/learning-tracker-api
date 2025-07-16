@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>진도율 시각화</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        background: linear-gradient(135deg, #e0e0e0, #ffffff);
+        /* 부드러운 색 배경 */
+        text-align: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Glass 효과는 카드에만 */
+      .chart-card {
+        text-align: center;
+        max-width: 260px; /* ✅ 카드 최대 너비 제한 */
+        margin: auto; /* ✅ 가운데 정렬 */
+
+        padding: 16px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .chart-card:hover {
+        cursor: pointer;
+
+        transform: translateY(-6px) scale(1.03);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      }
+      #charts-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      /* 다른 요소들은 Glass 효과 제거하고 깔끔하게 */
+      form {
+        margin: 30px auto;
+      }
+
+      input[type="text"] {
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #aaa;
+        width: 240px;
+        margin-right: 8px;
+      }
+
+      button {
+        padding: 10px 16px;
+        border: none;
+        background: #007bff;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+
+      h1,
+      h2 {
+        color: #222;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>카테고리별 문제 풀이 현황</h1>
+
+    <form id="search-form">
+      <input
+        type="text"
+        id="username-input"
+        placeholder="유저명을 입력하세요"
+        required
+      />
+      <button type="submit">조회</button>
+    </form>
+
+    <h2 id="result-title" style="display: none"></h2>
+    <div id="charts-container"></div>
+
+    <script>
+      // 사용자 조회
+      const form = document.getElementById("search-form");
+      const input = document.getElementById("username-input");
+      const resultTitle = document.getElementById("result-title");
+      const container = document.getElementById("charts-container");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const username = input.value.trim();
+        if (!username) return;
+
+        resultTitle.style.display = "none";
+        container.innerHTML = "로딩 중...";
+
+        const res = await fetch(`/api/overview/${username}`);
+        const data = await res.json();
+
+        if (data.status !== "ok") {
+          container.innerHTML = `<p>${data.message}</p>`;
+          return;
+        }
+
+        resultTitle.textContent = `${data.username} 님의 챕터별 진도`;
+        resultTitle.style.display = "block";
+
+        container.innerHTML = data.progress_data
+          .map(
+            (item, idx) => `
+  <div class="chart-card" data-href="/user/${data.username}/chapter/${item.chapter}">
+    <canvas id="chart-${idx}" width="160" height="160"></canvas>
+    <p style="margin-top: 12px; font-weight: bold;">${item.title}</p>
+  </div>
+`
+          )
+          .join("");
+
+        // 카드 클릭 시 상세 페이지 이동
+        document.querySelectorAll(".chart-card").forEach((card) => {
+          card.addEventListener("click", () => {
+            const href = card.dataset.href;
+            if (href) window.location.href = href;
+          });
+        });
+
+        // 각 도넛 그래프 그리기
+        data.progress_data.forEach((item, idx) => {
+          const canvas = document.getElementById(`chart-${idx}`);
+          const ctx = canvas.getContext("2d");
+
+          // 🎨 도넛용 원형 그라데이션 생성
+          const gradient = ctx.createLinearGradient(0, 0, 200, 200); // 가로 세로 방향
+          if (item.percent === 100)
+            gradient.addColorStop(0, "rgb(142,234,220)"),
+              gradient.addColorStop(1, "rgb(46,147,248)");
+          else if (item.percent >= 80)
+            gradient.addColorStop(0, "rgb(128,240,131)"),
+              gradient.addColorStop(1, "rgb(44,206,190)");
+          else if (item.percent >= 51)
+            gradient.addColorStop(0, "rgb(219,234,134)"),
+              gradient.addColorStop(1, "rgb(50,214,58)");
+          else if (item.percent >= 21)
+            gradient.addColorStop(0, "rgb(236,219,135)"),
+              gradient.addColorStop(1, "rgb(245,151,35)");
+          else if (item.percent >= 1)
+            gradient.addColorStop(0, "rgb(236,167,184)"),
+              gradient.addColorStop(1, "rgb(241,53,35)");
+          else
+            gradient.addColorStop(0, "#ddd"), gradient.addColorStop(1, "#ddd");
+
+          new Chart(ctx, {
+            type: "doughnut",
+            data: {
+              labels: ["완료", "미완료"],
+              datasets: [
+                {
+                  data: [item.percent, 100 - item.percent],
+                  backgroundColor: [gradient, "#f0f0f0"], // ✅ 더 밝은 회색
+                  borderWidth: 0,
+                  borderRadius: 100, // ✅ 도넛 끝 둥글게
+                },
+              ],
+            },
+            options: {
+              cutout: "60%",
+              plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false },
+                title: {
+                  display: true,
+                  text: `${item.percent}%`,
+                  color: "#444",
+                  font: {
+                    size: 20,
+                    weight: "bold",
+                  },
+                  position: "center",
+                },
+              },
+            },
+            plugins: [centerTextPlugin(`${item.percent}%`)],
+          });
+        });
+      });
+
+      // 중앙 텍스트용 Chart.js 커스텀 플러그인
+      function centerTextPlugin(text) {
+        return {
+          id: "centerText",
+          beforeDraw(chart) {
+            const { ctx, chartArea, width, height } = chart;
+
+            if (!chartArea) return; // 아직 렌더링 준비 전이면 그리지 않음
+
+            ctx.save();
+
+            const fontSize = Math.min(width / 10, 20); // responsive size
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#444";
+
+            const centerX = (chartArea.left + chartArea.right) / 2;
+            const centerY = (chartArea.top + chartArea.bottom) / 2;
+
+            ctx.fillText(text, centerX, centerY);
+            ctx.restore();
+          },
+        };
+      }
+
+      // 색상 결정 함수
+      function getGradientColor(percent) {
+        if (percent === 100) return "rgb(46,147,248)";
+        if (percent >= 80) return "rgb(44,206,190)";
+        if (percent >= 51) return "rgb(50,214,58)";
+        if (percent >= 21) return "rgb(245,151,35)";
+        if (percent >= 1) return "rgb(241,53,35)";
+        return "#ddd";
+      }
+    </script>
+  </body>
+</html>

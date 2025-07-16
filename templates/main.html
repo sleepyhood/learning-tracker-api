@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>전체 카테고리 진도</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 40px auto;
+      }
+      .category-card {
+        border: 1px solid #ddd;
+        padding: 16px;
+        margin-bottom: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-decoration: none;
+        color: inherit;
+      }
+      .category-card:hover {
+        background-color: #f0f8ff;
+      }
+      .progress-bar {
+        width: 120px;
+        height: 16px;
+        background: #eee;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4fc3f7, #0288d1);
+        width: 0;
+        transition: width 1s ease-in-out;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>카테고리별 전체 진도</h1>
+
+    {% for cat in categories %}
+    <a
+      href="{{ url_for('category_detail', category_id=cat.id) }}"
+      class="category-card"
+    >
+      <div>{{ cat.name }}</div>
+      <div class="progress-bar">
+        <div class="progress-fill" data-percent="{{ cat.progress }}"></div>
+      </div>
+      <div>{{ cat.progress }}%</div>
+    </a>
+    {% endfor %}
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const fills = document.querySelectorAll(".progress-fill");
+        fills.forEach((bar) => {
+          const percent = bar.getAttribute("data-percent");
+          setTimeout(() => {
+            bar.style.width = percent + "%";
+          }, 50);
+        });
+      });
+    </script>
+  </body>
+</html>
