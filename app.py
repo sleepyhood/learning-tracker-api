@@ -4,12 +4,14 @@ from collections import defaultdict
 from flask import jsonify
 from datetime import datetime, timedelta
 import requests
+from login import load_cookies, get_authenticated_session
 
 # config.py 또는 main.py 상단
 from dotenv import load_dotenv
 import os
 
 from utils.user_crawler import crawl_user
+import re
 
 load_dotenv()
 
@@ -45,6 +47,20 @@ def is_cookie_valid():
         return "sessionid" in cookies and cookies["sessionid"]
     except:
         return False
+
+
+def extract_level(name):
+    # Lv 또는 SLv 다음 숫자 추출
+    match = re.match(r"(S?Lv)\s*(\d+)", name)
+    if match:
+        prefix = match.group(1)
+        level_num = int(match.group(2))
+        # Lv는 SLv보다 우선 (숫자가 같으면 Lv 먼저)
+        priority = 0 if prefix == "Lv" else 1  # Lv=0, SLv=1
+        return (level_num, priority)
+    else:
+        # 매칭 안되면 최하위 처리
+        return (float("inf"), float("inf"))
 
 
 def get_progress(solved_list, problem_info):
@@ -95,7 +111,66 @@ def index():
 
     print("유효한 쿠키. index에 접근 허용됨.")
 
+    cookies = load_cookies(COOKIE_PATH)
+    session = get_authenticated_session(cookies)
+
+    res = session.get(f"http://edu.doingcoding.com/api/profile?username={username}")
+
+    # # JSON 파싱
+    data = json.loads(res.text)
+    print(data)
+
+    ###################
+    print()
+
+    res = session.get(
+        f"http://edu.doingcoding.com/api/submissions?myself=1&starred=0&result=&username={username}&page=1&limit=100&offset=0"
+    )
+
+    # # JSON 파싱
+    data = json.loads(res.text)
+    print(data)
+
     return render_template("index.html", username="", progress_data=[])
+
+
+@app.route("/api/problems", methods=["GET"])
+def get_problem_list():
+    cookies = load_cookies(COOKIE_PATH)
+    session = get_authenticated_session(cookies)
+
+    try:
+        chapter = "LV1 출력"
+        res1 = session.get(
+            f"http://edu.doingcoding.com/api/problem?paging=true&offset=0&limit=100&tag=Lv1+%EC%B6%9C%EB%A0%A5&page=1"
+        )
+        print(res1.json())
+
+        with open("student_data.json", "w", encoding="utf-8") as f:
+            json.dump(res1.json(), f, ensure_ascii=False, indent=2)
+
+        res = session.get(
+            f"http://edu.doingcoding.com/api/problem/tags"
+            # f"http://edu.doingcoding.com/api/problem?paging=true&offset=0&limit=100&tag=Lv1+%EC%B6%9C%EB%A0%A5&page=1"
+        )  # ← 실제 API 엔드포인트에 맞게 변경
+        problem_data = res.json()
+
+        filtered = [
+            problem
+            for problem in problem_data["data"]
+            if problem["name"].startswith("Lv") or problem["name"].startswith("SLv")
+        ]
+
+        sorted_problems = sorted(filtered, key=lambda p: extract_level(p["name"]))
+
+        for p in sorted_problems:
+            print(f"{p['name']} (id: {p['id']})")
+
+        return jsonify({"success": True, "problems": res1.json()})
+
+    except Exception as e:
+        print("문제 목록 API 호출 실패:", e)
+        return jsonify({"success": False, "error": str(e)})
 
 
 @app.route("/login", methods=["GET", "POST"])

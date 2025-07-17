@@ -16,9 +16,9 @@ COOKIE_PATH = "cookies.json"
 LOGIN_URL = "http://edu.doingcoding.com/api/profile"  # 인증 확인용 URL
 
 
-def load_cookies():
-    if os.path.exists(COOKIE_PATH):
-        with open(COOKIE_PATH, "r") as f:
+def load_cookies(cookie_path=None):
+    if os.path.exists(cookie_path):
+        with open(cookie_path, "r") as f:
             return json.load(f)
     return None
 
