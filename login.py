@@ -101,6 +101,17 @@ def do_login(username=None, password=None):
             cookies = selenium_login(username, password)
             session = get_authenticated_session(cookies)
 
+            session = requests.Session()
+
+        # 수정 필요: 쿠키가 이미 있으면 새로 json 안 불러오게끔
+        try:
+            # res = session.get(f"http://edu.doingcoding.com/api/profile?username={username}")
+            session = get_authenticated_session(cookies)
+            res = session.get(f"http://edu.doingcoding.com/api/profile")
+            print(res.text)
+        except:
+            print("유효하지 않은 아이디")
+
         return True, session  # ✅ 성공 상태와 세션을 반환
 
     except Exception as e:

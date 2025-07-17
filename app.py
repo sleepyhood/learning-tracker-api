@@ -3,6 +3,7 @@ import json
 from collections import defaultdict
 from flask import jsonify
 from datetime import datetime, timedelta
+import requests
 
 # config.py 또는 main.py 상단
 from dotenv import load_dotenv
@@ -26,6 +27,8 @@ USER_DATA_DIR = os.path.join(BASE_DIR, "students_data")
 
 COOKIE_PATH = "cookies.json"
 
+BASE_URL = "http://edu.doingcoding.com"
+
 
 def is_cookie_valid():
     if not os.path.exists(COOKIE_PATH):
@@ -33,8 +36,13 @@ def is_cookie_valid():
     try:
         with open(COOKIE_PATH, "r") as f:
             cookies = json.load(f)
-        ts = datetime.fromisoformat(cookies.get("timestamp"))
-        return datetime.now() - ts < timedelta(hours=12)
+
+        if "timestamp" in cookies:
+            ts = datetime.fromisoformat(cookies["timestamp"])
+            if datetime.now() - ts > timedelta(hours=12):
+                return False
+
+        return "sessionid" in cookies and cookies["sessionid"]
     except:
         return False
 
@@ -76,6 +84,7 @@ def calculate_progress(solved_list, chapter_json):
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    username = ""
     if not is_cookie_valid():
         return redirect("/login")
 
@@ -83,6 +92,8 @@ def index():
         username = request.form.get("username", "").strip()
         if username:
             return redirect(url_for("user_overview", username=username))
+
+    print("유효한 쿠키. index에 접근 허용됨.")
 
     return render_template("index.html", username="", progress_data=[])
 
