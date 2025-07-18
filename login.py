@@ -88,7 +88,7 @@ def is_cookie_valid(session):
 
 def do_login(username=None, password=None):
     try:
-        cookies = load_cookies()
+        cookies = load_cookies(COOKIE_PATH)
         if cookies:
             print("✅ 저장된 쿠키 로드")
             session = get_authenticated_session(cookies)

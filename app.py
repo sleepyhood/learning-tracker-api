@@ -12,6 +12,7 @@ import os
 
 from utils.user_crawler import crawl_user
 import re
+from urllib.parse import quote
 
 load_dotenv()
 
@@ -39,10 +40,11 @@ def is_cookie_valid():
         with open(COOKIE_PATH, "r") as f:
             cookies = json.load(f)
 
-        if "timestamp" in cookies:
-            ts = datetime.fromisoformat(cookies["timestamp"])
-            if datetime.now() - ts > timedelta(hours=12):
-                return False
+        # 테스트용: 유효성 검사에서 시간 체크 제거
+        # if "timestamp" in cookies:
+        #     ts = datetime.fromisoformat(cookies["timestamp"])
+        #     if datetime.now() - ts > timedelta(hours=12):
+        #         return False
 
         return "sessionid" in cookies and cookies["sessionid"]
     except:
@@ -98,6 +100,37 @@ def calculate_progress(solved_list, chapter_json):
     return progress_data
 
 
+# 문제 태그 불러오기
+def fetch_problem_tags(session):
+    url = "http://edu.doingcoding.com/api/problem/tags"
+    response = session.get(url)
+    response.raise_for_status()
+    return response.json()["data"]
+
+
+# "Lv", "SLv"로 시작하는 태그만 필터링
+def filter_level_tags(tags):
+    return [tag for tag in tags if tag["name"].startswith(("Lv", "SLv"))]
+
+
+# 정렬 기준: Lv1, Lv2, SLv1, ...
+def extract_level(tag_name):
+    import re
+
+    match = re.search(r"(?:S)?Lv(\d+)", tag_name)
+    return int(match.group(1)) if match else float("inf")
+
+
+def sort_tags_by_level(tags):
+    return sorted(tags, key=lambda tag: extract_level(tag["name"]))
+
+
+# 파일로 저장
+def save_tags_to_file(tags, filename="tags.json"):
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(tags, f, ensure_ascii=False, indent=2)
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     username = ""
@@ -140,33 +173,17 @@ def get_problem_list():
     session = get_authenticated_session(cookies)
 
     try:
-        chapter = "LV1 출력"
-        res1 = session.get(
-            f"http://edu.doingcoding.com/api/problem?paging=true&offset=0&limit=100&tag=Lv1+%EC%B6%9C%EB%A0%A5&page=1"
-        )
-        print(res1.json())
+        # 1. 태그 저장
+        raw_tags = fetch_problem_tags(session)
+        filtered = filter_level_tags(raw_tags)
+        sorted_tags = sort_tags_by_level(filtered)
 
-        with open("student_data.json", "w", encoding="utf-8") as f:
-            json.dump(res1.json(), f, ensure_ascii=False, indent=2)
+        for tag in sorted_tags:
+            print(f"{tag['name']} (id: {tag['id']})")
 
-        res = session.get(
-            f"http://edu.doingcoding.com/api/problem/tags"
-            # f"http://edu.doingcoding.com/api/problem?paging=true&offset=0&limit=100&tag=Lv1+%EC%B6%9C%EB%A0%A5&page=1"
-        )  # ← 실제 API 엔드포인트에 맞게 변경
-        problem_data = res.json()
+        save_tags_to_file(sorted_tags)
 
-        filtered = [
-            problem
-            for problem in problem_data["data"]
-            if problem["name"].startswith("Lv") or problem["name"].startswith("SLv")
-        ]
-
-        sorted_problems = sorted(filtered, key=lambda p: extract_level(p["name"]))
-
-        for p in sorted_problems:
-            print(f"{p['name']} (id: {p['id']})")
-
-        return jsonify({"success": True, "problems": res1.json()})
+        return jsonify({"success": True, "problems": sorted_tags})
 
     except Exception as e:
         print("문제 목록 API 호출 실패:", e)

@@ -1,0 +1,598 @@
+{
+  "error": null,
+  "data": {
+    "results": [
+      {
+        "id": 27,
+        "tags": [
+          "Lv1 출력"
+        ],
+        "created_by": {
+          "id": 1,
+          "username": "root",
+          "real_name": null
+        },
+        "template": {},
+        "_id": "P101v0101",
+        "title": "01. [출력-기본1] Hello 출력",
+        "description": "<p>아래의 출력예시와 같이 출력하세요.</p>",
+        "input_description": "<p>입력은 없습니다.<br /></p>",
+        "output_description": "<p>프로그래밍의 출력 명령어를 사용하여 아래와 같이 출력하세요<br /></p>",
+        "samples": [
+          {
+            "input": " ",
+            "output": "Hello"
+          }
+        ],
+        "hint": "<h3><b>C언어</b></h3><h3><img alt=\"image.png\" src=\"/public/upload/1023f0f858.png\" width=\"801\" height=\"404\" /><br /></h3><hr /><p><b><br /></b></p><h3><b>Python</b></h3><h3><img alt=\"image.png\" src=\"/public/upload/18eb52bc84.png\" width=\"733\" height=\"146\" /><br /></h3><hr /><p><br /></p><h3><b>JAVA</b></h3><h3><b><img alt=\"image.png\" src=\"/public/upload/424ae79db2.png\" width=\"897\" height=\"416\" /><br /></b></h3>",
+        "languages": [
+          "C",
+          "C++",
+          "Java",
+          "Python3"
+        ],
+        "create_time": "2021-10-30T15:48:10.218993Z",
+        "last_update_time": null,
+        "time_limit": 1000,
+        "memory_limit": 256,
+        "io_mode": {
+          "input": "input.txt",
+          "output": "output.txt",
+          "io_mode": "Standard IO"
+        },
+        "spj": false,
+        "spj_language": null,
+        "rule_type": "OI",
+        "difficulty": "Low",
+        "source": "",
+        "total_score": 100,
+        "submission_number": 1838,
+        "accepted_number": 1119,
+        "statistic_info": {
+          "0": 1119,
+          "4": 24,
+          "-1": 256,
+          "-2": 422
+        },
+        "share_submission": false,
+        "contest": null,
+        "my_status": 0
+      },
+      {
+        "id": 28,
+        "tags": [
+          "Lv1 출력"
+        ],
+        "created_by": {
+          "id": 1,
+          "username": "root",
+          "real_name": null
+        },
+        "template": {},
+        "_id": "P101v0102",
+        "title": "02. [출력-기본2] Welcome to DOINGCODING 출력",
+        "description": "<p><span style=\"color: rgb(0, 0, 0);\">아래의 출력예시와 같이 출력하세요</span><br /></p>",
+        "input_description": "<p>입력은 없습니다.</p>",
+        "output_description": "<p><span style=\"color: rgb(0, 0, 0);\"><span style=\"color: rgb(51, 51, 51);\">프로그래밍의 출력 명령어를</span>사용하여 아래와 같이 출력하세요</span><br /></p>",
+        "samples": [
+          {
+            "input": " ",
+            "output": "Welcome to DOINGCODING"
+          }
+        ],
+        "hint": "<p>printf(&quot; &quot;);</p><p>처음 만나는 &quot;(쌍따옴표) 부터 두번째 &quot;(쌍따옴표) 까지 화면에 출력됩니다.</p>",
+        "languages": [
+          "C",
+          "C++",
+          "Golang",
+          "Java",
+          "Python2",
+          "Python3"
+        ],
+        "create_time": "2021-10-30T16:16:42.275524Z",
+        "last_update_time": null,
+        "time_limit": 1000,
+        "memory_limit": 256,
+        "io_mode": {
+          "input": "input.txt",
+          "output": "output.txt",
+          "io_mode": "Standard IO"
+        },
+        "spj": false,
+        "spj_language": null,
+        "rule_type": "OI",
+        "difficulty": "Low",
+        "source": "",
+        "total_score": 100,
+        "submission_number": 1093,
+        "accepted_number": 662,
+        "statistic_info": {
+          "0": 662,
+          "4": 29,
+          "-1": 150,
+          "-2": 252
+        },
+        "share_submission": false,
+        "contest": null,
+        "my_status": 0
+      },
+      {
+        "id": 89,
+        "tags": [
+          "Lv1 출력",
+          "이스케이프"
+        ],
+        "created_by": {
+          "id": 1,
+          "username": "root",
+          "real_name": null
+        },
+        "template": {},
+        "_id": "P101v0103",
+        "title": "03. [출력-이스케이프1] Hello World를 2줄로 출력",
+        "description": "<p>아래의 출력예시와 같이 출력하세요<br /></p>",
+        "input_description": "<p>입력은 없습니다.<br /></p>",
+        "output_description": "<p><span style=\"color: rgb(51, 51, 51);\">프로그래밍의 출력 명령어를</span>사용하여 아래와 같이 출력하세요<br /></p>",
+        "samples": [
+          {
+            "input": " ",
+            "output": "Hello\nWorld"
+          }
+        ],
+        "hint": "<p>C언어의 출력명령어 printf와</p><p>옵션 이스케이프(\\:백슬러시 + 영문자)문자를 사용하세요</p>",
+        "languages": [
+          "C",
+          "C++",
+          "Golang",
+          "Java",
+          "Python2",
+          "Python3"
+        ],
+        "create_time": "2021-11-30T09:09:54.617742Z",
+        "last_update_time": null,
+        "time_limit": 1000,
+        "memory_limit": 256,
+        "io_mode": {
+          "input": "input.txt",
+          "output": "output.txt",
+          "io_mode": "Standard IO"
+        },
+        "spj": false,
+        "spj_language": null,
+        "rule_type": "OI",
+        "difficulty": "Low",
+        "source": "",
+        "total_score": 100,
+        "submission_number": 1418,
+        "accepted_number": 679,
+        "statistic_info": {
+          "0": 679,
+          "4": 14,
+          "-1": 438,
+          "-2": 287
+        },
+        "share_submission": false,
+        "contest": null,
+        "my_status": 0
+      },
+      {
+        "id": 90,
+        "tags": [
+          "Lv1 출력",
+          "이스케이프"
+        ],
+        "created_by": {
+          "id": 1,
+          "username": "root",
+          "real_name": null
+        },
+        "template": {},
+        "_id": "P101v0104",
+        "title": "04. [출력-이스케이프2] * 로 다이아몬드 출력",
+        "description": "<p>아래의 출력예시와 같이 출력하세요<br /></p><p>*뒤에<span style=\"color: rgb(227, 55, 55);\">띄어쓰기가 없어야</span>정확한 풀이로 채점 됩니다.</p>",
+        "input_description": "<p>입력은 없습니다.<br /></p>",
+        "output_description": "<p><span style=\"color: rgb(51, 51, 51);\">프로그래밍의 출력 명령어를</span>사용하여 아래와 같이 출력하세요<br /></p>",
+        "samples": [
+          {
+            "input": " ",
+            "output": "  *\n * *\n*   *\n * *\n  *"
+          }
+        ],
+        "hint": "<p><span style=\"color: rgb(51, 51, 51);\">프로그래밍의 출력 명령어의</span></p><p>옵션 이스케이프(\\:백슬러시 + 영문자)문자를 사용하세요</p>",
+        "languages": [
+          "C",
+          "C++",
+          "Golang",
+          "Java",
+          "Python2",
+          "Python3"
+        ],
+        "create_time": "2021-11-30T09:11:45.710987Z",
+        "last_update_time": null,
+        "time_limit": 1000,
+        "memory_limit": 256,
+        "io_mode": {
+          "input": "input.txt",
+          "output": "output.txt",
+          "io_mode": "Standard IO"
+        },
+        "spj": false,
+        "spj_language": null,
+        "rule_type": "OI",
+        "difficulty": "Low",
+        "source": "",
+        "total_score": 100,
+        "submission_number": 1457,
+        "accepted_number": 616,
+        "statistic_info": {
+          "0": 616,
+          "4": 4,
+          "-1": 617,
+          "-2": 220
+        },
+        "share_submission": false,
+        "contest": null,
+        "my_status": 0
+      },
+      {
+        "id": 91,
+        "tags": [
+          "Lv1 출력",
+          "이스케이프"
+        ],
+        "created_by": {
+          "id": 1,
+          "username": "root",
+          "real_name": null
+        },
+        "template": {},
+        "_id": "P101v0105",
+        "title": "05. [출력-이스케이프3] I \"will\" be back 출력",
+        "description": "<p style=\"\">아래의 출력예시와 같이 출력하세요.<br /></p>",
+        "input_description": "<p>입력은 없습니다.<br /></p>",
+        "output_description": "<p>C언어의 출력명령어 printf 를 사용하여 아래와 같이 출력하세요<br /></p>",
+        "samples": [
+          {
+            "input": " ",
+            "output": "I \"will\" be back"
+          }
+        ],
+        "hint": "<p>C언어의 출력명령어 printf와</p><p>옵션 이스케이프(\\:백슬러시 + 영문자)문자를 사용하세요.</p>",
+        "languages": [
+          "C",
+          "C++",
+          "Golang",
+          "Java",
+          "Python2",
+          "Python3"
+        ],
+        "create_time": "2021-11-30T09:16:00.641320Z",
+        "last_update_time": null,
+        "time_limit": 1000,
+        "memory_limit": 256,
+        "io_mode": {
+          "input": "input.txt",
+          "output": "output.txt",
+          "io_mode": "Standard IO"
+        },
+        "spj": false,
+        "spj_language": null,
+        "rule_type": "OI",
+        "difficulty": "Low",
+        "source": "",
+        "total_score": 100,
+        "submission_number": 1322,
+        "accepted_number": 653,
+        "statistic_info": {
+          "0": 653,
+          "4": 8,
+          "-1": 237,
+          "-2": 424
+        },
+        "share_submission": false,
+        "contest": null,
+        "my_status": 0
+      },
+      {
+        "id": 92,
+        "tags": [
+          "Lv1 출력",
+          "이스케이프"
+        ],
+        "created_by": {
+          "id": 1,
+          "username": "root",
+          "real_name": null
+        },
+        "template": {},
+        "_id": "P101v0106",
+        "title": "06. [출력-이스케이프4] 토끼 이모티콘 출력",
+        "description": "<p>아래의 출력예시와 같이 출력하세요.<br /></p>",
+        "input_description": "<p style=\"\"><span style=\"color: rgb(0, 0, 0);\">입력은 없습니다.</span><br /></p>",
+        "output_description": "<p>C언어의 출력명령어 printf 를 사용하여 아래와 같이 출력하세요.<br /></p>",
+        "samples": [
+          {
+            "input": " ",
+            "output": "(\\(\\\n( -.-)\n(_('')('')"
+          }
+        ],
+        "hint": "<p>C언어의 출력명령어 printf와</p><p>옵션 이스케이프(\\:백슬러시 + 영문자)문자를 사용하세요.</p><p>\\(백슬러시)를 출력하기 위해서는 \\\\ (백슬러시 2개)를 작성합니다.</p>",
+        "languages": [
+          "C",
+          "C++",
+          "Golang",
+          "Java",
+          "Python2",
+          "Python3"
+        ],
+        "create_time": "2021-11-30T10:11:38.075326Z",
+        "last_update_time": null,
+        "time_limit": 1000,
+        "memory_limit": 256,
+        "io_mode": {
+          "input": "input.txt",
+          "output": "output.txt",
+          "io_mode": "Standard IO"
+        },
+        "spj": false,
+        "spj_language": null,
+        "rule_type": "OI",
+        "difficulty": "Low",
+        "source": "",
+        "total_score": 100,
+        "submission_number": 1365,
+        "accepted_number": 576,
+        "statistic_info": {
+          "0": 576,
+          "4": 6,
+          "-1": 438,
+          "-2": 345
+        },
+        "share_submission": false,
+        "contest": null,
+        "my_status": 0
+      },
+      {
+        "id": 93,
+        "tags": [
+          "서식문자",
+          "Lv1 출력",
+          "서식문자-정수"
+        ],
+        "created_by": {
+          "id": 1,
+          "username": "root",
+          "real_name": null
+        },
+        "template": {},
+        "_id": "P101v0107",
+        "title": "07. [출력-서식문자 정수1] 100 출력",
+        "description": "<p style=\"\">아래의 출력예시와 같이 출력하세요.<br /></p>",
+        "input_description": "<p>입력은 없습니다.<br /></p>",
+        "output_description": "<p>C언어의 출력명령어 printf 를 사용하여 아래와 같이 출력하세요.</p><p>숫자는 서식문자 %d를 사용하여 출력하세요.</p>",
+        "samples": [
+          {
+            "input": " ",
+            "output": "100"
+          }
+        ],
+        "hint": "<p><b>[C언어]</b></p><p>📘<strong>:</strong><code>%d</code>는10진수 정수(decimal integer)를 출력하는 문자입니다.</p><p><code>printf</code>로 출력합니다.</p><p><img alt=\"image.png\" src=\"/public/upload/9b9e944b22.png\" width=\"700\" height=\"269.2307692307692\" /><br /></p><hr /><h3><b><br /></b></h3><h3><b>[파이썬]</b></h3><p>📘<strong>:</strong><code>%d</code>는 정수(decimal)를 출력하는 문자입니다.</p><p><code>print</code>로 출력합니다.</p><p><img alt=\"image.png\" src=\"/public/upload/885a582080.png\" width=\"700\" height=\"118.4604498056265\" /><br /></p><hr /><h3><b><br /></b></h3><h3><b>[Java]</b></h3><p></p><p>📘<strong>:</strong><code>%d</code>는 정수(decimal)를 출력하는 문자입니다.</p><p><code>System.out.printf</code>로 출력합니다.</p><p><img alt=\"image.png\" src=\"/public/upload/34a2d41404.png\" width=\"700\" height=\"224.71938732773344\" /><br /></p>",
+        "languages": [
+          "C",
+          "C++",
+          "Golang",
+          "Java",
+          "Python2",
+          "Python3"
+        ],
+        "create_time": "2021-11-30T10:17:56.162401Z",
+        "last_update_time": null,
+        "time_limit": 1000,
+        "memory_limit": 256,
+        "io_mode": {
+          "input": "input.txt",
+          "output": "output.txt",
+          "io_mode": "Standard IO"
+        },
+        "spj": false,
+        "spj_language": null,
+        "rule_type": "OI",
+        "difficulty": "Low",
+        "source": "",
+        "total_score": 100,
+        "submission_number": 1113,
+        "accepted_number": 675,
+        "statistic_info": {
+          "0": 675,
+          "4": 31,
+          "-1": 179,
+          "-2": 228
+        },
+        "share_submission": false,
+        "contest": null,
+        "my_status": null
+      },
+      {
+        "id": 94,
+        "tags": [
+          "서식문자",
+          "Lv1 출력",
+          "서식문자-정수"
+        ],
+        "created_by": {
+          "id": 1,
+          "username": "root",
+          "real_name": null
+        },
+        "template": {},
+        "_id": "P101v0108",
+        "title": "08. [출력-서식문자 정수2] 1 100 출력",
+        "description": "<p>아래의 출력예시와 같이 출력하세요.<br /></p>",
+        "input_description": "<p>입력은 없습니다.<br /></p>",
+        "output_description": "<p>C언어의 출력명령어 printf 를 사용하여 아래와 같이 출력하세요.</p><p>숫자는 서식문자 %d를 사용하여 출력하세요.</p>",
+        "samples": [
+          {
+            "input": " ",
+            "output": "1 100"
+          }
+        ],
+        "hint": "<p>C언어의 출력명령어 printf와</p><p>옵션 서식(%)문자를 사용하세요</p><p>정수는 %d 입니다.</p><p>d는 decimal(10진수)의 약자입니다.</p>",
+        "languages": [
+          "C",
+          "C++",
+          "Golang",
+          "Java",
+          "Python2",
+          "Python3"
+        ],
+        "create_time": "2021-11-30T10:21:53.413541Z",
+        "last_update_time": null,
+        "time_limit": 1000,
+        "memory_limit": 256,
+        "io_mode": {
+          "input": "input.txt",
+          "output": "output.txt",
+          "io_mode": "Standard IO"
+        },
+        "spj": false,
+        "spj_language": null,
+        "rule_type": "OI",
+        "difficulty": "Low",
+        "source": "",
+        "total_score": 100,
+        "submission_number": 1227,
+        "accepted_number": 601,
+        "statistic_info": {
+          "0": 601,
+          "4": 63,
+          "-1": 207,
+          "-2": 356
+        },
+        "share_submission": false,
+        "contest": null,
+        "my_status": null
+      },
+      {
+        "id": 95,
+        "tags": [
+          "서식문자",
+          "Lv1 출력",
+          "서식문자-정수"
+        ],
+        "created_by": {
+          "id": 1,
+          "username": "root",
+          "real_name": null
+        },
+        "template": {},
+        "_id": "P101v0109",
+        "title": "09. [출력-서식문자 정수3] 1cm = 10mm 출력",
+        "description": "<p>아래의 출력예시와 같이 출력하세요.<br /></p>",
+        "input_description": "<p>입력은 없습니다.<br /></p>",
+        "output_description": "<p>C언어의 출력명령어 printf 를 사용하여 아래와 같이 출력하세요.</p><p>숫자는 서식문자 %d를 사용하여 출력하세요.</p>",
+        "samples": [
+          {
+            "input": " ",
+            "output": "1cm = 10mm"
+          }
+        ],
+        "hint": "<p>C언어의 출력명령어 printf와</p><p>옵션 서식(%)문자를 사용하세요</p><p>정수는 %d 입니다.</p><p>d는 decimal(10진수)의 약자입니다.</p>",
+        "languages": [
+          "C",
+          "C++",
+          "Golang",
+          "Java",
+          "Python2",
+          "Python3"
+        ],
+        "create_time": "2021-11-30T10:23:35.935992Z",
+        "last_update_time": null,
+        "time_limit": 1000,
+        "memory_limit": 256,
+        "io_mode": {
+          "input": "input.txt",
+          "output": "output.txt",
+          "io_mode": "Standard IO"
+        },
+        "spj": false,
+        "spj_language": null,
+        "rule_type": "OI",
+        "difficulty": "Low",
+        "source": "",
+        "total_score": 100,
+        "submission_number": 1243,
+        "accepted_number": 651,
+        "statistic_info": {
+          "0": 651,
+          "4": 32,
+          "-1": 295,
+          "-2": 265
+        },
+        "share_submission": false,
+        "contest": null,
+        "my_status": null
+      },
+      {
+        "id": 96,
+        "tags": [
+          "서식문자",
+          "Lv1 출력",
+          "서식문자-실수"
+        ],
+        "created_by": {
+          "id": 1,
+          "username": "root",
+          "real_name": null
+        },
+        "template": {},
+        "_id": "P101v0110",
+        "title": "10. [출력-서식문자 소수1] 3.141592 출력",
+        "description": "<p>아래의 출력예시와 같이 출력하세요.<br /></p>",
+        "input_description": "<p>입력은 없습니다.<br /></p>",
+        "output_description": "<p>C언어의 출력명령어 printf 를 사용하여 아래와 같이 출력하세요.</p><p>소수는 서식문자 %lf를 사용하여 출력하세요.</p>",
+        "samples": [
+          {
+            "input": " ",
+            "output": "3.141592"
+          }
+        ],
+        "hint": "<p>C언어의 출력명령어 printf와</p><p>옵션 서식(%)문자를 사용하세요</p><p>소수는 %f 와 %lf가 있습니다.</p><p>%f는 소수 7자리까지 연산을, %lf는 소수 15자리까지 연산을 합니다.</p><p>차이는 정확도와 속도의 차이가 있겠습니다.</p><p>%f, %lf 모두 화면출력은 기본적으로 소수 6자리까지 표현됩니다.</p><p>우리는 %lf로 공부합니다.</p>",
+        "languages": [
+          "C",
+          "C++",
+          "Golang",
+          "Java",
+          "Python2",
+          "Python3"
+        ],
+        "create_time": "2021-11-30T10:26:09.468928Z",
+        "last_update_time": null,
+        "time_limit": 1000,
+        "memory_limit": 256,
+        "io_mode": {
+          "input": "input.txt",
+          "output": "output.txt",
+          "io_mode": "Standard IO"
+        },
+        "spj": false,
+        "spj_language": null,
+        "rule_type": "OI",
+        "difficulty": "Low",
+        "source": "",
+        "total_score": 100,
+        "submission_number": 852,
+        "accepted_number": 597,
+        "statistic_info": {
+          "0": 597,
+          "4": 37,
+          "-1": 92,
+          "-2": 126
+        },
+        "share_submission": false,
+        "contest": null,
+        "my_status": null
+      }
+    ],
+    "total": 20
+  }
+}
