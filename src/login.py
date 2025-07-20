@@ -15,6 +15,13 @@ from datetime import datetime
 COOKIE_PATH = "cookies.json"
 LOGIN_URL = "http://edu.doingcoding.com/api/profile"  # 인증 확인용 URL
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROBLEM_DIR = os.path.join(BASE_DIR, "problems_data")
+USER_DATA_DIR = os.path.join(BASE_DIR, "users_data")
+
+
+MAX_DATA_AGE_SECONDS = 86400  # 하루(60*60*24)
+
 
 def load_cookies(cookie_path=None):
     if os.path.exists(cookie_path):
@@ -86,9 +93,18 @@ def is_cookie_valid(session):
     return False
 
 
+def is_data_stale(file_path):
+    if not os.path.exists(file_path):
+        return True
+    modified_time = os.path.getmtime(file_path)
+    current_time = time.time()
+    return (current_time - modified_time) > MAX_DATA_AGE_SECONDS
+
+
 def do_login(username=None, password=None):
     try:
         cookies = load_cookies(COOKIE_PATH)
+
         if cookies:
             print("✅ 저장된 쿠키 로드")
             session = get_authenticated_session(cookies)
@@ -101,19 +117,36 @@ def do_login(username=None, password=None):
             cookies = selenium_login(username, password)
             session = get_authenticated_session(cookies)
 
-            session = requests.Session()
+        session = get_authenticated_session(cookies)
 
-        # 수정 필요: 쿠키가 이미 있으면 새로 json 안 불러오게끔
-        try:
-            # res = session.get(f"http://edu.doingcoding.com/api/profile?username={username}")
-            session = get_authenticated_session(cookies)
-            res = session.get(f"http://edu.doingcoding.com/api/profile")
-            print(res.text)
-        except:
-            print("유효하지 않은 아이디")
+        # 유저 데이터 파일 경로 설정
+        user_id = username or "unknown_user"
+        filename = f"{user_id}.json"
+        user_path = os.path.join(USER_DATA_DIR, filename)
 
-        return True, session  # ✅ 성공 상태와 세션을 반환
+        # 유저 디렉토리 없으면 생성
+        os.makedirs(USER_DATA_DIR, exist_ok=True)
+
+        if is_data_stale(user_path):
+            print("🔄 사용자 데이터 갱신 중...")
+            res = session.get(
+                f"http://edu.doingcoding.com/api/profile?username={username}"
+            )
+            data = json.loads(res.text)
+
+            with open(user_path, "w", encoding="utf-8") as f:
+                json.dump(
+                    data["data"]["oi_problems_status"]["problems"],
+                    f,
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            print(f"✅ 사용자 데이터 저장됨: {filename}")
+        else:
+            print("📁 사용자 데이터가 최신 상태입니다.")
+
+        return True, session
 
     except Exception as e:
         print("❌ 로그인 실패:", e)
-        return False, str(e)  # ✅ 실패 시 False와 메시지 반환
+        return False, str(e)

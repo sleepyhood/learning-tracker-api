@@ -5,6 +5,8 @@ from flask import jsonify
 import requests
 from login import load_cookies, get_authenticated_session
 from datetime import datetime, timezone, timedelta
+from pprint import pprint
+from utils.streak_utils import generate_streak_data
 
 # config.py 또는 main.py 상단
 from dotenv import load_dotenv
@@ -121,35 +123,43 @@ def calculate_progress(solved_list, chapter_json):
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    username = ""
+    # 쿠키 확인
     cookie_result = is_cookie_valid()
-    print(f"cookie_result: {cookie_result}")
+
     if not cookie_result:
         return redirect("/login")
 
+    # 기본 유저명: 로그인한 유저명 or 입력받은 유저명
+    username = ""
+
+    print(f"user_overview: {username}")
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         if username:
-            return redirect(url_for("user_overview", username=username))
 
-    print("유효한 쿠키. index에 접근 허용됨.")
+            # 다른 유저 조회 요청 시
+            return redirect(
+                url_for("user_overview", username=username)
+            )  # ✅ 이 부분에서 처리 위임
+        else:
+            return "유저명을 입력해주세요.", 400
 
+    # POST가 아닌 경우: 로그인한 유저 기준으로 기본 데이터 보여주기
     cookies = load_cookies(COOKIE_PATH)
     session = get_authenticated_session(cookies)
 
-    res = session.get(f"http://edu.doingcoding.com/api/profile?username={username}")
-    # 프로필 JSON 파싱
+    # 유저 정보 가져오기
+    res = session.get("http://edu.doingcoding.com/api/profile")  # ✅ 현재 유저 정보
     data = json.loads(res.text)
-    print(data["data"]["user"])
+    user_data = data["data"]["user"]
 
-    user_id = data["data"]["user"]["username"]
-    filename = f"{user_id}.json"
-
+    username = user_data["username"]
+    filename = f"{username}.json"
     user_path = os.path.join(USER_DATA_DIR, filename)
 
-    # 유저 디렉토리 없으면 생성
     os.makedirs(USER_DATA_DIR, exist_ok=True)
 
+    # 사용자 문제 상태 저장
     with open(user_path, "w", encoding="utf-8") as f:
         json.dump(
             data["data"]["oi_problems_status"]["problems"],
@@ -158,45 +168,47 @@ def index():
             indent=2,
         )
 
-    print(f"✅ 저장됨: {filename}")
+    PROBLEM_FILE = os.path.join(PROBLEM_DIR, "all_problems.json")
+    if not os.path.exists(PROBLEM_FILE):
+        do_crawling()
 
-    # print(f"나의 정보: {data}")
+    lastLogin = format_last_login(user_data["last_login"])
+    progress_data = summarize_progress(PROBLEM_FILE, user_path)
 
     # 제출 기록
-    # res = session.get(
-    #     f"http://edu.doingcoding.com/api/submissions?myself=1&starred=0&result=&username={username}&page=1&limit=100&offset=0"
+    records = session.get(
+        f"http://edu.doingcoding.com/api/submissions?myself=1&starred=0&result=&username={username}&page=1&limit=100&offset=0"
+    )
+    records = records.json()
+    streak_data = generate_streak_data(records["data"]["results"])
+
+    # pprint(records["data"]["results"])
+    # for rec in records["data"]["results"]:
+    #     problem = rec["problem"]
+    #     user = rec["username"]
+    #     lang = rec["language"]
+    #     result = rec["result"]
+    #     score = rec["statistic_info"]["score"]
+    #     # time_cost = rec["statistic_info"]["time_cost"]
+    #     # memory_cost = rec["statistic_info"]["memory_cost"]
+    #     # ISO 포맷 날짜를 사람이 읽기 편한 형태로 변경
+    #     create_time = datetime.fromisoformat(
+    #         rec["create_time"].replace("Z", "+00:00")
+    #     ).strftime("%Y-%m-%d %H:%M:%S")
+
+    #     print(
+    #         f"{create_time} | 문제: {problem} | 사용자: {user} | 언어: {lang} | 결과: {result} | 점수: {score} "
     # )
-
-    print("\n\n")
-
-    print(f"해결: {data["data"]["accepted_number"]}")
-    print(f"제출: {data["data"]["submission_number"]}")
-    print(f"점수: {data["data"]["total_score"]}")
-
-    lastLogin = format_last_login(data["data"]["user"]["last_login"])
-
-    # 파일이 없으면 크롤링 실행
-    PROBLEM_FILE = os.path.join(PROBLEM_DIR, filename)
-
-    PROBLEM_FILE = "src\\problems_data\\all_problems.json"
-    # SOLVED_FILE = "src\\problems_data\\" + filename
-    SOLVED_FILE = os.path.join(USER_DATA_DIR, filename)
-
-    if not os.path.exists(PROBLEM_FILE):
-        print(f"{PROBLEM_FILE}이 존재하지 않아 크롤링을 시작합니다.")
-        do_crawling()
-        print("크롤링이 완료되었습니다.")
-
-    progress_data = summarize_progress(PROBLEM_FILE, SOLVED_FILE)
 
     return render_template(
         "index.html",
-        username=data["data"]["user"]["username"],
+        username=username,
         last_login=lastLogin,
         accepted_number=data["data"]["accepted_number"],
         submission_number=data["data"]["submission_number"],
         total_score=data["data"]["total_score"],
-        progress_data=progress_data,  # ✅ 여기에 추가!
+        progress_data=progress_data,
+        streak_data=streak_data,  # 👈 스트릭 추가
     )
 
 
@@ -212,7 +224,8 @@ def login():
 
         if success:
             # 로그인 성공 시 index 페이지로 리디렉션
-            return redirect(url_for("index"))
+            # return redirect(url_for("index"))
+            return redirect("/")  # ✅ 이 리다이렉트가 핵심!
         else:
             print("로그인 실패:", session_or_msg)
             return render_template("login.html", error="로그인에 실패했습니다.")
@@ -220,56 +233,76 @@ def login():
     return render_template("login.html")
 
 
-@app.route("/api/overview/<username>", methods=["GET"])
-def api_overview(username):
-    user_path = os.path.join(USER_DATA_DIR, f"{username}.json")
-    crawl_user(username)
+@app.route("/user_overview/<username>")
+def user_overview(username):
+    print(f"user_overview: {username}")
+    cookies = load_cookies(COOKIE_PATH)
+    session = get_authenticated_session(cookies)
 
-    if not os.path.exists(user_path):
-        return jsonify({"status": "error", "message": "사용자 데이터가 없습니다."}), 404
+    try:
+        # username에 특수문자 들어간 경우 예외 처리
+        from urllib.parse import quote
 
-    with open(user_path, "r", encoding="utf-8") as f:
-        solved_list = json.load(f)
+        encoded_username = quote(username)
 
-    chapter_files = sorted(os.listdir(PROBLEM_DIR))
-    progress_data = []
+        res = session.get(
+            f"http://edu.doingcoding.com/api/profile?username={encoded_username}"
+        )
+        data = res.json()
+        user_data = data["data"]["user"]
+    except Exception as e:
+        return f"❌ 사용자 정보를 불러오지 못했습니다: {e}", 500
 
-    for file in chapter_files:
-        if file.endswith(".json"):
-            chapter = file.replace(".json", "")
-            problem_path = os.path.join(PROBLEM_DIR, file)
-            with open(problem_path, "r", encoding="utf-8") as f:
-                problem_info = json.load(f)
+    filename = f"{user_data['username']}.json"
+    user_path = os.path.join(USER_DATA_DIR, filename)
 
-            total_problems = 0
-            solved_problems = 0
+    with open(user_path, "w", encoding="utf-8") as f:
+        json.dump(
+            data["data"]["oi_problems_status"]["problems"],
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
 
-            for group_id, info in problem_info.items():
-                total = info.get("total", 0)
-                total_problems += total
+    PROBLEM_FILE = os.path.join(PROBLEM_DIR, "all_problems.json")
+    if not os.path.exists(PROBLEM_FILE):
+        do_crawling()
 
-                problem_names = info.get("problem_names", {})
-                solved = sum(1 for pid in problem_names if pid in solved_list)
-                solved_problems += solved
+    progress_data = summarize_progress(PROBLEM_FILE, user_path)
+    lastLogin = format_last_login(user_data["last_login"])
 
-            percent = (
-                round(solved_problems / total_problems * 100, 1)
-                if total_problems
-                else 0
-            )
+    # 제출 기록
+    records = session.get(
+        f"http://edu.doingcoding.com/api/submissions?myself=0&starred=0&result=&username={user_data['username']}&page=1&limit=100&offset=0"
+    )
+    records = records.json()
+    streak_data = generate_streak_data(records["data"]["results"])
 
-            progress_data.append(
-                {
-                    "chapter": chapter,
-                    "title": f"{chapter.upper()}",
-                    "solved": solved_problems,
-                    "total": total_problems,
-                    "percent": percent,
-                }
-            )
+    for rec in records["data"]["results"]:
+        problem = rec["problem"]
+        user = rec["username"]
+        lang = rec["language"]
+        result = rec["result"]
+        score = rec["statistic_info"]["score"]
+        # time_cost = rec["statistic_info"]["time_cost"]
+        # memory_cost = rec["statistic_info"]["memory_cost"]
+        # ISO 포맷 날짜를 사람이 읽기 편한 형태로 변경
+        create_time = datetime.fromisoformat(
+            rec["create_time"].replace("Z", "+00:00")
+        ).strftime("%Y-%m-%d %H:%M:%S")
 
-    return jsonify(
-        {"status": "ok", "username": username, "progress_data": progress_data}
+        print(
+            f"{create_time} | 문제: {problem} | 사용자: {user} | 언어: {lang} | 결과: {result} | 점수: {score} "
+        )
+    return render_template(
+        "index.html",
+        username=user_data["username"],
+        last_login=lastLogin,
+        accepted_number=data["data"]["accepted_number"],
+        submission_number=data["data"]["submission_number"],
+        total_score=data["data"]["total_score"],
+        progress_data=progress_data,
+        streak_data=streak_data,
     )
 
 

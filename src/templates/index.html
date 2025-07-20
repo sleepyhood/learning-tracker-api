@@ -34,6 +34,10 @@
         box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
       }
       #charts-container {
+        position: relative; /* 만약 없다면 추가 */
+        z-index: 1; /* 너무 높게 설정되어 있으면 낮춰주세요 */
+        overflow: visible !important; /* 가능하면 overflow 숨김 제거 */
+
         display: grid;
         grid-template-columns: repeat(
           auto-fit,
@@ -75,139 +79,386 @@
       h2 {
         color: #222;
       }
+
+      /*스트릭 컨테이너 */
+      .streak-container {
+        position: relative;
+        z-index: 2; /* 차트보다 위로 나오게 */
+
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 16px;
+        /*background-color: #f9f9ff;*/
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      /* 전체 그리드 정렬 */
+      .streak-grid {
+        display: grid;
+
+        grid-template-columns: repeat(7, 1fr); /* 7칸 고정 */
+
+        gap: 16px;
+        padding: 20px;
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      /* 각 셀 디자인 */
+      .streak-cell {
+        padding: 12px;
+        border-radius: 15px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transition: transform 0.2s, background 0.3s;
+        cursor: default;
+      }
+
+      /* 녹색 강도 단계화 (count 기반) */
+      .streak-cell[data-count="1"],
+      .streak-cell[data-count="2"] {
+        background-color: rgba(0, 128, 0, 0.15);
+      }
+      .streak-cell[data-count="3"],
+      .streak-cell[data-count="4"] {
+        background-color: rgba(0, 128, 0, 0.25);
+      }
+      .streak-cell[data-count="5"],
+      .streak-cell[data-count="6"] {
+        background-color: rgba(0, 128, 0, 0.35);
+      }
+      .streak-cell[data-count="7"],
+      .streak-cell[data-count="8"] {
+        background-color: rgba(0, 128, 0, 0.5);
+      }
+      .streak-cell[data-count="9"],
+      .streak-cell[data-count="10"] {
+        background-color: rgba(0, 128, 0, 0.65);
+      }
+      .streak-cell[data-count="11"],
+      .streak-cell[data-count="12"] {
+        background-color: rgba(0, 128, 0, 0.8);
+      }
+      .streak-cell[data-count="13"],
+      .streak-cell[data-count="14"],
+      .streak-cell[data-count="15"],
+      .streak-cell[data-count="16"],
+      .streak-cell[data-count="17"],
+      .streak-cell[data-count="18"],
+      .streak-cell[data-count="19"],
+      .streak-cell[data-count="20"] {
+        background-color: rgba(0, 128, 0, 0.95);
+      }
+
+      /* count 0이면 배경 투명 유지 */
+      .streak-cell[data-count="0"] {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+
+      /* 문제 푼 날은 커서 포인터 */
+      .streak-cell[data-count]:not([data-count="0"]) {
+        cursor: pointer;
+      }
+
+      /* 날짜와 요일 강조 */
+      .streak-cell strong {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: bold;
+        color: #fff;
+      }
+
+      .count {
+        font-size: 16px;
+        font-weight: bold;
+        color: #fff;
+      }
+      /* 포인터 커서 적용 */
+      .streak-cell[data-count]:not([data-count="0"]) {
+        cursor: pointer;
+      }
+      #overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 9998;
+        display: none; /* 기본 숨김 */
+      }
+      /* 디테일 토글 (원하는 경우에만 보여지도록) */
+      .details {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 100000; /* overlay보다 더 높게 설정 */
+
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: none;
+
+        border-radius: 14px;
+        padding: 14px 20px;
+
+        width: 320px;
+        max-height: 280px;
+        overflow-y: auto;
+
+        color: #222;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.5;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+        /* 부드러운 스크롤바 스타일 */
+        scrollbar-width: thin;
+        scrollbar-color: #4caf50 #d4f0d4;
+      }
+
+      /* Webkit 기반 브라우저 스크롤바 커스텀 */
+      .details::-webkit-scrollbar {
+        width: 8px;
+      }
+      .details::-webkit-scrollbar-track {
+        background: #d4f0d4;
+        border-radius: 8px;
+      }
+      .details::-webkit-scrollbar-thumb {
+        background-color: #4caf50;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+      }
+
+      /* 문제별 아이템 */
+      .prob-item {
+        padding: 6px 10px;
+        margin-bottom: 6px;
+        border-radius: 8px;
+        background-color: rgba(76, 175, 80, 0.15); /* 연한 초록 배경 */
+        color: #2e7d32;
+        font-weight: 600;
+        box-shadow: inset 0 0 4px rgba(46, 125, 50, 0.3);
+        transition: background-color 0.2s ease;
+        cursor: default;
+      }
+
+      .prob-item:hover {
+        background-color: rgba(76, 175, 80, 0.3);
+      }
     </style>
   </head>
   <body>
+    <div id="overlay"></div>
     <h1>카테고리별 문제 풀이 현황</h1>
 
-    <form id="search-form">
+    <form id="search-form" method="POST" action="/">
       <input
         type="text"
         id="username-input"
+        name="username"
         placeholder="유저명을 입력하세요"
         required
       />
-      <button type="submit">조회</button>
+      <button type="submit" id="submitButton">조회</button>
     </form>
     <h1>{{ username }}</h1>
     <h3>마지막 로그인: {{last_login}}</h3>
     <p>해결: {{accepted_number}}</p>
     <p>제출: {{submission_number}}</p>
     <p>점수: {{total_score}}</p>
+    <div class="streak-container">
+      <div class="streak-grid">
+        {% for day in streak_data %}
+        <div class="streak-cell" data-count="{{ day.count }}">
+          <strong class="weekday">{{ day.weekday }}</strong><br />
+          {{ day.date }}<br />
+          <span class="count">{{ day.count }}</span>
+
+          {% if day.details %}
+          <div class="details">
+            {% for prob in day.details %}
+            <div class="prob-item">
+              {{ prob.problem }} ({{ prob.language }}, {{ prob.score }}점, {{
+              prob.time }})
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
     <h2 id="result-title" style="display: none"></h2>
+
     <div id="charts-container"></div>
 
     <script>
-      // 중앙 텍스트용 Chart.js 커스텀 플러그인
-            function centerTextPlugin(text) {
-              return {
-                id: "centerText",
-                beforeDraw(chart) {
-                  const { ctx, chartArea, width, height } = chart;
+             const overlay = document.getElementById('overlay');
+      const details = document.querySelectorAll('.details');
 
-                  if (!chartArea) return; // 아직 렌더링 준비 전이면 그리지 않음
+      document.querySelectorAll('.streak-cell').forEach(cell => {
+        cell.addEventListener('click', e => {
+          e.stopPropagation();
+          // 토글 팝업 보여주기
+          const detail = cell.querySelector('.details');
+          if (!detail) return;
 
-                  ctx.save();
+          const isVisible = detail.style.display === 'block';
 
-                  const fontSize = Math.min(width / 10, 20); // responsive size
-                  ctx.font = `bold ${fontSize}px sans-serif`;
-                  ctx.textBaseline = "middle";
-                  ctx.textAlign = "center";
-                  ctx.fillStyle = "#444";
+          // 모든 팝업 숨기고 overlay 숨기기
+          details.forEach(d => d.style.display = 'none');
+          overlay.style.display = 'none';
 
-                  const centerX = (chartArea.left + chartArea.right) / 2;
-                  const centerY = (chartArea.top + chartArea.bottom) / 2;
+          if (!isVisible) {
+            detail.style.display = 'block';
+            overlay.style.display = 'block';
+          }
+        });
+      });
 
-                  ctx.fillText(text, centerX, centerY);
-                  ctx.restore();
-                },
-              };
-            }
+      overlay.addEventListener('click', () => {
+        details.forEach(d => d.style.display = 'none');
+        overlay.style.display = 'none';
+      });
 
-             const progressData = {{ progress_data | tojson }};
-             const username = "{{ username }}";
+      document.body.addEventListener('click', () => {
+        details.forEach(d => d.style.display = 'none');
+        overlay.style.display = 'none';
+      });
 
-             // 사용자 조회
-            // const form = document.getElementById("search-form");
-            //const input = document.getElementById("username-input");
-             const resultTitle = document.getElementById("result-title");
-             // const container = document.getElementById("charts-container");
 
-             document.getElementById("result-title").textContent = `${username} 님의 챕터별 진도`;
-             document.getElementById("result-title").style.display = "block";
+                                    // 중앙 텍스트용 Chart.js 커스텀 플러그인
+                                          function centerTextPlugin(text) {
+                                            return {
+                                              id: "centerText",
+                                              beforeDraw(chart) {
+                                                const { ctx, chartArea, width, height } = chart;
 
-             const container = document.getElementById("charts-container");
-             container.innerHTML = progressData
-               .map(
-                 (item, idx) => `
-               <div class="chart-card" data-href="/user/${username}/chapter/${item.chapter}">
-                 <canvas id="chart-${idx}" width="160" height="160"></canvas>
-                 <p style="margin-top: 12px; font-weight: bold;">${item.chapter}</p>
-               </div>
-             `
-               )
-               .join("");
+                                                if (!chartArea) return; // 아직 렌더링 준비 전이면 그리지 않음
 
-             document.querySelectorAll(".chart-card").forEach((card) => {
-               card.addEventListener("click", () => {
-                 const href = card.dataset.href;
-                 if (href) window.location.href = href;
-               });
-             });
+                                                ctx.save();
 
-             progressData.forEach((item, idx) => {
-               const canvas = document.getElementById(`chart-${idx}`);
-               const ctx = canvas.getContext("2d");
+                                                const fontSize = Math.min(width / 10, 20); // responsive size
+                                                ctx.font = `bold ${fontSize}px sans-serif`;
+                                                ctx.textBaseline = "middle";
+                                                ctx.textAlign = "center";
+                                                ctx.fillStyle = "#444";
 
-               const gradient = ctx.createLinearGradient(0, 0, 200, 200);
-               if (item.percent === 100)
-                 gradient.addColorStop(0, "rgb(142,234,220)"),
-                   gradient.addColorStop(1, "rgb(46,147,248)");
-               else if (item.percent >= 80)
-                 gradient.addColorStop(0, "rgb(128,240,131)"),
-                   gradient.addColorStop(1, "rgb(44,206,190)");
-               else if (item.percent >= 51)
-                 gradient.addColorStop(0, "rgb(219,234,134)"),
-                   gradient.addColorStop(1, "rgb(50,214,58)");
-               else if (item.percent >= 21)
-                 gradient.addColorStop(0, "rgb(236,219,135)"),
-                   gradient.addColorStop(1, "rgb(245,151,35)");
-               else if (item.percent >= 1)
-                 gradient.addColorStop(0, "rgb(236,167,184)"),
-                   gradient.addColorStop(1, "rgb(241,53,35)");
-               else
-                 gradient.addColorStop(0, "#ddd"), gradient.addColorStop(1, "#ddd");
+                                                const centerX = (chartArea.left + chartArea.right) / 2;
+                                                const centerY = (chartArea.top + chartArea.bottom) / 2;
 
-               new Chart(ctx, {
-                 type: "doughnut",
-                 data: {
-                   labels: ["완료", "미완료"],
-                   datasets: [
-                     {
-                       data: [item.percent, 100 - item.percent],
-                       backgroundColor: [gradient, "#f0f0f0"],
-                       borderWidth: 0,
-                       borderRadius: 100,
-                     },
-                   ],
-                 },
-                 options: {
-                   cutout: "60%",
-                   plugins: {
-                     legend: { display: false },
-                     tooltip: { enabled: false },
-                     title: {
-                       display: true,
-                       text: `${item.percent}%`,
-                       color: "#444",
-                       font: { size: 20, weight: "bold" },
-                       position: "center",
-                     },
-                   },
-                 },
-                 plugins: [centerTextPlugin(`${item.percent}%`)],
-               });
-             });
+                                                ctx.fillText(text, centerX, centerY);
+                                                ctx.restore();
+                                              },
+                                            };
+                                          }
+
+                                           const progressData = {{ progress_data | tojson }};
+                                           const username = "{{ username }}";
+
+                                           // 사용자 조회
+                                          // const form = document.getElementById("search-form");
+                                          //const input = document.getElementById("username-input");
+                                           const resultTitle = document.getElementById("result-title");
+                                           // const container = document.getElementById("charts-container");
+
+                                           document.getElementById("result-title").textContent = `${username} 님의 챕터별 진도`;
+                                           document.getElementById("result-title").style.display = "block";
+
+                                           const container = document.getElementById("charts-container");
+                                           container.innerHTML = progressData
+                                             .map(
+                                               (item, idx) => `
+                                             <div class="chart-card" data-href="/user/${username}/chapter/${item.chapter}">
+                                               <canvas id="chart-${idx}" width="160" height="160"></canvas>
+                                               <p style="margin-top: 12px; font-weight: bold;">${item.chapter}</p>
+                                             </div>
+                                           `
+                                             )
+                                             .join("");
+
+                                           document.querySelectorAll(".chart-card").forEach((card) => {
+                                             card.addEventListener("click", () => {
+                                               const href = card.dataset.href;
+                                               if (href) window.location.href = href;
+                                             });
+                                           });
+
+                                           progressData.forEach((item, idx) => {
+                                             const canvas = document.getElementById(`chart-${idx}`);
+                                             const ctx = canvas.getContext("2d");
+
+                                             const gradient = ctx.createLinearGradient(0, 0, 200, 200);
+                                             if (item.percent === 100)
+                                               gradient.addColorStop(0, "rgb(142,234,220)"),
+                                                 gradient.addColorStop(1, "rgb(46,147,248)");
+                                             else if (item.percent >= 80)
+                                               gradient.addColorStop(0, "rgb(128,240,131)"),
+                                                 gradient.addColorStop(1, "rgb(44,206,190)");
+                                             else if (item.percent >= 51)
+                                               gradient.addColorStop(0, "rgb(219,234,134)"),
+                                                 gradient.addColorStop(1, "rgb(50,214,58)");
+                                             else if (item.percent >= 21)
+                                               gradient.addColorStop(0, "rgb(236,219,135)"),
+                                                 gradient.addColorStop(1, "rgb(245,151,35)");
+                                             else if (item.percent >= 1)
+                                               gradient.addColorStop(0, "rgb(236,167,184)"),
+                                                 gradient.addColorStop(1, "rgb(241,53,35)");
+                                             else
+                                               gradient.addColorStop(0, "#ddd"), gradient.addColorStop(1, "#ddd");
+
+                                             new Chart(ctx, {
+                                               type: "doughnut",
+                                               data: {
+                                                 labels: ["완료", "미완료"],
+                                                 datasets: [
+                                                   {
+                                                     data: [item.percent, 100 - item.percent],
+                                                     backgroundColor: [gradient, "#f0f0f0"],
+                                                     borderWidth: 0,
+                                                     borderRadius: 100,
+                                                   },
+                                                 ],
+                                               },
+                                               options: {
+                                                 cutout: "60%",
+                                                 plugins: {
+                                                   legend: { display: false },
+                                                   tooltip: { enabled: false },
+                                                   title: {
+                                                     display: true,
+                                                     text: `${item.percent}%`,
+                                                     color: "#444",
+                                                     font: { size: 20, weight: "bold" },
+                                                     position: "center",
+                                                   },
+                                                 },
+                                               },
+                                               plugins: [centerTextPlugin(`${item.percent}%`)],
+                                             });
+                                           });
+
+                                window.addEventListener("DOMContentLoaded", () => {
+                          const urlParams = new URLSearchParams(window.location.search);
+                          const usernameParam = urlParams.get("username");
+
+                          if (usernameParam) {
+                            const usernameInput = document.getElementById("username-input");
+                            usernameInput.value = decodeURIComponent(usernameParam);
+
+                            // 버튼 클릭이 아니라 form 직접 submit
+                            document.getElementById("search-form").submit();
+                          }
+                        });
     </script>
   </body>
 </html>
