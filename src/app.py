@@ -2,9 +2,9 @@ from flask import Flask, request, render_template, redirect, url_for
 import json
 from collections import defaultdict
 from flask import jsonify
-from datetime import datetime, timedelta
 import requests
 from login import load_cookies, get_authenticated_session
+from datetime import datetime, timezone, timedelta
 
 # config.py 또는 main.py 상단
 from dotenv import load_dotenv
@@ -13,6 +13,11 @@ import os
 from utils.user_crawler import crawl_user
 import re
 from urllib.parse import quote
+from utils.questions_crawler import do_crawling
+from utils.summarizer import (
+    summarize_progress,
+    summarize_user_chapter_group,
+)  # 너가 사용하는 함수 경로에 따라 조정 필요
 
 load_dotenv()
 
@@ -26,11 +31,29 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROBLEM_DIR = os.path.join(BASE_DIR, "problems_data")
-USER_DATA_DIR = os.path.join(BASE_DIR, "students_data")
+USER_DATA_DIR = os.path.join(BASE_DIR, "users_data")
 
 COOKIE_PATH = "cookies.json"
 
 BASE_URL = "http://edu.doingcoding.com"
+
+
+def format_last_login(last_login_str):
+    now = datetime.now(timezone.utc)
+    last_login = datetime.fromisoformat(last_login_str.replace("Z", "+00:00"))
+    delta = now - last_login
+
+    if delta < timedelta(hours=1):
+        minutes = int(delta.total_seconds() // 60)
+        return f"{minutes}분 전"
+    elif delta < timedelta(hours=24):
+        hours = int(delta.total_seconds() // 3600)
+        return f"{hours}시간 전"
+    elif delta < timedelta(days=7):
+        days = delta.days
+        return f"{days}일 전"
+    else:
+        return last_login.strftime("%Y년 %m월 %d일")
 
 
 def is_cookie_valid():
@@ -40,29 +63,25 @@ def is_cookie_valid():
         with open(COOKIE_PATH, "r") as f:
             cookies = json.load(f)
 
-        # 테스트용: 유효성 검사에서 시간 체크 제거
-        # if "timestamp" in cookies:
-        #     ts = datetime.fromisoformat(cookies["timestamp"])
-        #     if datetime.now() - ts > timedelta(hours=12):
-        #         return False
+        if "sessionid" not in cookies or not cookies["sessionid"]:
+            return False
 
-        return "sessionid" in cookies and cookies["sessionid"]
-    except:
+        if "timestamp" in cookies:
+            ts = datetime.fromisoformat(cookies["timestamp"])
+            now = datetime.now()
+
+            # 조건 1: 12시간 이상 지남
+            if now - ts > timedelta(hours=12):
+                return False
+
+            # 조건 2: 날짜가 바뀜 (예: 07/20 → 07/21)
+            if now.date() != ts.date():
+                return False
+
+        return True
+    except Exception as e:
+        print("쿠키 유효성 검사 중 오류:", e)
         return False
-
-
-def extract_level(name):
-    # Lv 또는 SLv 다음 숫자 추출
-    match = re.match(r"(S?Lv)\s*(\d+)", name)
-    if match:
-        prefix = match.group(1)
-        level_num = int(match.group(2))
-        # Lv는 SLv보다 우선 (숫자가 같으면 Lv 먼저)
-        priority = 0 if prefix == "Lv" else 1  # Lv=0, SLv=1
-        return (level_num, priority)
-    else:
-        # 매칭 안되면 최하위 처리
-        return (float("inf"), float("inf"))
 
 
 def get_progress(solved_list, problem_info):
@@ -100,41 +119,12 @@ def calculate_progress(solved_list, chapter_json):
     return progress_data
 
 
-# 문제 태그 불러오기
-def fetch_problem_tags(session):
-    url = "http://edu.doingcoding.com/api/problem/tags"
-    response = session.get(url)
-    response.raise_for_status()
-    return response.json()["data"]
-
-
-# "Lv", "SLv"로 시작하는 태그만 필터링
-def filter_level_tags(tags):
-    return [tag for tag in tags if tag["name"].startswith(("Lv", "SLv"))]
-
-
-# 정렬 기준: Lv1, Lv2, SLv1, ...
-def extract_level(tag_name):
-    import re
-
-    match = re.search(r"(?:S)?Lv(\d+)", tag_name)
-    return int(match.group(1)) if match else float("inf")
-
-
-def sort_tags_by_level(tags):
-    return sorted(tags, key=lambda tag: extract_level(tag["name"]))
-
-
-# 파일로 저장
-def save_tags_to_file(tags, filename="tags.json"):
-    with open(filename, "w", encoding="utf-8") as f:
-        json.dump(tags, f, ensure_ascii=False, indent=2)
-
-
 @app.route("/", methods=["GET", "POST"])
 def index():
     username = ""
-    if not is_cookie_valid():
+    cookie_result = is_cookie_valid()
+    print(f"cookie_result: {cookie_result}")
+    if not cookie_result:
         return redirect("/login")
 
     if request.method == "POST":
@@ -148,46 +138,66 @@ def index():
     session = get_authenticated_session(cookies)
 
     res = session.get(f"http://edu.doingcoding.com/api/profile?username={username}")
-
-    # # JSON 파싱
+    # 프로필 JSON 파싱
     data = json.loads(res.text)
-    print(data)
+    print(data["data"]["user"])
 
-    ###################
-    print()
+    user_id = data["data"]["user"]["username"]
+    filename = f"{user_id}.json"
 
-    res = session.get(
-        f"http://edu.doingcoding.com/api/submissions?myself=1&starred=0&result=&username={username}&page=1&limit=100&offset=0"
+    user_path = os.path.join(USER_DATA_DIR, filename)
+
+    # 유저 디렉토리 없으면 생성
+    os.makedirs(USER_DATA_DIR, exist_ok=True)
+
+    with open(user_path, "w", encoding="utf-8") as f:
+        json.dump(
+            data["data"]["oi_problems_status"]["problems"],
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
+
+    print(f"✅ 저장됨: {filename}")
+
+    # print(f"나의 정보: {data}")
+
+    # 제출 기록
+    # res = session.get(
+    #     f"http://edu.doingcoding.com/api/submissions?myself=1&starred=0&result=&username={username}&page=1&limit=100&offset=0"
+    # )
+
+    print("\n\n")
+
+    print(f"해결: {data["data"]["accepted_number"]}")
+    print(f"제출: {data["data"]["submission_number"]}")
+    print(f"점수: {data["data"]["total_score"]}")
+
+    lastLogin = format_last_login(data["data"]["user"]["last_login"])
+
+    # 파일이 없으면 크롤링 실행
+    PROBLEM_FILE = os.path.join(PROBLEM_DIR, filename)
+
+    PROBLEM_FILE = "src\\problems_data\\all_problems.json"
+    # SOLVED_FILE = "src\\problems_data\\" + filename
+    SOLVED_FILE = os.path.join(USER_DATA_DIR, filename)
+
+    if not os.path.exists(PROBLEM_FILE):
+        print(f"{PROBLEM_FILE}이 존재하지 않아 크롤링을 시작합니다.")
+        do_crawling()
+        print("크롤링이 완료되었습니다.")
+
+    progress_data = summarize_progress(PROBLEM_FILE, SOLVED_FILE)
+
+    return render_template(
+        "index.html",
+        username=data["data"]["user"]["username"],
+        last_login=lastLogin,
+        accepted_number=data["data"]["accepted_number"],
+        submission_number=data["data"]["submission_number"],
+        total_score=data["data"]["total_score"],
+        progress_data=progress_data,  # ✅ 여기에 추가!
     )
-
-    # # JSON 파싱
-    data = json.loads(res.text)
-    print(data)
-
-    return render_template("index.html", username="", progress_data=[])
-
-
-@app.route("/api/problems", methods=["GET"])
-def get_problem_list():
-    cookies = load_cookies(COOKIE_PATH)
-    session = get_authenticated_session(cookies)
-
-    try:
-        # 1. 태그 저장
-        raw_tags = fetch_problem_tags(session)
-        filtered = filter_level_tags(raw_tags)
-        sorted_tags = sort_tags_by_level(filtered)
-
-        for tag in sorted_tags:
-            print(f"{tag['name']} (id: {tag['id']})")
-
-        save_tags_to_file(sorted_tags)
-
-        return jsonify({"success": True, "problems": sorted_tags})
-
-    except Exception as e:
-        print("문제 목록 API 호출 실패:", e)
-        return jsonify({"success": False, "error": str(e)})
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -266,77 +276,65 @@ def api_overview(username):
 @app.route("/user/<username>/chapter/<chapter>")
 def chapter_detail(username, chapter):
     user_path = os.path.join(USER_DATA_DIR, f"{username}.json")
-    problem_path = os.path.join(PROBLEM_DIR, f"{chapter}.json")
+    problem_path = os.path.join(PROBLEM_DIR, "all_problems.json")
 
     if not os.path.exists(user_path) or not os.path.exists(problem_path):
-        return f"{username} 또는 {chapter} 파일이 존재하지 않습니다."
+        return f"{username} 또는 문제 파일이 존재하지 않습니다."
 
-    with open(user_path, "r", encoding="utf-8") as f:
-        solved_list = json.load(f)
+    # with open(problem_path, "r", encoding="utf-8") as f:
+    #     all_problems = json.load(f)
+    # with open(user_path, "r", encoding="utf-8") as f:
+    #     user_data = json.load(f)
 
-    with open(problem_path, "r", encoding="utf-8") as f:
-        problem_info = json.load(f)
+    all_chapter_data = summarize_progress(problem_path, user_path)
+    print(all_chapter_data)
 
-    progress_data = []
+    # 해당 챕터의 문제만 필터링
+    # ✅ 요기 부분만 이렇게 고쳐주세요
+    matched = next(
+        (item for item in all_chapter_data if item["chapter"] == chapter), None
+    )
+    # print(matched)
 
-    for group_id, info in problem_info.items():
-        title = info["title"]
-        total = info["total"]
-        problem_names = info["problem_names"]
-        solved = sum(1 for pid in problem_names if pid in solved_list)
-        percent = round(solved / total * 100, 1) if total else 0
-
-        progress_data.append(
-            {
-                "group_id": group_id,  # 추가
-                "title": title,
-                "solved": solved,
-                "total": total,
-                "percent": percent,
-            }
-        )
+    if matched is None:
+        return f"'{chapter}' 챕터를 찾을 수 없습니다."
 
     return render_template(
         "chapter_detail.html",
         username=username,
         chapter=chapter,
-        chapter_name=chapter + " (" + str(len(progress_data)) + "개 단원)",
-        progress_data=progress_data,
+        chapter_name=chapter + " 단원",
+        progress_data=matched["groups"],  # 👈 그룹 리스트만 넘김!
     )
 
 
-# 07 12 추가
-# 각 파트별 어떤 문제를 풀었는지 확인용
 @app.route("/user/<username>/chapter/<chapter>/group/<group_id>")
 def group_detail(username, chapter, group_id):
     user_path = os.path.join(USER_DATA_DIR, f"{username}.json")
-    problem_path = os.path.join(PROBLEM_DIR, f"{chapter}.json")
+    problem_path = os.path.join(PROBLEM_DIR, "all_problems.json")
 
-    if not os.path.exists(user_path) or not os.path.exists(problem_path):
-        return f"{username} 또는 {chapter} 파일이 존재하지 않습니다."
+    try:
+        with open(user_path, encoding="utf-8") as f:
+            user_data = json.load(f)
+        with open(problem_path, encoding="utf-8") as f:
+            all_problems = json.load(f)
 
-    with open(user_path, "r", encoding="utf-8") as f:
-        solved_list = json.load(f)
+        result = summarize_user_chapter_group(
+            user_data, all_problems, chapter, group_id
+        )
 
-    with open(problem_path, "r", encoding="utf-8") as f:
-        problem_info = json.load(f)
-
-    # 단원(group_id) 정보 가져오기
-    if group_id not in problem_info:
-        return f"{group_id} 단원이 존재하지 않습니다."
-
-    group = problem_info[group_id]
-    title = group["title"]
-    problem_names = group["problem_names"]
+    except FileNotFoundError as e:
+        return str(e)
+    except KeyError as e:
+        return f"데이터 오류: {e}"
 
     return render_template(
         "group_detail.html",
         username=username,
         chapter=chapter,
         group_id=group_id,
-        group_title=title,
-        problem_names=problem_names,
-        solved_problems=solved_list,
+        group_title=result["group_title"],
+        problem_names=result["problem_names"],
     )
 
 

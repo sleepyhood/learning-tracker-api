@@ -39,7 +39,7 @@ def crawl_questions(select):
     driver.get(f"{BASE_URL}/{difficultys[select]}")
     print(f"{BASE_URL}/{difficultys[select]}")
 
-    time.sleep(0.5)
+    # time.sleep(0.5)
 
     # XPath로 div 내부의 button 태그 중 두 번째부터 모두 선택
 
@@ -142,8 +142,8 @@ def crawl_questions(select):
 
         print(f"{tmpTags[i]}의 총 row 개수: {len(rows)} 와 문제 형식: {_format}")
         print(problem_dict)
-        time.sleep(0.5)
-
+        # time.sleep(0.5)
+    driver.quit()
     return validTags, validRows, validFormats, validProblemNames
 
 
@@ -159,24 +159,43 @@ difficultys_names = [
     "알고리즘 고급2",
 ]
 
-for i in range(len(difficultys)):
-    qTags = []  # 문제 태그(제목)
-    qFormats = []  # 문제 ID 형식
-    qRows = []  # 문제 개수
-    qProblemNames = []  # 문제 제목들
 
-    qTags, qRows, qFormats, qProblemNames = crawl_questions(i)
+def do_crawling():
+    # 전체 문제를 담을 dict
+    all_problems = {}
 
-    # 이제 데이터를 저장하기
-    # id를 기준으로 하나의 딕셔너리 구성
-    problem_info = {}
-    for pid, title, total, names in zip(qFormats, qTags, qRows, qProblemNames):
-        problem_info[pid] = {"title": title, "total": total, "problem_names": names}
+    for i in range(len(difficultys)):
+        qTags = []  # 문제 태그(제목)
+        qFormats = []  # 문제 ID 형식
+        qRows = []  # 문제 개수
+        qProblemNames = []  # 문제 제목들
+
+        qTags, qRows, qFormats, qProblemNames = crawl_questions(i)
+
+        # 단원 이름을 키로 사용
+        chapter_name = f"{i+1}. {difficultys_names[i]}"
+        all_problems[chapter_name] = {}
+
+        # 이제 데이터를 저장하기
+        # id를 기준으로 하나의 딕셔너리 구성
+        problem_info = {}
+        for pid, title, total, names in zip(qFormats, qTags, qRows, qProblemNames):
+            # problem_info[pid] = {"title": title, "total": total, "problem_names": names}
+            all_problems[chapter_name][pid] = {
+                "title": title,
+                "total": total,
+                "problem_names": names,
+            }
 
     # 현재 파일 기준 상위 폴더로 이동 후, problems_data 폴더 지정
     output_dir = os.path.join(os.path.dirname(__file__), "..", "problems_data")
     os.makedirs(output_dir, exist_ok=True)
-    save_path = os.path.join(output_dir, f"{i+1}. {difficultys_names[i]}.json")
+    # save_path = os.path.join(output_dir, f"{i+1}. {difficultys_names[i]}.json")
+    save_path = os.path.join(output_dir, "all_problems.json")
 
     with open(save_path, "w", encoding="utf-8") as f:
-        json.dump(problem_info, f, ensure_ascii=False, indent=4)
+        json.dump(all_problems, f, ensure_ascii=False, indent=4)
+
+
+if __name__ == "__main__":
+    do_crawling()

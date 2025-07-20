@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>진도율 시각화</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        background: linear-gradient(135deg, #e0e0e0, #ffffff);
+        /* 부드러운 색 배경 */
+        text-align: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Glass 효과는 카드에만 */
+      .chart-card {
+        max-width: 240px; /* ✅ 카드 너비 줄임 */
+        padding: 14px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .chart-card:hover {
+        cursor: pointer;
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+      }
+      #charts-container {
+        display: grid;
+        grid-template-columns: repeat(
+          auto-fit,
+          minmax(220px, 1fr)
+        ); /* ✅ 더 촘촘하게 */
+        gap: 12px; /* ✅ 간격 축소 */
+        padding: 16px 12px;
+        max-width: 960px; /* ✅ 폭 조정 */
+        margin: 0 auto;
+      }
+
+      /* 다른 요소들은 Glass 효과 제거하고 깔끔하게 */
+      form {
+        margin: 30px auto;
+      }
+
+      input[type="text"] {
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #aaa;
+        width: 240px;
+        margin-right: 8px;
+      }
+
+      button {
+        padding: 10px 16px;
+        border: none;
+        background: #007bff;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+
+      h1,
+      h2 {
+        color: #222;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>카테고리별 문제 풀이 현황</h1>
+
+    <form id="search-form">
+      <input
+        type="text"
+        id="username-input"
+        placeholder="유저명을 입력하세요"
+        required
+      />
+      <button type="submit">조회</button>
+    </form>
+    <h1>{{ username }}</h1>
+    <h3>마지막 로그인: {{last_login}}</h3>
+    <p>해결: {{accepted_number}}</p>
+    <p>제출: {{submission_number}}</p>
+    <p>점수: {{total_score}}</p>
+    <h2 id="result-title" style="display: none"></h2>
+    <div id="charts-container"></div>
+
+    <script>
+      // 중앙 텍스트용 Chart.js 커스텀 플러그인
+            function centerTextPlugin(text) {
+              return {
+                id: "centerText",
+                beforeDraw(chart) {
+                  const { ctx, chartArea, width, height } = chart;
+
+                  if (!chartArea) return; // 아직 렌더링 준비 전이면 그리지 않음
+
+                  ctx.save();
+
+                  const fontSize = Math.min(width / 10, 20); // responsive size
+                  ctx.font = `bold ${fontSize}px sans-serif`;
+                  ctx.textBaseline = "middle";
+                  ctx.textAlign = "center";
+                  ctx.fillStyle = "#444";
+
+                  const centerX = (chartArea.left + chartArea.right) / 2;
+                  const centerY = (chartArea.top + chartArea.bottom) / 2;
+
+                  ctx.fillText(text, centerX, centerY);
+                  ctx.restore();
+                },
+              };
+            }
+
+             const progressData = {{ progress_data | tojson }};
+             const username = "{{ username }}";
+
+             // 사용자 조회
+            // const form = document.getElementById("search-form");
+            //const input = document.getElementById("username-input");
+             const resultTitle = document.getElementById("result-title");
+             // const container = document.getElementById("charts-container");
+
+             document.getElementById("result-title").textContent = `${username} 님의 챕터별 진도`;
+             document.getElementById("result-title").style.display = "block";
+
+             const container = document.getElementById("charts-container");
+             container.innerHTML = progressData
+               .map(
+                 (item, idx) => `
+               <div class="chart-card" data-href="/user/${username}/chapter/${item.chapter}">
+                 <canvas id="chart-${idx}" width="160" height="160"></canvas>
+                 <p style="margin-top: 12px; font-weight: bold;">${item.chapter}</p>
+               </div>
+             `
+               )
+               .join("");
+
+             document.querySelectorAll(".chart-card").forEach((card) => {
+               card.addEventListener("click", () => {
+                 const href = card.dataset.href;
+                 if (href) window.location.href = href;
+               });
+             });
+
+             progressData.forEach((item, idx) => {
+               const canvas = document.getElementById(`chart-${idx}`);
+               const ctx = canvas.getContext("2d");
+
+               const gradient = ctx.createLinearGradient(0, 0, 200, 200);
+               if (item.percent === 100)
+                 gradient.addColorStop(0, "rgb(142,234,220)"),
+                   gradient.addColorStop(1, "rgb(46,147,248)");
+               else if (item.percent >= 80)
+                 gradient.addColorStop(0, "rgb(128,240,131)"),
+                   gradient.addColorStop(1, "rgb(44,206,190)");
+               else if (item.percent >= 51)
+                 gradient.addColorStop(0, "rgb(219,234,134)"),
+                   gradient.addColorStop(1, "rgb(50,214,58)");
+               else if (item.percent >= 21)
+                 gradient.addColorStop(0, "rgb(236,219,135)"),
+                   gradient.addColorStop(1, "rgb(245,151,35)");
+               else if (item.percent >= 1)
+                 gradient.addColorStop(0, "rgb(236,167,184)"),
+                   gradient.addColorStop(1, "rgb(241,53,35)");
+               else
+                 gradient.addColorStop(0, "#ddd"), gradient.addColorStop(1, "#ddd");
+
+               new Chart(ctx, {
+                 type: "doughnut",
+                 data: {
+                   labels: ["완료", "미완료"],
+                   datasets: [
+                     {
+                       data: [item.percent, 100 - item.percent],
+                       backgroundColor: [gradient, "#f0f0f0"],
+                       borderWidth: 0,
+                       borderRadius: 100,
+                     },
+                   ],
+                 },
+                 options: {
+                   cutout: "60%",
+                   plugins: {
+                     legend: { display: false },
+                     tooltip: { enabled: false },
+                     title: {
+                       display: true,
+                       text: `${item.percent}%`,
+                       color: "#444",
+                       font: { size: 20, weight: "bold" },
+                       position: "center",
+                     },
+                   },
+                 },
+                 plugins: [centerTextPlugin(`${item.percent}%`)],
+               });
+             });
+    </script>
+  </body>
+</html>

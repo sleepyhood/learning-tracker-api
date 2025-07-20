@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{{ username }}님의 {{ group_title }} 문제별 풀이 현황</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 900px;
+        margin: 40px auto;
+        background: linear-gradient(135deg, #e0e0e0, #ffffff);
+        padding: 0 20px;
+        color: #222;
+      }
+
+      h2 {
+        text-align: center;
+        margin-bottom: 30px;
+        font-weight: 700;
+      }
+      .problem-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      .problem {
+        background: rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 14px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 600;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease;
+      }
+
+      .problem.solved {
+        background-color: rgba(76, 175, 80, 0.7);
+        color: white;
+      }
+
+      .problem.partial {
+        background-color: rgba(255, 152, 0, 0.7);
+        color: white;
+      }
+
+      .problem.wrong {
+        background-color: rgba(244, 67, 54, 0.7);
+        color: white;
+      }
+
+      .problem.unsolved {
+        background-color: rgba(221, 221, 221, 0.7);
+        color: #333;
+      }
+
+      .problem:hover {
+        background-color: rgba(255, 255, 255, 0.35);
+      }
+
+      .problem-link {
+        color: inherit;
+        text-decoration: none;
+        flex-grow: 1;
+        margin-right: 12px;
+      }
+
+      .copy-btn {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #444;
+        padding: 6px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      .copy-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        color: #222;
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #444;
+        color: white;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        z-index: 9999;
+      }
+      .toast.show {
+        opacity: 1;
+      }
+      .copy-btn:disabled {
+        opacity: 0.5;
+        /* cursor: not-allowed; */
+      }
+      .problem:hover {
+        background-color: #e8f5e9; /* solved용 */
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      }
+      .unsolved:hover {
+        background-color: #fcebea; /* unsolved용 */
+      }
+
+      .problem-link {
+        text-decoration: none;
+        color: inherit;
+        transition: color 0.3s ease, text-shadow 0.3s ease;
+      }
+
+      .problem-link:hover {
+        /* color: #0d47a1; 파란색 계열 강조 */
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        font-weight: bold;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>{{ username }} 님의 {{ group_title }} 문제별 풀이 현황</h2>
+    <div class="problem-list">
+      {% for problem in problem_names %}
+      <div
+        class="problem {% if problem.status == 'solved' %}solved {% elif problem.status == 'partial' %}partial {% elif problem.status == 'wrong' %}wrong {% else %}unsolved {% endif %}"
+      >
+        <a
+          href="http://edu.doingcoding.com/problem/{{ problem.pid }}"
+          target="_blank"
+          class="problem-link"
+        >
+          {{ problem.title }}
+        </a>
+        <button
+          class="copy-btn"
+          data-title="{{ problem.title }}"
+          data-url="http://edu.doingcoding.com/problem/{{ problem.pid }}"
+        >
+          복사
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+
+    <script>
+      function showToast(message) {
+        const toast = document.createElement("div");
+        toast.className = "toast";
+        toast.innerText = message;
+        document.body.appendChild(toast);
+
+        // 보여주기
+        setTimeout(() => toast.classList.add("show"), 100);
+
+        // 2초 후 제거
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => document.body.removeChild(toast), 400);
+        }, 2000);
+      }
+
+      document.querySelectorAll(".copy-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const title = btn.dataset.title;
+          const url = btn.dataset.url;
+          const text = `${title}\n${url}`;
+
+          try {
+            await navigator.clipboard.writeText(text);
+
+            btn.disabled = true;
+            showToast(`${text}\n\n📋 복사되었습니다!`);
+            setTimeout(() => (btn.disabled = false), 1000);
+          } catch (err) {
+            showToast("❌ 복사에 실패했습니다.");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
