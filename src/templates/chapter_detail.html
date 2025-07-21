@@ -131,11 +131,11 @@
       {% for item in progress_data %}
       <div
         class="progress-container"
-        onclick="location.href='/user/{{ username }}/chapter/{{ chapter }}/group/{{ item.group }}'"
+        onclick="location.href='/user/{{ username|urlencode }}/chapter/{{ chapter|urlencode }}/group/{{ item.group }}'"
       >
         <div class="label">
           <a
-            href="/user/{{ username }}/chapter/{{ chapter }}/group/{{ item.group }}"
+            href="/user/{{ username|urlencode }}/chapter/{{ chapter|urlencode }}/group/{{ item.group }}"
           >
             {{ item.title }} ({{ item.solved }}/{{ item.total }})
           </a>

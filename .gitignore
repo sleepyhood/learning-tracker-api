@@ -2,3 +2,5 @@
 .env
 cookies.json
 students_data/
+users_data/
+problems_data/

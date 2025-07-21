@@ -65,34 +65,6 @@ def format_last_login(last_login_str):
         return last_login.strftime("%Y년 %m월 %d일")
 
 
-# def is_cookie_valid():
-#     if not os.path.exists(COOKIE_PATH):
-#         return False
-#     try:
-#         with open(COOKIE_PATH, "r") as f:
-#             cookies = json.load(f)
-
-#         if "sessionid" not in cookies or not cookies["sessionid"]:
-#             return False
-
-#         if "timestamp" in cookies:
-#             ts = datetime.fromisoformat(cookies["timestamp"])
-#             now = datetime.now()
-
-#             # 조건 1: 12시간 이상 지남
-#             if now - ts > timedelta(hours=12):
-#                 return False
-
-#             # 조건 2: 날짜가 바뀜 (예: 07/20 → 07/21)
-#             if now.date() != ts.date():
-#                 return False
-
-#         return True
-#     except Exception as e:
-#         print("쿠키 유효성 검사 중 오류:", e)
-#         return False
-
-
 def get_progress(solved_list, problem_info):
     progress = defaultdict(int)
     for pid in solved_list:
@@ -171,7 +143,7 @@ def index():
     data = json.loads(res.text)
     user_data = data["data"]["user"]
     username = user_data["username"]
-
+    # pprint(data["data"]["oi_problems_status"])
     filename = f"{sanitize_filename(user_data['username'])}.json"
 
     user_path = os.path.join(USER_DATA_DIR, filename)
@@ -282,7 +254,7 @@ def user_overview(username):
         from urllib.parse import quote
 
         encoded_username = quote(username)
-
+        print(f"encoded_username: {encoded_username}")
         res = session.get(
             f"http://edu.doingcoding.com/api/profile?username={encoded_username}"
         )
@@ -346,9 +318,9 @@ def user_overview(username):
             rec["create_time"].replace("Z", "+00:00")
         ).strftime("%Y-%m-%d %H:%M:%S")
 
-        print(
-            f"{create_time} | 문제: {problem} | 사용자: {user} | 언어: {lang} | 결과: {result} | 점수: {score} "
-        )
+        # print(
+        #    f"{create_time} | 문제: {problem} | 사용자: {user} | 언어: {lang} | 결과: {result} | 점수: {score} "
+        # )
 
     avatar = "/public/avatar/dafault.png"
 
@@ -372,7 +344,9 @@ def user_overview(username):
 
 @app.route("/user/<username>/chapter/<chapter>")
 def chapter_detail(username, chapter):
-    user_path = os.path.join(USER_DATA_DIR, f"{username}.json")
+    print(f"username: {username}")
+    safe_name = sanitize_filename(username)
+    user_path = os.path.join(USER_DATA_DIR, f"{safe_name}.json")
     problem_path = os.path.join(PROBLEM_DIR, "all_problems.json")
 
     if not os.path.exists(user_path) or not os.path.exists(problem_path):
@@ -407,7 +381,10 @@ def chapter_detail(username, chapter):
 
 @app.route("/user/<username>/chapter/<chapter>/group/<group_id>")
 def group_detail(username, chapter, group_id):
-    user_path = os.path.join(USER_DATA_DIR, f"{username}.json")
+
+    safe_name = sanitize_filename(username)
+
+    user_path = os.path.join(USER_DATA_DIR, f"{safe_name}.json")
     problem_path = os.path.join(PROBLEM_DIR, "all_problems.json")
 
     try:
