@@ -6,6 +6,65 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+      header {
+        position: relative;
+        top: 0;
+        left: 0;
+        box-sizing: border-box;
+        background: rgba(255, 255, 255, 0.5); /* 살짝 더 보기 좋게 */
+
+        z-index: 999;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px); /* 블러 효과 추가 (선택사항) */
+
+        justify-content: space-between; /* 제목과 검색폼 좌우 배치 */
+        align-items: center; /* 수직 중앙 정렬 */
+        display: flex; /* 이 부분 꼭 추가하세요! */
+        /*justify-content: flex-end;*/
+
+        padding: 0 25px; /* 좌우 여백 */
+      }
+      #search-form {
+        align-items: center;
+        margin: 8px;
+      }
+      .search-wrapper {
+        display: flex;
+        align-items: center;
+        position: relative;
+      }
+
+      #username-input {
+        padding: 8px 12px;
+        border-radius: 20px 20px 20px 20px;
+        border: 1px solid #ccc;
+        outline: none;
+        transition: width 0.3s ease;
+        width: 0;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      #username-input.show {
+        width: 180px;
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      #search-btn {
+        margin-right: 16px;
+        padding: 8px 12px; /* 세미콜론 꼭 붙이기! */
+
+        border-radius: 20px 20px 20px 20px;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      form {
+        margin: 0;
+        padding: 0;
+      }
+
       body {
         font-family: sans-serif;
         background: linear-gradient(135deg, #e0e0e0, #ffffff);
@@ -14,6 +73,24 @@
         min-height: 100vh;
         margin: 0;
         padding: 0;
+      }
+
+      #profile-container {
+        max-width: 320px;
+        margin: 40px auto 40px;
+        padding: 24px 16px 32px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(12px);
+        border-radius: 16px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      #profile-container:hover {
+        cursor: default;
+        transform: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       }
 
       /* Glass 효과는 카드에만 */
@@ -46,7 +123,7 @@
         gap: 12px; /* ✅ 간격 축소 */
         padding: 16px 12px;
         max-width: 960px; /* ✅ 폭 조정 */
-        margin: 0 auto;
+        margin: 40px auto;
       }
 
       /* 다른 요소들은 Glass 효과 제거하고 깔끔하게 */
@@ -65,19 +142,19 @@
       button {
         padding: 10px 16px;
         border: none;
-        background: #007bff;
-        color: white;
+        color: #222;
         border-radius: 8px;
         cursor: pointer;
         transition: background 0.2s;
       }
       button:hover {
-        background: #0056b3;
+        /*background: #0056b3;*/
       }
 
       h1,
       h2 {
         color: #222;
+        font-weight: 900;
       }
 
       /*스트릭 컨테이너 */
@@ -89,6 +166,9 @@
         margin: 20px auto;
         padding: 16px;
         /*background-color: #f9f9ff;*/
+        background: rgba(255, 255, 255, 0.15); /* chart-card와 동일 */
+        backdrop-filter: blur(12px); /* 동일 blur 효과 */
+
         border-radius: 16px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       }
@@ -111,36 +191,43 @@
         text-align: center;
         backdrop-filter: blur(10px);
         background: rgba(255, 255, 255, 0.1);
+
         border: 1px solid rgba(255, 255, 255, 0.3);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         transition: transform 0.2s, background 0.3s;
         cursor: default;
       }
 
+      .streak-cell:hover {
+        cursor: pointer;
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+      }
+
       /* 녹색 강도 단계화 (count 기반) */
       .streak-cell[data-count="1"],
       .streak-cell[data-count="2"] {
-        background-color: rgba(0, 128, 0, 0.15);
+        background-color: rgba(0, 128, 0, 0.25);
       }
       .streak-cell[data-count="3"],
       .streak-cell[data-count="4"] {
-        background-color: rgba(0, 128, 0, 0.25);
+        background-color: rgba(0, 128, 0, 0.45);
       }
       .streak-cell[data-count="5"],
       .streak-cell[data-count="6"] {
-        background-color: rgba(0, 128, 0, 0.35);
+        background-color: rgba(0, 128, 0, 0.55);
       }
       .streak-cell[data-count="7"],
       .streak-cell[data-count="8"] {
-        background-color: rgba(0, 128, 0, 0.5);
+        background-color: rgba(0, 128, 0, 0.65);
       }
       .streak-cell[data-count="9"],
       .streak-cell[data-count="10"] {
-        background-color: rgba(0, 128, 0, 0.65);
+        background-color: rgba(0, 128, 0, 0.75);
       }
       .streak-cell[data-count="11"],
       .streak-cell[data-count="12"] {
-        background-color: rgba(0, 128, 0, 0.8);
+        background-color: rgba(0, 128, 0, 0.85);
       }
       .streak-cell[data-count="13"],
       .streak-cell[data-count="14"],
@@ -155,7 +242,7 @@
 
       /* count 0이면 배경 투명 유지 */
       .streak-cell[data-count="0"] {
-        background-color: rgba(255, 255, 255, 0.05);
+        background-color: rgba(2, 2, 2, 0.3);
       }
 
       /* 문제 푼 날은 커서 포인터 */
@@ -164,15 +251,33 @@
       }
 
       /* 날짜와 요일 강조 */
-      .streak-cell strong {
-        display: block;
-        margin-bottom: 4px;
-        font-weight: bold;
+      /* 날짜/요일 그룹 */
+      .date-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 6px;
+        font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
         color: #fff;
       }
 
+      /* 요일 (위) */
+      .weekday {
+        font-weight: 600;
+        font-size: 13px;
+        opacity: 0.85;
+      }
+
+      /* 날짜 (아래) */
+      .date {
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+      }
+
+      /* count 강조 */
       .count {
-        font-size: 16px;
+        font-size: 18px;
         font-weight: bold;
         color: #fff;
       }
@@ -199,7 +304,7 @@
         top: 100%;
         left: 50%;
         transform: translateX(-50%);
-        z-index: 100000; /* overlay보다 더 높게 설정 */
+        z-index: 9999; /* overlay보다 더 높게 설정 */
 
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: none;
@@ -207,7 +312,7 @@
         border-radius: 14px;
         padding: 14px 20px;
 
-        width: 320px;
+        width: 500px;
         max-height: 280px;
         overflow-y: auto;
 
@@ -253,41 +358,146 @@
       .prob-item:hover {
         background-color: rgba(76, 175, 80, 0.3);
       }
+
+      .prob-item a {
+        color: #2e7d32;
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .prob-item a:hover {
+        text-decoration: underline;
+      }
+
+      footer {
+        padding: 20px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        margin: 30px auto;
+        width: fit-content;
+      }
+
+      .footer-btn {
+        margin: 8px;
+        padding: 10px 16px;
+        font-size: 16px;
+        border: none;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.25);
+        color: #555;
+        font-weight: 700;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+        transition: background 0.3s ease, transform 0.2s ease;
+      }
+
+      .footer-btn:hover {
+        background: rgba(255, 255, 255, 0.4);
+        transform: scale(1.05);
+      }
     </style>
   </head>
+
   <body>
     <div id="overlay"></div>
-    <h1>카테고리별 문제 풀이 현황</h1>
+    <header>
+      <h1>풀이현황</h1>
+      <form id="search-form" method="POST" action="/">
+        <div class="search-wrapper">
+          <input
+            type="text"
+            id="username-input"
+            name="username"
+            placeholder="유저명"
+            required
+          />
+          <button type="submit" id="search-btn">
+            <img
+              src="/static/search-icon.png"
+              alt="검색"
+              width="30"
+              height="auto"
+            />
+          </button>
+        </div>
+      </form>
+    </header>
 
-    <form id="search-form" method="POST" action="/">
-      <input
-        type="text"
-        id="username-input"
-        name="username"
-        placeholder="유저명을 입력하세요"
-        required
+    <div id="profile-container" class="chart-card">
+      <img
+        src="{{ avatar_path }}"
+        alt="User Avatar"
+        width="100"
+        height="100"
+        style="border-radius: 50%; margin-bottom: 12px"
       />
-      <button type="submit" id="submitButton">조회</button>
-    </form>
-    <h1>{{ username }}</h1>
-    <h3>마지막 로그인: {{last_login}}</h3>
-    <p>해결: {{accepted_number}}</p>
-    <p>제출: {{submission_number}}</p>
-    <p>점수: {{total_score}}</p>
+      <h2 style="margin: 8px 0 4px">{{ username }}</h2>
+      <p style="margin: 2px 0; font-weight: 600">
+        마지막 로그인: {{ last_login }}
+      </p>
+
+      <div
+        id="profile-stats"
+        style="
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-top: 16px;
+        "
+      >
+        <div>
+          <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
+            {{ accepted_number }}
+          </div>
+          <div style="font-size: 13px; color: #555">해결한 문제</div>
+        </div>
+        <div>
+          <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
+            {{ submission_number }}
+          </div>
+          <div style="font-size: 13px; color: #555">제출 횟수</div>
+        </div>
+        <div>
+          <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
+            {{ total_score }}
+          </div>
+          <div style="font-size: 13px; color: #555">점수</div>
+        </div>
+      </div>
+    </div>
+
     <div class="streak-container">
       <div class="streak-grid">
         {% for day in streak_data %}
         <div class="streak-cell" data-count="{{ day.count }}">
-          <strong class="weekday">{{ day.weekday }}</strong><br />
-          {{ day.date }}<br />
+          <div class="date-info">
+            <div class="weekday">{{ day.weekday }}</div>
+            <div class="date">{{ day.date }}</div>
+          </div>
+
           <span class="count">{{ day.count }}</span>
 
           {% if day.details %}
           <div class="details">
             {% for prob in day.details %}
             <div class="prob-item">
-              {{ prob.problem }} ({{ prob.language }}, {{ prob.score }}점, {{
-              prob.time }})
+              <a
+                href="http://edu.doingcoding.com/status/{{ prob.server_sub_id }}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ prob.title }}
+              </a>
+              <br />
+              ({{ prob.language }}, {{ prob.score }}점, {{ prob.time }})
             </div>
             {% endfor %}
           </div>
@@ -301,164 +511,229 @@
 
     <div id="charts-container"></div>
 
+    <footer style="padding: 20px; text-align: center">
+      <button id="update-btn" class="footer-btn" onclick="updateProblems()">
+        🔄 문제 목록 업데이트
+      </button>
+      <!-- ⏰ 마지막 업데이트 시각 표시 -->
+      <!-- ⏰ 마지막 업데이트 시각 표시 -->
+      <div
+        id="update-time"
+        style="margin-top: 10px; font-size: 14px; color: #ccc"
+      ></div>
+
+      <button
+        class="footer-btn"
+        onclick="fetch('/logout').then(() => alert('로그아웃 되었습니다.'))"
+      >
+        🚪 로그아웃
+      </button>
+      <button
+        class="footer-btn"
+        onclick="fetch('/clear_data').then(() => alert('데이터가 초기화되었습니다.'))"
+      >
+        🧹 캐시 지우기
+      </button>
+    </footer>
+
     <script>
-             const overlay = document.getElementById('overlay');
-      const details = document.querySelectorAll('.details');
 
-      document.querySelectorAll('.streak-cell').forEach(cell => {
-        cell.addEventListener('click', e => {
-          e.stopPropagation();
-          // 토글 팝업 보여주기
-          const detail = cell.querySelector('.details');
-          if (!detail) return;
+                 function updateProblems() {
+        const btn = document.getElementById("update-btn");
+        const timeDisplay = document.getElementById("update-time");
+        const originalText = btn.innerHTML;
 
-          const isVisible = detail.style.display === 'block';
+        btn.disabled = true;
+        btn.innerHTML = "⏳ 업데이트 중...";
 
-          // 모든 팝업 숨기고 overlay 숨기기
-          details.forEach(d => d.style.display = 'none');
-          overlay.style.display = 'none';
+        fetch("/update_problems", { method: "POST" })
+          .then((res) => {
+            if (res.ok) {
+              alert("문제 목록이 갱신되었습니다!");
 
-          if (!isVisible) {
-            detail.style.display = 'block';
-            overlay.style.display = 'block';
-          }
-        });
-      });
+              // 타임스탬프 갱신
+              const now = new Date();
+              const formattedTime = now.toLocaleTimeString("ko-KR", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              });
 
-      overlay.addEventListener('click', () => {
-        details.forEach(d => d.style.display = 'none');
-        overlay.style.display = 'none';
-      });
+            } else {
+              alert("실패했습니다");
+            }
+            timeDisplay.textContent = `🕒 마지막 업데이트: ${formattedTime}`;
+          })
+          .catch(() => alert("요청 중 오류가 발생했습니다."))
+          .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          });
+      }
+                                            document.querySelectorAll('.streak-cell').forEach(cell => {
+                                    const originalDetail = cell.querySelector('.details');
 
-      document.body.addEventListener('click', () => {
-        details.forEach(d => d.style.display = 'none');
-        overlay.style.display = 'none';
-      });
+                                    cell.addEventListener('click', e => {
+                                      e.stopPropagation();
+                                      if (!originalDetail) return;
+
+                                      const isVisible = originalDetail.style.display === 'block';
+
+                                      // 모든 팝업 숨기기
+                                      document.querySelectorAll('.details').forEach(d => d.style.display = 'none');
+                                      overlay.style.display = 'none';
+
+                                      if (!isVisible) {
+                                        // 팝업 위치 조정 전 body로 이동
+                                        document.body.appendChild(originalDetail);
+                                        const rect = cell.getBoundingClientRect();
+                                        originalDetail.style.position = 'absolute';
+                                        originalDetail.style.top = `${rect.top + window.scrollY + cell.offsetHeight}px`;
+                                        originalDetail.style.left = `${rect.left + rect.width / 2}px`;
+                                        originalDetail.style.transform = 'translateX(-50%)';
+
+                                        // z-index 설정
+                                        originalDetail.style.zIndex = '1001';
+                                        overlay.style.zIndex = '1000';
+
+                                        // 보이기
+                                        originalDetail.style.display = 'block';
+                                        overlay.style.display = 'block';
+                                      }
+                                    });
+                                  });
+
+                                  // 배경 클릭 시 팝업 닫기
+                                  overlay.addEventListener('click', () => {
+                                    document.querySelectorAll('.details').forEach(d => d.style.display = 'none');
+                                    overlay.style.display = 'none';
+                                  });
 
 
-                                    // 중앙 텍스트용 Chart.js 커스텀 플러그인
-                                          function centerTextPlugin(text) {
-                                            return {
-                                              id: "centerText",
-                                              beforeDraw(chart) {
-                                                const { ctx, chartArea, width, height } = chart;
 
-                                                if (!chartArea) return; // 아직 렌더링 준비 전이면 그리지 않음
+                                                                // 중앙 텍스트용 Chart.js 커스텀 플러그인
+                                                                      function centerTextPlugin(text) {
+                                                                        return {
+                                                                          id: "centerText",
+                                                                          beforeDraw(chart) {
+                                                                            const { ctx, chartArea, width, height } = chart;
 
-                                                ctx.save();
+                                                                            if (!chartArea) return; // 아직 렌더링 준비 전이면 그리지 않음
 
-                                                const fontSize = Math.min(width / 10, 20); // responsive size
-                                                ctx.font = `bold ${fontSize}px sans-serif`;
-                                                ctx.textBaseline = "middle";
-                                                ctx.textAlign = "center";
-                                                ctx.fillStyle = "#444";
+                                                                            ctx.save();
 
-                                                const centerX = (chartArea.left + chartArea.right) / 2;
-                                                const centerY = (chartArea.top + chartArea.bottom) / 2;
+                                                                            const fontSize = Math.min(width / 10, 20); // responsive size
+                                                                            ctx.font = `bold ${fontSize}px sans-serif`;
+                                                                            ctx.textBaseline = "middle";
+                                                                            ctx.textAlign = "center";
+                                                                            ctx.fillStyle = "#444";
 
-                                                ctx.fillText(text, centerX, centerY);
-                                                ctx.restore();
-                                              },
-                                            };
-                                          }
+                                                                            const centerX = (chartArea.left + chartArea.right) / 2;
+                                                                            const centerY = (chartArea.top + chartArea.bottom) / 2;
 
-                                           const progressData = {{ progress_data | tojson }};
-                                           const username = "{{ username }}";
+                                                                            ctx.fillText(text, centerX, centerY);
+                                                                            ctx.restore();
+                                                                          },
+                                                                        };
+                                                                      }
 
-                                           // 사용자 조회
-                                          // const form = document.getElementById("search-form");
-                                          //const input = document.getElementById("username-input");
-                                           const resultTitle = document.getElementById("result-title");
-                                           // const container = document.getElementById("charts-container");
+                                                                        const progressData = {{ progress_data | tojson }};
+                                                                        const username = "{{ username }}";
 
-                                           document.getElementById("result-title").textContent = `${username} 님의 챕터별 진도`;
-                                           document.getElementById("result-title").style.display = "block";
+                                                                        // 사용자 조회
+                                                                      // const form = document.getElementById("search-form");
+                                                                      //const input = document.getElementById("username-input");
+                                                                        const resultTitle = document.getElementById("result-title");
+                                                                        // const container = document.getElementById("charts-container");
 
-                                           const container = document.getElementById("charts-container");
-                                           container.innerHTML = progressData
-                                             .map(
-                                               (item, idx) => `
-                                             <div class="chart-card" data-href="/user/${username}/chapter/${item.chapter}">
-                                               <canvas id="chart-${idx}" width="160" height="160"></canvas>
-                                               <p style="margin-top: 12px; font-weight: bold;">${item.chapter}</p>
-                                             </div>
-                                           `
-                                             )
-                                             .join("");
+                                                                        // document.getElementById("result-title").textContent = `${username} 님의 챕터별 진도`;
+                                                                        document.getElementById("result-title").style.display = "block";
 
-                                           document.querySelectorAll(".chart-card").forEach((card) => {
-                                             card.addEventListener("click", () => {
-                                               const href = card.dataset.href;
-                                               if (href) window.location.href = href;
-                                             });
-                                           });
+                                                                        const container = document.getElementById("charts-container");
+                                                                        container.innerHTML = progressData
+                                                                          .map(
+                                                                            (item, idx) => `
+                                                                          <div class="chart-card" data-href="/user/${username}/chapter/${item.chapter}">
+                                                                            <canvas id="chart-${idx}" width="160" height="160"></canvas>
+                                                                            <p style="margin-top: 12px; font-weight: bold;">${item.chapter}</p>
+                                                                          </div>
+                                                                        `
+                                                                          )
+                                                                          .join("");
 
-                                           progressData.forEach((item, idx) => {
-                                             const canvas = document.getElementById(`chart-${idx}`);
-                                             const ctx = canvas.getContext("2d");
+                                                                        document.querySelectorAll(".chart-card").forEach((card) => {
+                                                                          card.addEventListener("click", () => {
+                                                                            const href = card.dataset.href;
+                                                                            if (href) window.location.href = href;
+                                                                          });
+                                                                        });
 
-                                             const gradient = ctx.createLinearGradient(0, 0, 200, 200);
-                                             if (item.percent === 100)
-                                               gradient.addColorStop(0, "rgb(142,234,220)"),
-                                                 gradient.addColorStop(1, "rgb(46,147,248)");
-                                             else if (item.percent >= 80)
-                                               gradient.addColorStop(0, "rgb(128,240,131)"),
-                                                 gradient.addColorStop(1, "rgb(44,206,190)");
-                                             else if (item.percent >= 51)
-                                               gradient.addColorStop(0, "rgb(219,234,134)"),
-                                                 gradient.addColorStop(1, "rgb(50,214,58)");
-                                             else if (item.percent >= 21)
-                                               gradient.addColorStop(0, "rgb(236,219,135)"),
-                                                 gradient.addColorStop(1, "rgb(245,151,35)");
-                                             else if (item.percent >= 1)
-                                               gradient.addColorStop(0, "rgb(236,167,184)"),
-                                                 gradient.addColorStop(1, "rgb(241,53,35)");
-                                             else
-                                               gradient.addColorStop(0, "#ddd"), gradient.addColorStop(1, "#ddd");
+                                                                        progressData.forEach((item, idx) => {
+                                                                          const canvas = document.getElementById(`chart-${idx}`);
+                                                                          const ctx = canvas.getContext("2d");
 
-                                             new Chart(ctx, {
-                                               type: "doughnut",
-                                               data: {
-                                                 labels: ["완료", "미완료"],
-                                                 datasets: [
-                                                   {
-                                                     data: [item.percent, 100 - item.percent],
-                                                     backgroundColor: [gradient, "#f0f0f0"],
-                                                     borderWidth: 0,
-                                                     borderRadius: 100,
-                                                   },
-                                                 ],
-                                               },
-                                               options: {
-                                                 cutout: "60%",
-                                                 plugins: {
-                                                   legend: { display: false },
-                                                   tooltip: { enabled: false },
-                                                   title: {
-                                                     display: true,
-                                                     text: `${item.percent}%`,
-                                                     color: "#444",
-                                                     font: { size: 20, weight: "bold" },
-                                                     position: "center",
-                                                   },
-                                                 },
-                                               },
-                                               plugins: [centerTextPlugin(`${item.percent}%`)],
-                                             });
-                                           });
+                                                                          const gradient = ctx.createLinearGradient(0, 0, 200, 200);
+                                                                          if (item.percent === 100)
+                                                                            gradient.addColorStop(0, "rgb(142,234,220)"),
+                                                                              gradient.addColorStop(1, "rgb(46,147,248)");
+                                                                          else if (item.percent >= 80)
+                                                                            gradient.addColorStop(0, "rgb(128,240,131)"),
+                                                                              gradient.addColorStop(1, "rgb(44,206,190)");
+                                                                          else if (item.percent >= 51)
+                                                                            gradient.addColorStop(0, "rgb(219,234,134)"),
+                                                                              gradient.addColorStop(1, "rgb(50,214,58)");
+                                                                          else if (item.percent >= 21)
+                                                                            gradient.addColorStop(0, "rgb(236,219,135)"),
+                                                                              gradient.addColorStop(1, "rgb(245,151,35)");
+                                                                          else if (item.percent >= 1)
+                                                                            gradient.addColorStop(0, "rgb(236,167,184)"),
+                                                                              gradient.addColorStop(1, "rgb(241,53,35)");
+                                                                          else
+                                                                            gradient.addColorStop(0, "#ddd"), gradient.addColorStop(1, "#ddd");
 
-                                window.addEventListener("DOMContentLoaded", () => {
-                          const urlParams = new URLSearchParams(window.location.search);
-                          const usernameParam = urlParams.get("username");
+                                                                          new Chart(ctx, {
+                                                                            type: "doughnut",
+                                                                            data: {
+                                                                              labels: ["완료", "미완료"],
+                                                                              datasets: [
+                                                                                {
+                                                                                  data: [item.percent, 100 - item.percent],
+                                                                                  backgroundColor: [gradient, "#f0f0f0"],
+                                                                                  borderWidth: 0,
+                                                                                  borderRadius: 100,
+                                                                                },
+                                                                              ],
+                                                                            },
+                                                                            options: {
+                                                                              cutout: "60%",
+                                                                              plugins: {
+                                                                                legend: { display: false },
+                                                                                tooltip: { enabled: false },
+                                                                                title: {
+                                                                                  display: true,
+                                                                                  text: `${item.percent}%`,
+                                                                                  color: "#444",
+                                                                                  font: { size: 20, weight: "bold" },
+                                                                                  position: "center",
+                                                                                },
+                                                                              },
+                                                                            },
+                                                                            plugins: [centerTextPlugin(`${item.percent}%`)],
+                                                                          });
+                                                                        });
 
-                          if (usernameParam) {
-                            const usernameInput = document.getElementById("username-input");
-                            usernameInput.value = decodeURIComponent(usernameParam);
+                                                            window.addEventListener("DOMContentLoaded", () => {
+                                                      const urlParams = new URLSearchParams(window.location.search);
+                                                      const usernameParam = urlParams.get("username");
 
-                            // 버튼 클릭이 아니라 form 직접 submit
-                            document.getElementById("search-form").submit();
-                          }
-                        });
+                                                      if (usernameParam) {
+                                                        const usernameInput = document.getElementById("username-input");
+                                                        usernameInput.value = decodeURIComponent(usernameParam);
+
+                                                        // 버튼 클릭이 아니라 form 직접 submit
+                                                        document.getElementById("search-form").submit();
+                                                      }
+                                                    });
     </script>
   </body>
 </html>

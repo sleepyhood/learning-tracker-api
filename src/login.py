@@ -85,12 +85,12 @@ def get_authenticated_session(cookie_dict):
 
 def is_cookie_valid(session):
     try:
-        res = session.get(LOGIN_URL)
-        if res.status_code == 200 and '"error": null' in res.text:
-            return True
-    except:
-        pass
-    return False
+        res = session.get("http://edu.doingcoding.com/api/profile")
+        data = res.json()
+        return res.status_code == 200 and data.get("data", {}).get("user") is not None
+    except Exception as e:
+        print("❌ 쿠키 유효성 검사 실패:", e)
+        return False
 
 
 def is_data_stale(file_path):
@@ -117,7 +117,7 @@ def do_login(username=None, password=None):
             cookies = selenium_login(username, password)
             session = get_authenticated_session(cookies)
 
-        session = get_authenticated_session(cookies)
+        # session = get_authenticated_session(cookies)
 
         # 유저 데이터 파일 경로 설정
         user_id = username or "unknown_user"

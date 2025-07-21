@@ -3,7 +3,7 @@ import json
 from collections import defaultdict
 from flask import jsonify
 import requests
-from login import load_cookies, get_authenticated_session
+from login import load_cookies, get_authenticated_session, is_cookie_valid
 from datetime import datetime, timezone, timedelta
 from pprint import pprint
 from utils.streak_utils import generate_streak_data
@@ -32,12 +32,19 @@ app = Flask(__name__, static_folder="static")
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 PROBLEM_DIR = os.path.join(BASE_DIR, "problems_data")
 USER_DATA_DIR = os.path.join(BASE_DIR, "users_data")
 
 COOKIE_PATH = "cookies.json"
 
 BASE_URL = "http://edu.doingcoding.com"
+
+
+# 몰?루
+def sanitize_filename(name):
+    # 파일명으로 부적절한 문자를 밑줄(_)로 대체
+    return re.sub(r'[\\/:"*?<>|]+', "_", name)
 
 
 def format_last_login(last_login_str):
@@ -58,32 +65,32 @@ def format_last_login(last_login_str):
         return last_login.strftime("%Y년 %m월 %d일")
 
 
-def is_cookie_valid():
-    if not os.path.exists(COOKIE_PATH):
-        return False
-    try:
-        with open(COOKIE_PATH, "r") as f:
-            cookies = json.load(f)
+# def is_cookie_valid():
+#     if not os.path.exists(COOKIE_PATH):
+#         return False
+#     try:
+#         with open(COOKIE_PATH, "r") as f:
+#             cookies = json.load(f)
 
-        if "sessionid" not in cookies or not cookies["sessionid"]:
-            return False
+#         if "sessionid" not in cookies or not cookies["sessionid"]:
+#             return False
 
-        if "timestamp" in cookies:
-            ts = datetime.fromisoformat(cookies["timestamp"])
-            now = datetime.now()
+#         if "timestamp" in cookies:
+#             ts = datetime.fromisoformat(cookies["timestamp"])
+#             now = datetime.now()
 
-            # 조건 1: 12시간 이상 지남
-            if now - ts > timedelta(hours=12):
-                return False
+#             # 조건 1: 12시간 이상 지남
+#             if now - ts > timedelta(hours=12):
+#                 return False
 
-            # 조건 2: 날짜가 바뀜 (예: 07/20 → 07/21)
-            if now.date() != ts.date():
-                return False
+#             # 조건 2: 날짜가 바뀜 (예: 07/20 → 07/21)
+#             if now.date() != ts.date():
+#                 return False
 
-        return True
-    except Exception as e:
-        print("쿠키 유효성 검사 중 오류:", e)
-        return False
+#         return True
+#     except Exception as e:
+#         print("쿠키 유효성 검사 중 오류:", e)
+#         return False
 
 
 def get_progress(solved_list, problem_info):
@@ -121,12 +128,23 @@ def calculate_progress(solved_list, chapter_json):
     return progress_data
 
 
+# 문제 목록 강제 업데이트 기능
+@app.route("/update_problems", methods=["POST"])
+def update_problems():
+    # 무조건 새로 크롤링
+    do_crawling()
+    return jsonify(
+        {"message": "문제 목록이 갱신되었습니다.", "time": datetime.now().isoformat()}
+    )
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     # 쿠키 확인
-    cookie_result = is_cookie_valid()
+    cookies = load_cookies(COOKIE_PATH)
+    session = get_authenticated_session(cookies)
 
-    if not cookie_result:
+    if not is_cookie_valid(session):
         return redirect("/login")
 
     # 기본 유저명: 로그인한 유저명 or 입력받은 유저명
@@ -152,9 +170,10 @@ def index():
     res = session.get("http://edu.doingcoding.com/api/profile")  # ✅ 현재 유저 정보
     data = json.loads(res.text)
     user_data = data["data"]["user"]
-
     username = user_data["username"]
-    filename = f"{username}.json"
+
+    filename = f"{sanitize_filename(user_data['username'])}.json"
+
     user_path = os.path.join(USER_DATA_DIR, filename)
 
     os.makedirs(USER_DATA_DIR, exist_ok=True)
@@ -180,7 +199,15 @@ def index():
         f"http://edu.doingcoding.com/api/submissions?myself=1&starred=0&result=&username={username}&page=1&limit=100&offset=0"
     )
     records = records.json()
-    streak_data = generate_streak_data(records["data"]["results"])
+
+    true_username = user_data["username"]
+    # pprint(records["data"]["results"])
+    raw_submissions = records["data"]["results"]
+    # 메인 계정으로 푼 문제만 필터링
+    filtered_submissions = [
+        rec for rec in raw_submissions if rec.get("username") == true_username
+    ]
+    streak_data = generate_streak_data(filtered_submissions)
 
     # pprint(records["data"]["results"])
     # for rec in records["data"]["results"]:
@@ -200,6 +227,16 @@ def index():
     #         f"{create_time} | 문제: {problem} | 사용자: {user} | 언어: {lang} | 결과: {result} | 점수: {score} "
     # )
 
+    # 프로필 이미지 가져오기
+    # 기본값은 /public/avatar/dafault.png
+    avatar = "/public/avatar/dafault.png"
+
+    if avatar != data["data"].get("avatar", None):
+        avatar = data["data"].get("avatar", None)
+
+    avatar_path = f"http://edu.doingcoding.com{avatar}"
+    print(f"avatar_path: {avatar_path}")
+
     return render_template(
         "index.html",
         username=username,
@@ -209,6 +246,7 @@ def index():
         total_score=data["data"]["total_score"],
         progress_data=progress_data,
         streak_data=streak_data,  # 👈 스트릭 추가
+        avatar_path=avatar_path,  # 프로필 이미지
     )
 
 
@@ -253,8 +291,12 @@ def user_overview(username):
     except Exception as e:
         return f"❌ 사용자 정보를 불러오지 못했습니다: {e}", 500
 
-    filename = f"{user_data['username']}.json"
+    # filename = f"{user_data['username']}.json"
+    filename = f"{sanitize_filename(user_data['username'])}.json"
+
     user_path = os.path.join(USER_DATA_DIR, filename)
+
+    # pprint(data["data"]["avatar"])
 
     with open(user_path, "w", encoding="utf-8") as f:
         json.dump(
@@ -276,14 +318,27 @@ def user_overview(username):
         f"http://edu.doingcoding.com/api/submissions?myself=0&starred=0&result=&username={user_data['username']}&page=1&limit=100&offset=0"
     )
     records = records.json()
-    streak_data = generate_streak_data(records["data"]["results"])
 
+    true_username = user_data["username"]
+    # pprint(records["data"]["results"])
+    raw_submissions = records["data"]["results"]
+    # 메인 계정으로 푼 문제만 필터링
+    filtered_submissions = [
+        rec for rec in raw_submissions if rec.get("username") == true_username
+    ]
+    streak_data = generate_streak_data(filtered_submissions)
+
+    # pprint(filtered_submissions[0])
     for rec in records["data"]["results"]:
+        server_sub_id = rec["id"]
         problem = rec["problem"]
         user = rec["username"]
         lang = rec["language"]
         result = rec["result"]
-        score = rec["statistic_info"]["score"]
+        try:
+            score = rec["statistic_info"]["score"]
+        except Exception as e:
+            print(f"score 없음: {e}")
         # time_cost = rec["statistic_info"]["time_cost"]
         # memory_cost = rec["statistic_info"]["memory_cost"]
         # ISO 포맷 날짜를 사람이 읽기 편한 형태로 변경
@@ -294,6 +349,14 @@ def user_overview(username):
         print(
             f"{create_time} | 문제: {problem} | 사용자: {user} | 언어: {lang} | 결과: {result} | 점수: {score} "
         )
+
+    avatar = "/public/avatar/dafault.png"
+
+    if avatar != data["data"].get("avatar", None):
+        avatar = data["data"].get("avatar", None)
+
+    avatar_path = f"http://edu.doingcoding.com{avatar}"
+    print(f"avatar_path: {avatar_path}")
     return render_template(
         "index.html",
         username=user_data["username"],
@@ -303,6 +366,7 @@ def user_overview(username):
         total_score=data["data"]["total_score"],
         progress_data=progress_data,
         streak_data=streak_data,
+        avatar_path=avatar_path,  # 프로필 이미지
     )
 
 
