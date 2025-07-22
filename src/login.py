@@ -78,8 +78,12 @@ def selenium_login(username, password):
 
 def get_authenticated_session(cookie_dict):
     session = requests.Session()
-    for name, value in cookie_dict.items():
-        session.cookies.set(name, value)
+
+    try:
+        for name, value in cookie_dict.items():
+            session.cookies.set(name, value)
+    except Exception as e:
+        print(f"cookie_dict가 존재하지 않습니다.")
     return session
 
 
