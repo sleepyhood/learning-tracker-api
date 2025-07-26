@@ -141,8 +141,11 @@ def index():
     # 유저 정보 가져오기
     res = session.get("http://edu.doingcoding.com/api/profile")  # ✅ 현재 유저 정보
     data = json.loads(res.text)
+    
     user_data = data["data"]["user"]
     username = user_data["username"]
+
+
     # pprint(data["data"]["oi_problems_status"])
     filename = f"{sanitize_filename(user_data['username'])}.json"
 
@@ -221,6 +224,26 @@ def index():
         avatar_path=avatar_path,  # 프로필 이미지
     )
 
+@app.route("/refresh_user/<username>")
+def refresh_user(username):
+    cookies = load_cookies(COOKIE_PATH)
+    session = get_authenticated_session(cookies)
+    encoded_username = quote(username)
+
+    try:
+        res = session.get(f"http://edu.doingcoding.com/api/profile?username={encoded_username}")
+        data = res.json()
+        user_data = data["data"]["user"]
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+    # 저장
+    filename = f"{sanitize_filename(user_data['username'])}.json"
+    user_path = os.path.join(USER_DATA_DIR, filename)
+    with open(user_path, "w", encoding="utf-8") as f:
+        json.dump(data["data"]["oi_problems_status"]["problems"], f, ensure_ascii=False, indent=2)
+
+    return jsonify({"success": True, "updated_at": datetime.now().isoformat()})
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -268,6 +291,8 @@ def user_overview(username):
 
     user_path = os.path.join(USER_DATA_DIR, filename)
 
+    sample = data["data"]
+    # print(f"{username}의 데이터: {sample}")
     # pprint(data["data"]["avatar"])
 
     with open(user_path, "w", encoding="utf-8") as f:
