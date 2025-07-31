@@ -72,6 +72,8 @@ def summarize_progress(problem_file, solve_file):
 
 def summarize_user_chapter_group(user_data, all_problems, chapter, group_id):
     problem_group_data = all_problems.get(chapter, {}).get(group_id)
+    problem_chapter_id = problem_group_data.get("chapter_id")  # url에서 사용할 태그
+    # print(f"problem_group_id: {problem_group_id}")
     if problem_group_data is None:
         raise KeyError(f"'{chapter}' 챕터 내 '{group_id}' 그룹을 찾을 수 없습니다.")
 
@@ -101,6 +103,7 @@ def summarize_user_chapter_group(user_data, all_problems, chapter, group_id):
         )
 
     return {
+        "problem_chapter_id": problem_chapter_id,
         "group_title": problem_group_data.get("title", ""),
         "problem_names": problems_with_status,
     }

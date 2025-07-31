@@ -5,26 +5,13 @@
     <title>진도율 시각화</title>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}"> -->
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}"> -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/fab.css') }}"
+    />
 
     <style>
-
-      .fab {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  background-color: #007bff;
-  color: white;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  font-size: 28px;
-  text-align: center;
-  line-height: 56px;
-  cursor: pointer;
-  box-shadow: 0px 3px 6px rgba(0,0,0,0.16);
-  z-index: 999;
-}
       header {
         position: relative;
         top: 0;
@@ -164,10 +151,9 @@
         color: #222;
         border-radius: 8px;
         cursor: pointer;
-        
+
         background: rgba(255, 255, 255, 0.1);
       }
-
 
       h1,
       h2 {
@@ -425,10 +411,26 @@
   </head>
 
   <body>
-    
     <div id="overlay"></div>
-<div class="fab" title="풀이 현황 최신화" onclick="refreshUserProgress()">🔄</div>
-
+    <div
+      class="fab"
+      title="풀이 현황 최신화"
+      onclick="refreshUserProgress('{{ username }}')"
+    >
+      🔄
+    </div>
+    {% set admin_type = admin_type | default("Regular User") %} {% if admin_type
+    == 'Admin' %}
+    <!-- 추가될 숙제 모드 FAB -->
+    <div
+      class="fab"
+      title="숙제 출제 모드"
+      style="bottom: 100px"
+      onclick="toggleAssignMode()"
+    >
+      📚
+    </div>
+    {% endif %}
     <header>
       <a href="/" style="text-decoration: none; color: inherit">
         <h1>풀이현황</h1>
@@ -558,44 +560,14 @@
         🧹 캐시 지우기
       </button>
     </footer>
-<!-- 
+    <!-- 
  <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
 <script src="{{ url_for('static', filename='js/refreshUserProgress.js') }}"></script> -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
     <script>
-  function showToast(message, duration = 3000) {
-        const toast = document.createElement("div");
-    toast.textContent = message;
-    toast.classList.add("show");
-
-    // 자동 사라짐
-    setTimeout(() => {
-      toast.classList.remove("show");
-    }, duration);
-  }
-
-    function refreshUserProgress() {
-  const username = "{{ username }}"; // Jinja 템플릿에서 사용자 이름 삽입
-  fetch(`/refresh_user/${username}`)
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.success) {
-        showToast(`${username} 님\n✅ 풀이 데이터 갱신 완료!`);
-        setTimeout(() => {
-          location.reload();  // ✅ 토스트 잠깐 보여주고 새로고침
-        }, 1500);
-      } else {
-        showToast("❌ 풀이 데이터 갱신에 실패했습니다.");
-        console.error("Error:", data.error);
-      }
-    })
-    .catch((err) => {
-      showToast("⚠️ 네트워크 오류: 서버에 연결할 수 없습니다.");
-      console.error("Fetch error:", err);
-    });
-}
-
-                  function updateProblems() {
+      // 문제 업데이트 버튼
+      function updateProblems() {
         const btn = document.getElementById("update-btn");
         const timeDisplay = document.getElementById("update-time");
         const originalText = btn.innerHTML;
@@ -615,7 +587,6 @@
                 minute: "2-digit",
                 second: "2-digit",
               });
-
             } else {
               alert("실패했습니다");
             }
@@ -627,184 +598,188 @@
             btn.innerHTML = originalText;
           });
       }
-                document.querySelectorAll('.streak-cell').forEach(cell => {
-        const originalDetail = cell.querySelector('.details');
+      document.querySelectorAll(".streak-cell").forEach((cell) => {
+        const originalDetail = cell.querySelector(".details");
 
-        cell.addEventListener('click', e => {
+        cell.addEventListener("click", (e) => {
           e.stopPropagation();
           if (!originalDetail) return;
 
-          const isVisible = originalDetail.style.display === 'block';
+          const isVisible = originalDetail.style.display === "block";
 
           // 모든 팝업 숨기기
-          document.querySelectorAll('.details').forEach(d => d.style.display = 'none');
-          overlay.style.display = 'none';
+          document
+            .querySelectorAll(".details")
+            .forEach((d) => (d.style.display = "none"));
+          overlay.style.display = "none";
 
           if (!isVisible) {
             // 팝업 위치 조정 전 body로 이동
             document.body.appendChild(originalDetail);
             const rect = cell.getBoundingClientRect();
-            originalDetail.style.position = 'absolute';
-            originalDetail.style.top = `${rect.top + window.scrollY + cell.offsetHeight}px`;
+            originalDetail.style.position = "absolute";
+            originalDetail.style.top = `${
+              rect.top + window.scrollY + cell.offsetHeight
+            }px`;
             originalDetail.style.left = `${rect.left + rect.width / 2}px`;
-            originalDetail.style.transform = 'translateX(-50%)';
+            originalDetail.style.transform = "translateX(-50%)";
 
             // z-index 설정
-            originalDetail.style.zIndex = '1001';
-            overlay.style.zIndex = '1000';
+            originalDetail.style.zIndex = "1001";
+            overlay.style.zIndex = "1000";
 
             // 보이기
-            originalDetail.style.display = 'block';
-            overlay.style.display = 'block';
+            originalDetail.style.display = "block";
+            overlay.style.display = "block";
           }
         });
       });
 
       // 배경 클릭 시 팝업 닫기
-      overlay.addEventListener('click', () => {
-        document.querySelectorAll('.details').forEach(d => d.style.display = 'none');
-        overlay.style.display = 'none';
+      overlay.addEventListener("click", () => {
+        document
+          .querySelectorAll(".details")
+          .forEach((d) => (d.style.display = "none"));
+        overlay.style.display = "none";
       });
 
+      // 중앙 텍스트용 Chart.js 커스텀 플러그인
+      function centerTextPlugin(text) {
+        return {
+          id: "centerText",
+          beforeDraw(chart) {
+            const { ctx, chartArea, width, height } = chart;
 
+            if (!chartArea) return; // 아직 렌더링 준비 전이면 그리지 않음
 
-        // 중앙 텍스트용 Chart.js 커스텀 플러그인
-        function centerTextPlugin(text) {
-          return {
-            id: "centerText",
-            beforeDraw(chart) {
-              const { ctx, chartArea, width, height } = chart;
+            ctx.save();
 
-              if (!chartArea) return; // 아직 렌더링 준비 전이면 그리지 않음
+            const fontSize = Math.min(width / 10, 20); // responsive size
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#444";
 
-              ctx.save();
+            const centerX = (chartArea.left + chartArea.right) / 2;
+            const centerY = (chartArea.top + chartArea.bottom) / 2;
 
-              const fontSize = Math.min(width / 10, 20); // responsive size
-              ctx.font = `bold ${fontSize}px sans-serif`;
-              ctx.textBaseline = "middle";
-              ctx.textAlign = "center";
-              ctx.fillStyle = "#444";
+            ctx.fillText(text, centerX, centerY);
+            ctx.restore();
+          },
+        };
+      }
 
-              const centerX = (chartArea.left + chartArea.right) / 2;
-              const centerY = (chartArea.top + chartArea.bottom) / 2;
+      const progressData = JSON.parse(`{{ progress_data | tojson  }}`);
+      const username = "{{ username }}";
 
-              ctx.fillText(text, centerX, centerY);
-              ctx.restore();
-            },
-          };
-        }
+      // 사용자 조회
+      // const form = document.getElementById("search-form");
+      //const input = document.getElementById("username-input");
+      const resultTitle = document.getElementById("result-title");
+      // const container = document.getElementById("charts-container");
 
-          const progressData = JSON.parse(`{{ progress_data | tojson  }}`);
-          const username = "{{ username }}";
+      // document.getElementById("result-title").textContent = `${username} 님의 챕터별 진도`;
+      document.getElementById("result-title").style.display = "block";
 
-          // 사용자 조회
-        // const form = document.getElementById("search-form");
-        //const input = document.getElementById("username-input");
-          const resultTitle = document.getElementById("result-title");
-          // const container = document.getElementById("charts-container");
-
-          // document.getElementById("result-title").textContent = `${username} 님의 챕터별 진도`;
-          document.getElementById("result-title").style.display = "block";
-
-          const container = document.getElementById("charts-container");
-          container.innerHTML = progressData
-            .map(
-              (item, idx) => `
-            <div class="chart-card" data-href="/user/${encodeURIComponent(username)}/chapter/${encodeURIComponent(item.chapter)}">
+      const container = document.getElementById("charts-container");
+      container.innerHTML = progressData
+        .map(
+          (item, idx) => `
+            <div class="chart-card" data-href="/user/${encodeURIComponent(
+              username
+            )}/chapter/${encodeURIComponent(item.chapter)}">
               <canvas id="chart-${idx}" width="160" height="160"></canvas>
-              <p style="margin-top: 12px; font-weight: bold;">${item.chapter}</p>
+              <p style="margin-top: 12px; font-weight: bold;">${
+                item.chapter
+              }</p>
             </div>
           `
-            )
-            .join("");
+        )
+        .join("");
 
-          document.querySelectorAll(".chart-card").forEach((card) => {
-            card.addEventListener("click", () => {
-              const href = card.dataset.href;
-              if (href) window.location.href = href;
-            });
-          });
+      document.querySelectorAll(".chart-card").forEach((card) => {
+        card.addEventListener("click", () => {
+          const href = card.dataset.href;
+          if (href) window.location.href = href;
+        });
+      });
 
-          progressData.forEach((item, idx) => {
-            const canvas = document.getElementById(`chart-${idx}`);
-            const ctx = canvas.getContext("2d");
+      progressData.forEach((item, idx) => {
+        const canvas = document.getElementById(`chart-${idx}`);
+        const ctx = canvas.getContext("2d");
 
-            const gradient = ctx.createLinearGradient(0, 0, 200, 200);
-            if (item.percent === 100)
-              gradient.addColorStop(0, "rgb(142,234,220)"),
-                gradient.addColorStop(1, "rgb(46,147,248)");
-            else if (item.percent >= 80)
-              gradient.addColorStop(0, "rgb(128,240,131)"),
-                gradient.addColorStop(1, "rgb(44,206,190)");
-            else if (item.percent >= 51)
-              gradient.addColorStop(0, "rgb(219,234,134)"),
-                gradient.addColorStop(1, "rgb(50,214,58)");
-            else if (item.percent >= 21)
-              gradient.addColorStop(0, "rgb(236,219,135)"),
-                gradient.addColorStop(1, "rgb(245,151,35)");
-            else if (item.percent >= 1)
-              gradient.addColorStop(0, "rgb(236,167,184)"),
-                gradient.addColorStop(1, "rgb(241,53,35)");
-            else
-              gradient.addColorStop(0, "#ddd"), gradient.addColorStop(1, "#ddd");
+        const gradient = ctx.createLinearGradient(0, 0, 200, 200);
+        if (item.percent === 100)
+          gradient.addColorStop(0, "rgb(142,234,220)"),
+            gradient.addColorStop(1, "rgb(46,147,248)");
+        else if (item.percent >= 80)
+          gradient.addColorStop(0, "rgb(128,240,131)"),
+            gradient.addColorStop(1, "rgb(44,206,190)");
+        else if (item.percent >= 51)
+          gradient.addColorStop(0, "rgb(219,234,134)"),
+            gradient.addColorStop(1, "rgb(50,214,58)");
+        else if (item.percent >= 21)
+          gradient.addColorStop(0, "rgb(236,219,135)"),
+            gradient.addColorStop(1, "rgb(245,151,35)");
+        else if (item.percent >= 1)
+          gradient.addColorStop(0, "rgb(236,167,184)"),
+            gradient.addColorStop(1, "rgb(241,53,35)");
+        else gradient.addColorStop(0, "#ddd"), gradient.addColorStop(1, "#ddd");
 
-            new Chart(ctx, {
-              type: "doughnut",
-              data: {
-                labels: ["완료", "미완료"],
-                datasets: [
-                  {
-                    data: [item.percent, 100 - item.percent],
-                    backgroundColor: [gradient, "#f0f0f0"],
-                    borderWidth: 0,
-                    borderRadius: 100,
-                  },
-                ],
+        new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["완료", "미완료"],
+            datasets: [
+              {
+                data: [item.percent, 100 - item.percent],
+                backgroundColor: [gradient, "#f0f0f0"],
+                borderWidth: 0,
+                borderRadius: 100,
               },
-              options: {
-                cutout: "60%",
-                plugins: {
-                  legend: { display: false },
-                  tooltip: { enabled: false },
-                  title: {
-                    display: true,
-                    text: `${item.percent}%`,
-                    color: "#444",
-                    font: { size: 20, weight: "bold" },
-                    position: "center",
-                  },
-                },
+            ],
+          },
+          options: {
+            cutout: "60%",
+            plugins: {
+              legend: { display: false },
+              tooltip: { enabled: false },
+              title: {
+                display: true,
+                text: `${item.percent}%`,
+                color: "#444",
+                font: { size: 20, weight: "bold" },
+                position: "center",
               },
-              plugins: [centerTextPlugin(`${item.percent}%`)],
-            });
-          });
-                document.addEventListener("DOMContentLoaded", () => {
-            const searchBtn = document.getElementById("search-btn");
-            const searchInput = document.getElementById("username-input");
-            const searchForm = document.getElementById("search-form");
+            },
+          },
+          plugins: [centerTextPlugin(`${item.percent}%`)],
+        });
+      });
+      document.addEventListener("DOMContentLoaded", () => {
+        const searchBtn = document.getElementById("search-btn");
+        const searchInput = document.getElementById("username-input");
+        const searchForm = document.getElementById("search-form");
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const usernameParam = urlParams.get("username");
+        const urlParams = new URLSearchParams(window.location.search);
+        const usernameParam = urlParams.get("username");
 
-            // URL 파라미터로 자동 submit될 경우
-            if (usernameParam) {
-              searchInput.classList.add("show");
-              searchInput.value = decodeURIComponent(usernameParam);
-              searchForm.submit();
-            }
+        // URL 파라미터로 자동 submit될 경우
+        if (usernameParam) {
+          searchInput.classList.add("show");
+          searchInput.value = decodeURIComponent(usernameParam);
+          searchForm.submit();
+        }
 
-            // 버튼 클릭 시 input 슬라이드 토글
-            searchBtn.addEventListener("click", (e) => {
-              if (!searchInput.classList.contains("show")) {
-                e.preventDefault(); // 처음 클릭 시 검색 막고 input만 보여주기
-                searchInput.classList.add("show");
-                searchInput.focus();
-              }
-            });
-          });
+        // 버튼 클릭 시 input 슬라이드 토글
+        searchBtn.addEventListener("click", (e) => {
+          if (!searchInput.classList.contains("show")) {
+            e.preventDefault(); // 처음 클릭 시 검색 막고 input만 보여주기
+            searchInput.classList.add("show");
+            searchInput.focus();
+          }
+        });
+      });
     </script>
   </body>
-
-
-  
 </html>

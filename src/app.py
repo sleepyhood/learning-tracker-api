@@ -40,6 +40,8 @@ COOKIE_PATH = "cookies.json"
 
 BASE_URL = "http://edu.doingcoding.com"
 
+login_user_type = "Regular User"  # 유저 로그인 타입은 전역변수로
+
 
 # 몰?루
 def sanitize_filename(name):
@@ -112,6 +114,7 @@ def update_problems():
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    global login_user_type
     # 쿠키 확인
     cookies = load_cookies(COOKIE_PATH)
     session = get_authenticated_session(cookies)
@@ -141,10 +144,9 @@ def index():
     # 유저 정보 가져오기
     res = session.get("http://edu.doingcoding.com/api/profile")  # ✅ 현재 유저 정보
     data = json.loads(res.text)
-    
+
     user_data = data["data"]["user"]
     username = user_data["username"]
-
 
     # pprint(data["data"]["oi_problems_status"])
     filename = f"{sanitize_filename(user_data['username'])}.json"
@@ -210,8 +212,9 @@ def index():
         avatar = data["data"].get("avatar", None)
 
     avatar_path = f"http://edu.doingcoding.com{avatar}"
-    print(f"avatar_path: {avatar_path}")
-
+    # print(f"avatar_path: {avatar_path}")
+    # print(f"user_data.get(): { user_data["admin_type"]}")
+    login_user_type = user_data["admin_type"]
     return render_template(
         "index.html",
         username=username,
@@ -222,7 +225,9 @@ def index():
         progress_data=progress_data,
         streak_data=streak_data,  # 👈 스트릭 추가
         avatar_path=avatar_path,  # 프로필 이미지
+        admin_type=login_user_type,  # ✅ 여기 추가
     )
+
 
 @app.route("/refresh_user/<username>")
 def refresh_user(username):
@@ -231,9 +236,12 @@ def refresh_user(username):
     encoded_username = quote(username)
 
     try:
-        res = session.get(f"http://edu.doingcoding.com/api/profile?username={encoded_username}")
+        res = session.get(
+            f"http://edu.doingcoding.com/api/profile?username={encoded_username}"
+        )
         data = res.json()
         user_data = data["data"]["user"]
+        print(f"user_data: {user_data}")
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
@@ -241,9 +249,15 @@ def refresh_user(username):
     filename = f"{sanitize_filename(user_data['username'])}.json"
     user_path = os.path.join(USER_DATA_DIR, filename)
     with open(user_path, "w", encoding="utf-8") as f:
-        json.dump(data["data"]["oi_problems_status"]["problems"], f, ensure_ascii=False, indent=2)
+        json.dump(
+            data["data"]["oi_problems_status"]["problems"],
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
 
     return jsonify({"success": True, "updated_at": datetime.now().isoformat()})
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -268,6 +282,8 @@ def login():
 
 @app.route("/user_overview/<username>")
 def user_overview(username):
+    global login_user_type
+
     print(f"user_overview: {username}")
     cookies = load_cookies(COOKIE_PATH)
     session = get_authenticated_session(cookies)
@@ -352,6 +368,8 @@ def user_overview(username):
     if avatar != data["data"].get("avatar", None):
         avatar = data["data"].get("avatar", None)
 
+    print(f"user_data[]: {user_data["admin_type"]}")
+
     avatar_path = f"http://edu.doingcoding.com{avatar}"
     print(f"avatar_path: {avatar_path}")
     return render_template(
@@ -364,11 +382,14 @@ def user_overview(username):
         progress_data=progress_data,
         streak_data=streak_data,
         avatar_path=avatar_path,  # 프로필 이미지
+        admin_type=login_user_type,  # ✅ 여기 추가
     )
 
 
 @app.route("/user/<username>/chapter/<chapter>")
 def chapter_detail(username, chapter):
+    global login_user_type
+
     print(f"username: {username}")
     safe_name = sanitize_filename(username)
     user_path = os.path.join(USER_DATA_DIR, f"{safe_name}.json")
@@ -401,11 +422,13 @@ def chapter_detail(username, chapter):
         chapter=chapter,
         chapter_name=chapter + " 단원",
         progress_data=matched["groups"],  # 👈 그룹 리스트만 넘김!
+        admin_type=login_user_type,  # ✅ 여기 추가
     )
 
 
 @app.route("/user/<username>/chapter/<chapter>/group/<group_id>")
 def group_detail(username, chapter, group_id):
+    global login_user_type
 
     safe_name = sanitize_filename(username)
 
@@ -427,6 +450,14 @@ def group_detail(username, chapter, group_id):
     except KeyError as e:
         return f"데이터 오류: {e}"
 
+    pprint(f"index.py\tgroup_id: {group_id}")
+
+    problem_chapter_id = result["problem_chapter_id"]  # url에 사용할 데이터
+    title_url = str(result["group_title"]).replace(".", "")
+    title_url = quote(title_url)
+    chapter_url = BASE_URL + f"/{problem_chapter_id}?tag=" + title_url
+    # url에는 .이 없어야함
+
     return render_template(
         "group_detail.html",
         username=username,
@@ -434,6 +465,8 @@ def group_detail(username, chapter, group_id):
         group_id=group_id,
         group_title=result["group_title"],
         problem_names=result["problem_names"],
+        admin_type=login_user_type,  # ✅ 여기 추가
+        chapter_url_html=chapter_url,
     )
 
 

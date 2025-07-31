@@ -182,6 +182,7 @@ def do_crawling():
         for pid, title, total, names in zip(qFormats, qTags, qRows, qProblemNames):
             # problem_info[pid] = {"title": title, "total": total, "problem_names": names}
             all_problems[chapter_name][pid] = {
+                "chapter_id": difficultys[i],
                 "title": title,
                 "total": total,
                 "problem_names": names,

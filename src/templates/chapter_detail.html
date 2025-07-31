@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <title>{{ username }}님의 {{ chapter_name }} 진도 현황</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/fab.css') }}"
+    />
+
     <style>
       body {
         font-family: sans-serif;
@@ -152,6 +157,30 @@
       </div>
       {% endfor %}
     </div>
+
+    <div
+      class="fab"
+      title="풀이 현황 최신화"
+      onclick="refreshUserProgress('{{ username }}')"
+    >
+      🔄
+    </div>
+
+    {% set admin_type = admin_type | default("Regular User") %} {% if admin_type
+    == 'Admin' %}
+    <!-- 추가될 숙제 모드 FAB -->
+    <div
+      class="fab"
+      title="숙제 출제 모드"
+      style="bottom: 100px"
+      onclick="toggleAssignMode()"
+    >
+      📚
+    </div>
+
+    {% endif %}
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
     <script>
       function getGradient(percent) {

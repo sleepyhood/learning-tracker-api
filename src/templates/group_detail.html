@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <title>{{ username }}님의 {{ group_title }} 문제별 풀이 현황</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/fab.css') }}"
+    />
+
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -25,6 +30,7 @@
         max-width: 800px;
         margin: 0 auto;
         padding: 0 20px;
+        z-index: 999;
       }
 
       .problem {
@@ -39,6 +45,7 @@
         font-weight: 600;
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         transition: background-color 0.3s ease;
+        z-index: 99;
       }
 
       .problem.solved {
@@ -70,6 +77,11 @@
         text-decoration: none;
         flex-grow: 1;
         margin-right: 12px;
+      }
+      .problem-link.disabled {
+        pointer-events: none;
+        cursor: not-allowed;
+        opacity: 0.6;
       }
 
       .copy-btn {
@@ -135,11 +147,76 @@
   </head>
   <body>
     <h2>{{ username }} 님의 {{ group_title }} 문제별 풀이 현황</h2>
+    <div
+      class="fab"
+      title="풀이 현황 최신화"
+      onclick="refreshUserProgress('{{ username }}')"
+    >
+      🔄
+    </div>
+    {% set admin_type = admin_type | default("Regular User") %} {% if admin_type
+    == 'Admin' %}
+    <!-- 추가될 숙제 모드 FAB -->
+
+    <!-- 숙제 출제 FAB -->
+    <!-- 숙제 출제 FAB -->
+    <div class="fab-group">
+      <div
+        id="fab-toggle"
+        class="fab"
+        title="숙제 출제 모드"
+        style="bottom: 100px"
+      >
+        📚
+      </div>
+
+      <!-- 숙제 모드일 때만 보이는 버튼 그룹 -->
+      <div id="assignModeControls" class="fab-options hidden">
+        <button class="assign-btn" onclick="selectUnsolved()">
+          안 푼 것만
+        </button>
+        <button class="assign-btn" onclick="toggleAll(true)">전체 선택</button>
+        <button class="assign-btn" onclick="toggleAll(false)">전체 해제</button>
+      </div>
+    </div>
+
+    <div
+      id="copyFab"
+      class="fab"
+      style="bottom: 180px; display: none"
+      onclick="copySelectedProblems()"
+    >
+      📋
+    </div>
+    {% endif %}
+
+    <div
+      id="groupInfo"
+      data-title="{{ group_title }}"
+      data-url="{{ chapter_url_html }}"
+      style="display: none"
+    ></div>
+
     <div class="problem-list">
       {% for problem in problem_names %}
       <div
         class="problem {% if problem.status == 'solved' %}solved {% elif problem.status == 'partial' %}partial {% elif problem.status == 'wrong' %}wrong {% else %}unsolved {% endif %}"
       >
+        <!-- ✅ 커스텀 체크박스: 숙제 출제 모드에서만 보이도록 -->
+        <label
+          class="custom-checkbox assign-checkbox-wrapper"
+          style="display: none"
+        >
+          <input
+            type="checkbox"
+            class="assign-checkbox"
+            data-pid="{{ problem.pid }}"
+            data-title="{{ problem.title }}"
+            data-url="http://edu.doingcoding.com/problem/{{ problem.pid }}"
+          />
+          <span class="checkmark"></span>
+        </label>
+
         <a
           href="http://edu.doingcoding.com/problem/{{ problem.pid }}"
           target="_blank"
@@ -157,6 +234,7 @@
       </div>
       {% endfor %}
     </div>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
     <script>
       function showToast(message) {
@@ -174,7 +252,7 @@
           setTimeout(() => document.body.removeChild(toast), 400);
         }, 2000);
       }
-
+      //
       document.querySelectorAll(".copy-btn").forEach((btn) => {
         btn.addEventListener("click", async () => {
           const title = btn.dataset.title;
