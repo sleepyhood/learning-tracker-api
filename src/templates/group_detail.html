@@ -270,6 +270,57 @@
           }
         });
       });
+
+      document.getElementById("fab-toggle").addEventListener("click", () => {
+        assignMode = !assignMode;
+
+        // 체크박스 토글
+        const checkboxes = document.querySelectorAll(
+          ".assign-checkbox-wrapper"
+        );
+        checkboxes.forEach((checkbox) => {
+          checkbox.style.display = assignMode ? "inline-flex" : "none";
+        });
+
+        // 복사 버튼 토글
+        const copyFab = document.getElementById("copyFab");
+        if (copyFab) {
+          copyFab.style.display = assignMode ? "block" : "none";
+        }
+
+        // 버튼 그룹 보이기/숨기기
+        const assignControls = document.getElementById("assignModeControls");
+        assignControls.classList.toggle("hidden");
+
+        // ✅ 링크 활성/비활성 처리
+        // 링크 비활성화용 CSS 토글
+        document.querySelectorAll(".problem-link").forEach((link) => {
+          link.classList.toggle("disabled", assignMode);
+        });
+      });
+      document.querySelectorAll(".assign-checkbox").forEach((checkbox) => {
+        checkbox.addEventListener("click", function (e) {
+          if (!lastChecked) {
+            lastChecked = this;
+            return;
+          }
+
+          if (e.shiftKey) {
+            const checkboxes = Array.from(
+              document.querySelectorAll(".assign-checkbox")
+            );
+            const start = checkboxes.indexOf(this);
+            const end = checkboxes.indexOf(lastChecked);
+            const [min, max] = [Math.min(start, end), Math.max(start, end)];
+
+            for (let i = min; i <= max; i++) {
+              checkboxes[i].checked = true;
+            }
+          }
+
+          lastChecked = this;
+        });
+      });
     </script>
   </body>
 </html>

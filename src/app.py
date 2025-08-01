@@ -125,7 +125,7 @@ def index():
     # 기본 유저명: 로그인한 유저명 or 입력받은 유저명
     username = ""
 
-    print(f"user_overview: {username}")
+    # print(f"user_overview: {username}")
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         if username:
@@ -229,11 +229,48 @@ def index():
     )
 
 
+# 유저 목록
+@app.route("/proxy/user_rank")
+def proxy_user_rank():
+    url = "http://edu.doingcoding.com/api/user_rank?offset=0&limit=100&rule=ACM"
+    all_users = []
+    offset = 0
+    limit = 100
+    # users_rank = session.get(
+    #     f"http://edu.doingcoding.com/api/user_rank?offset=0&limit=201&rule=ACM"
+    # )
+    # users_rank = users_rank.json()
+    # usernames = [entry["user"]["username"] for entry in users_rank["data"]["results"]]
+    while True:
+        res = requests.get(f"{url}&offset={offset}&limit={limit}")
+        data = res.json()
+        # results = data.get("data", {}).get("results", [])
+        if not data:
+            break
+        # 유저명만 추출
+        usernames = [entry["user"]["username"] for entry in data["data"]["results"]]
+        all_users.extend(usernames)
+        if len(usernames) < limit:
+            break
+        offset += limit
+
+    return jsonify({"usernames": all_users})
+
+
 @app.route("/refresh_user/<username>")
 def refresh_user(username):
     cookies = load_cookies(COOKIE_PATH)
     session = get_authenticated_session(cookies)
     encoded_username = quote(username)
+
+    # 유저 목록?
+    # users_rank = session.get(
+    #     f"http://edu.doingcoding.com/api/user_rank?offset=0&limit=201&rule=ACM"
+    # )
+    # users_rank = users_rank.json()
+    # usernames = [entry["user"]["username"] for entry in users_rank["data"]["results"]]
+
+    # print(f"users_rank: {usernames}")
 
     try:
         res = session.get(
@@ -241,7 +278,7 @@ def refresh_user(username):
         )
         data = res.json()
         user_data = data["data"]["user"]
-        print(f"user_data: {user_data}")
+        # print(f"user_data: {user_data}")
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
@@ -368,7 +405,7 @@ def user_overview(username):
     if avatar != data["data"].get("avatar", None):
         avatar = data["data"].get("avatar", None)
 
-    print(f"user_data[]: {user_data["admin_type"]}")
+    # print(f"user_data[]: {user_data["admin_type"]}")
 
     avatar_path = f"http://edu.doingcoding.com{avatar}"
     print(f"avatar_path: {avatar_path}")

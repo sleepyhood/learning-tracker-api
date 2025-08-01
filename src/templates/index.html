@@ -38,6 +38,7 @@
         display: flex;
         align-items: center;
         position: relative;
+        margin: 0 auto;
       }
 
       #username-input {
@@ -444,6 +445,8 @@
             placeholder="유저명"
             required
           />
+          <ul id="autocomplete-list" class="autocomplete-box"></ul>
+
           <button type="submit" id="search-btn">
             <img
               src="/static/search-icon.png"
@@ -537,7 +540,7 @@
     <div id="charts-container"></div>
 
     <footer style="padding: 20px; text-align: center">
-      <button id="update-btn" class="footer-btn" onclick="updateProblems()">
+      <button id="update-btn" class="footer-btn" onclick="update  s()">
         🔄 문제 목록 업데이트
       </button>
       <!-- ⏰ 마지막 업데이트 시각 표시 -->
@@ -757,12 +760,35 @@
         });
       });
       document.addEventListener("DOMContentLoaded", () => {
+        let usernameList = [];
+
+        fetch("/proxy/user_rank")
+          .then((res) => res.json())
+          .then((data) => {
+            usernameList = data.usernames; // ✅ 누락된 부분
+
+            console.log(usernameList); // ["설재경0216", "다른이름", ...]
+          })
+          .catch((err) => console.error("Error:", err));
+
         const searchBtn = document.getElementById("search-btn");
         const searchInput = document.getElementById("username-input");
         const searchForm = document.getElementById("search-form");
 
         const urlParams = new URLSearchParams(window.location.search);
         const usernameParam = urlParams.get("username");
+
+        // 유저명 자동안성
+        searchInput.addEventListener("input", () => {
+          const inputValue = searchInput.value.toLowerCase();
+
+          // usernameList에서 필터링
+          const matches = usernameList.filter((name) =>
+            name.toLowerCase().includes(inputValue)
+          );
+
+          showAutocomplete(matches, searchInput, searchForm); // 자동완성 박스 띄우기 (아래 함수 구현)
+        });
 
         // URL 파라미터로 자동 submit될 경우
         if (usernameParam) {
@@ -780,6 +806,22 @@
           }
         });
       });
+
+      function showAutocomplete(matches, searchInput, searchForm) {
+        const list = document.getElementById("autocomplete-list");
+        list.innerHTML = ""; // 초기화
+
+        matches.slice(0, 5).forEach((name) => {
+          const li = document.createElement("li");
+          li.textContent = name;
+          li.addEventListener("click", () => {
+            searchInput.value = name;
+            list.innerHTML = "";
+            searchForm.submit();
+          });
+          list.appendChild(li);
+        });
+      }
     </script>
   </body>
 </html>

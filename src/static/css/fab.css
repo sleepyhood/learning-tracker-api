@@ -127,3 +127,50 @@
     pointer-events: auto;
 
 }
+
+/* ③ 자동완성 박스 - 글래스모피즘 적용 */
+.autocomplete-box {
+  position: absolute;
+  top: 100%; /* input 바로 아래 */
+  left: 0;
+  width: 100%;
+  max-height: 250px;
+  overflow-y: auto;
+  margin: 4px 0 0 0;
+  padding: 8px 0;
+  list-style: none;
+
+  background: rgba(255, 255, 255, 0.12); /* 연한 흰색 반투명 */
+  backdrop-filter: blur(12px); /* 블러 효과 */
+  -webkit-backdrop-filter: blur(12px);
+
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+
+  color: #e0e0e0; /* 연한 회색 텍스트 */
+  text-align: left;
+
+  font-weight: 500;
+  font-size: 1rem;
+  user-select: none;
+}
+
+/* ④ 자동완성 항목 */
+.autocomplete-box li {
+  padding: 12px 20px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  color: #222; /* 대비 위해 어두운 글씨 */
+}
+
+/* 호버 시 */
+.autocomplete-box li:hover,
+.autocomplete-box li:focus {
+  background: rgba(255, 255, 255, 0.25);
+  outline: none;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
