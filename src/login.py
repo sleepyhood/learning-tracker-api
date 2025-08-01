@@ -12,8 +12,14 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from datetime import datetime
 
+from dotenv import load_dotenv
+
+load_dotenv()  # .env 파일에서 환경변수 불러오기
+
 COOKIE_PATH = "cookies.json"
-LOGIN_URL = "http://edu.doingcoding.com/api/profile"  # 인증 확인용 URL
+BASE_URL = os.environ.get("API_BASE_URL")
+
+LOGIN_URL = f"{BASE_URL}/api/profile"  # 인증 확인용 URL
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROBLEM_DIR = os.path.join(BASE_DIR, "problems_data")
@@ -46,7 +52,8 @@ def selenium_login(username, password):
     # driver_path = ChromeDriverManager().install()
     # driver = webdriver.Chrome(executable_path=driver_path, options=options)
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-    driver.get("http://edu.doingcoding.com/")
+    print(f"BASE_URL: {BASE_URL}")
+    driver.get(BASE_URL)
     time.sleep(2)
 
     driver.find_element(By.XPATH, '//*[@id="header"]/ul/div[2]/button[1]').click()
@@ -88,8 +95,9 @@ def get_authenticated_session(cookie_dict):
 
 
 def is_cookie_valid(session):
+    print(f"BASE_URL: {BASE_URL}")
     try:
-        res = session.get("http://edu.doingcoding.com/api/profile")
+        res = session.get(f"{BASE_URL}/api/profile")
         data = res.json()
         return res.status_code == 200 and data.get("data", {}).get("user") is not None
     except Exception as e:
@@ -106,6 +114,7 @@ def is_data_stale(file_path):
 
 
 def do_login(username=None, password=None):
+    print(f"do_login의 BASE_URL : {BASE_URL }")
     try:
         cookies = load_cookies(COOKIE_PATH)
 
@@ -133,11 +142,9 @@ def do_login(username=None, password=None):
 
         if is_data_stale(user_path):
             print("🔄 사용자 데이터 갱신 중...")
-            res = session.get(
-                f"http://edu.doingcoding.com/api/profile?username={username}"
-            )
+            res = session.get(f"{BASE_URL}/api/profile?username={username}")
             data = json.loads(res.text)
-
+            print()
             with open(user_path, "w", encoding="utf-8") as f:
                 json.dump(
                     data["data"]["oi_problems_status"]["problems"],

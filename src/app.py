@@ -38,7 +38,7 @@ USER_DATA_DIR = os.path.join(BASE_DIR, "users_data")
 
 COOKIE_PATH = "cookies.json"
 
-BASE_URL = "http://edu.doingcoding.com"
+BASE_URL = os.environ.get("API_BASE_URL")
 
 login_user_type = "Regular User"  # 유저 로그인 타입은 전역변수로
 
@@ -142,7 +142,8 @@ def index():
     session = get_authenticated_session(cookies)
 
     # 유저 정보 가져오기
-    res = session.get("http://edu.doingcoding.com/api/profile")  # ✅ 현재 유저 정보
+
+    res = session.get(f"{BASE_URL}/api/profile")  # ✅ 현재 유저 정보
     data = json.loads(res.text)
 
     user_data = data["data"]["user"]
@@ -173,7 +174,7 @@ def index():
 
     # 제출 기록
     records = session.get(
-        f"http://edu.doingcoding.com/api/submissions?myself=1&starred=0&result=&username={username}&page=1&limit=100&offset=0"
+        f"{BASE_URL}/api/submissions?myself=1&starred=0&result=&username={username}&page=1&limit=100&offset=0"
     )
     records = records.json()
 
@@ -211,7 +212,7 @@ def index():
     if avatar != data["data"].get("avatar", None):
         avatar = data["data"].get("avatar", None)
 
-    avatar_path = f"http://edu.doingcoding.com{avatar}"
+    avatar_path = f"{BASE_URL}{avatar}"
     # print(f"avatar_path: {avatar_path}")
     # print(f"user_data.get(): { user_data["admin_type"]}")
     login_user_type = user_data["admin_type"]
@@ -232,7 +233,7 @@ def index():
 # 유저 목록
 @app.route("/proxy/user_rank")
 def proxy_user_rank():
-    url = "http://edu.doingcoding.com/api/user_rank?offset=0&limit=100&rule=ACM"
+    url = f"{BASE_URL}/api/user_rank?offset=0&limit=100&rule=ACM"
     all_users = []
     offset = 0
     limit = 100
@@ -273,9 +274,7 @@ def refresh_user(username):
     # print(f"users_rank: {usernames}")
 
     try:
-        res = session.get(
-            f"http://edu.doingcoding.com/api/profile?username={encoded_username}"
-        )
+        res = session.get(f"{BASE_URL}/api/profile?username={encoded_username}")
         data = res.json()
         user_data = data["data"]["user"]
         # print(f"user_data: {user_data}")
@@ -311,7 +310,7 @@ def login():
             # return redirect(url_for("index"))
             return redirect("/")  # ✅ 이 리다이렉트가 핵심!
         else:
-            print("로그인 실패:", session_or_msg)
+            print("로그인 실패!:", session_or_msg)
             return render_template("login.html", error="로그인에 실패했습니다.")
 
     return render_template("login.html")
@@ -331,9 +330,7 @@ def user_overview(username):
 
         encoded_username = quote(username)
         print(f"encoded_username: {encoded_username}")
-        res = session.get(
-            f"http://edu.doingcoding.com/api/profile?username={encoded_username}"
-        )
+        res = session.get(f"{BASE_URL}/api/profile?username={encoded_username}")
         data = res.json()
         user_data = data["data"]["user"]
     except Exception as e:
@@ -365,7 +362,7 @@ def user_overview(username):
 
     # 제출 기록
     records = session.get(
-        f"http://edu.doingcoding.com/api/submissions?myself=0&starred=0&result=&username={user_data['username']}&page=1&limit=100&offset=0"
+        f"{BASE_URL}/api/submissions?myself=0&starred=0&result=&username={user_data['username']}&page=1&limit=100&offset=0"
     )
     records = records.json()
 
@@ -407,7 +404,7 @@ def user_overview(username):
 
     # print(f"user_data[]: {user_data["admin_type"]}")
 
-    avatar_path = f"http://edu.doingcoding.com{avatar}"
+    avatar_path = f"{BASE_URL}{avatar}"
     print(f"avatar_path: {avatar_path}")
     return render_template(
         "index.html",

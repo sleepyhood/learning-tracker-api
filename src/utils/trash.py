@@ -65,7 +65,7 @@
 
 # 문제 태그 불러오기
 # def fetch_problem_tags(session):
-#     url = "http://edu.doingcoding.com/api/problem/tags"
+#     url = ""
 #     response = session.get(url)
 #     response.raise_for_status()
 #     return response.json()["data"]
@@ -192,9 +192,6 @@ def extract_numeric_key(key):
         prefix, num = match.groups()
         return (prefix, int(num))
     return (key, 0)  # fallback
-
-
-API_BASE = "http://edu.doingcoding.com/api/problem?paging=true&offset=0&limit=100&tag="
 
 
 # def save_problems_by_tag(tag_list, save_dir="problems_by_tag"):

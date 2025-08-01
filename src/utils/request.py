@@ -8,8 +8,14 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 
+from dotenv import load_dotenv
+
+load_dotenv()  # .env 파일에서 환경변수 불러오기
+
 COOKIE_PATH = "cookies.json"
-LOGIN_URL = "http://edu.doingcoding.com/api/profile"  # 인증 필요한 URL
+
+BASE_URL = os.environ.get("API_BASE_URL")
+LOGIN_URL = f"{BASE_URL}/api/profile"  # 인증 필요한 URL
 
 
 def load_cookies(cookie_path=None):
@@ -32,7 +38,7 @@ def selenium_login():
     options.add_argument("--disable-dev-shm-usage")
 
     driver = webdriver.Chrome(ChromeDriverManager().install())
-    driver.get("http://edu.doingcoding.com/")
+    driver.get(f"{BASE_URL}")
     time.sleep(2)
 
     # 로그인 버튼 클릭
