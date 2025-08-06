@@ -132,7 +132,7 @@ def index():
 
             # 다른 유저 조회 요청 시
             return redirect(
-                url_for("user_overview", username=username)
+                url_for("user", username=username)
             )  # ✅ 이 부분에서 처리 위임
         else:
             return "유저명을 입력해주세요.", 400
@@ -316,8 +316,8 @@ def login():
     return render_template("login.html")
 
 
-@app.route("/user_overview/<username>")
-def user_overview(username):
+@app.route("/user/<username>")
+def user(username):
     global login_user_type
 
     print(f"user_overview: {username}")

@@ -4,6 +4,33 @@ let assignMode = false;
 let selectedProblems = []; // {title, link, chapter}
 let lastChecked = null;
 
+function goToParentPage() {
+  const currentURL = window.location.href;
+
+  // 레벨 3 ➝ 레벨 2
+  if (currentURL.includes("/group/")) {
+    const newURL = currentURL.split("/group/")[0];
+    window.location.href = newURL;
+    return;
+  }
+
+  // 레벨 2 ➝ 레벨 1 (/chapter/까지 포함된 경우)
+  if (currentURL.includes("/chapter/")) {
+    const newURL = currentURL.split("/chapter/")[0];
+    window.location.href = newURL;
+    return;
+  }
+
+  // 레벨 1 ➝ 루트 페이지 or 사용자 개요 페이지
+  if (currentURL.includes("/user_overview/")) {
+    window.location.href = "/"; // 홈으로 이동
+    return;
+  }
+
+  // 예외 처리: 그래도 못 걸러졌다면 홈으로
+  window.location.href = "/";
+}
+
 function toggleAll(checked) {
   document
     .querySelectorAll(".assign-checkbox")
@@ -21,13 +48,13 @@ function toggleAssignMode() {
   });
 
   // 복사 버튼도 같이 보여줌
-  copyFab.style.display = copyFab.style.display === "block" ? "none" : "block";
+  copyFab.style.display = copyFab.style.display === "flex" ? "none" : "flex";
 
   // 여기 추가: assignModeControls 토글
-  if (assignControls.style.display === "block") {
+  if (assignControls.style.display === "flex") {
     assignControls.style.display = "none";
   } else {
-    assignControls.style.display = "block";
+    assignControls.style.display = "flex";
   }
 }
 function copySelectedProblems() {

@@ -158,28 +158,25 @@
       {% endfor %}
     </div>
 
-    <div
-      class="fab"
-      title="풀이 현황 최신화"
-      onclick="refreshUserProgress('{{ username }}')"
-    >
-      🔄
+    <div class="fab-container">
+      <!-- 공통 FAB: 현황 새로고침 -->
+      <div
+        class="fab fab-refresh"
+        title="풀이 현황 최신화"
+        onclick="refreshUserProgress('{{ username }}')"
+      >
+        🔄
+      </div>
+
+      <!-- 이전 페이지로 이동 FAB -->
+      <div
+        class="fab fab-back"
+        title="이전 페이지로 이동"
+        onclick="goToParentPage()"
+      >
+        🔙
+      </div>
     </div>
-
-    {% set admin_type = admin_type | default("Regular User") %} {% if admin_type
-    == 'Admin' %}
-    <!-- 추가될 숙제 모드 FAB -->
-    <div
-      class="fab"
-      title="숙제 출제 모드"
-      style="bottom: 100px"
-      onclick="toggleAssignMode()"
-    >
-      📚
-    </div>
-
-    {% endif %}
-
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
     <script>

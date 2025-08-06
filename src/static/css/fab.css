@@ -8,42 +8,23 @@
     cursor: pointer;
     font-size: 1em;
       font-weight: 700;
-
+    
     cursor: pointer;
     background-color: rgba(255, 255, 255, 0.1);
     transition: background-color 0.2s;
     box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
+
+      white-space: nowrap; /* 줄바꿈 방지 */
+  display: inline-block; /* 필요시 */
   }
 
   .assign-btn:hover {
     background-color: rgba(255, 255, 255, 1);
   }
 
-.fab-group {
-  position: fixed; /* 원래 의도대로 고정 위치로 */
-  bottom: 20px;
-  right: 20px;
-  display: flex;
-  flex-direction: column; /* 세로 방향 정렬 */
-  align-items: flex-end; /* 오른쪽 정렬 */
-  gap: 10px;
-  z-index: 9999;
-}
-
-.fab-options {
-  position: fixed;
-  bottom: 60px;
-  right: 96px; /* 숙제모드 버튼에서 왼쪽으로 96px 떨어지게 */
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 
 .hidden {
-  display: none;
-}
+  display: none !important;}
 
   
 .custom-checkbox {
@@ -87,25 +68,54 @@
   display: block;
 }
 
-.fab {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        color: white;
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        font-size: 28px;
-        text-align: center;
-        line-height: 56px;
+.fab-container {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
   display: flex;
+  flex-direction: column;
+  gap: 15px;
+  z-index: 999;
+    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
+border-radius: 50px;
+padding: 20px 10px;
+}
+.fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  color: white;
+  font-size: 28px;
+  display: flex;
+    border-radius: 50%;
+
   justify-content: center;
   align-items: center;
   cursor: pointer;
-        box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
-        z-index: 999;
-      }
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
+}
 
+
+.fab-group {
+  /* position: fixed;  삭제 */
+    position: relative; /* 추가 */
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  /* z-index도 제거해도 무방 */
+}
+.fab-options {
+  position: absolute; /* fixed → absolute */
+  right: 70px; /* ← fab-toggle보다 왼쪽으로 */
+  bottom: 0;   /* fab-toggle과 수직 정렬 */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  white-space: nowrap;
+  z-index: 9999;
+}
 
 
 .toast {

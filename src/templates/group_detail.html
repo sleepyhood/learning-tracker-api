@@ -147,49 +147,73 @@
   </head>
   <body>
     <h2>{{ username }} 님의 {{ group_title }} 문제별 풀이 현황</h2>
-    <div
-      class="fab"
-      title="풀이 현황 최신화"
-      onclick="refreshUserProgress('{{ username }}')"
-    >
-      🔄
-    </div>
-    {% set admin_type = admin_type | default("Regular User") %} {% if admin_type
-    == 'Admin' %}
-    <!-- 추가될 숙제 모드 FAB -->
 
-    <!-- 숙제 출제 FAB -->
-    <!-- 숙제 출제 FAB -->
-    <div class="fab-group">
+    <div class="fab-container">
+      <div class="fab-group">
+        <!-- 관리자 전용 FAB: 숙제 모드 -->
+        {% if admin_type == 'Admin' %}
+
+        <div
+          id="copyFab"
+          class="fab fab-copy"
+          title="선택 복사"
+          style="display: none"
+          onclick="copySelectedProblems()"
+        >
+          📋
+        </div>
+
+        <div id="assignModeControls" class="hidden fab-options">
+          <button class="assign-btn" onclick="selectUnsolved()">
+            안 푼 것만
+          </button>
+          <button class="assign-btn" onclick="toggleAll(true)">
+            전체 선택
+          </button>
+          <button class="assign-btn" onclick="toggleAll(false)">
+            전체 해제
+          </button>
+        </div>
+
+        <div
+          id="fab-toggle"
+          class="fab fab-assign-toggle"
+          title="숙제 출제 모드"
+          onclick="toggleAssignMode()"
+        >
+          📚
+        </div>
+
+        {% endif %}
+      </div>
+      <!-- 공통 FAB: 진도/숙제 전환 -->
       <div
-        id="fab-toggle"
-        class="fab"
-        title="숙제 출제 모드"
-        style="bottom: 100px"
+        id="switchFab"
+        class="fab fab-switch"
+        title="진도/숙제 전환"
+        onclick="switchGroupType()"
       >
-        📚
+        🔁
       </div>
 
-      <!-- 숙제 모드일 때만 보이는 버튼 그룹 -->
-      <div id="assignModeControls" class="fab-options hidden">
-        <button class="assign-btn" onclick="selectUnsolved()">
-          안 푼 것만
-        </button>
-        <button class="assign-btn" onclick="toggleAll(true)">전체 선택</button>
-        <button class="assign-btn" onclick="toggleAll(false)">전체 해제</button>
+      <!-- 공통 FAB: 현황 새로고침 -->
+      <div
+        class="fab fab-refresh"
+        title="풀이 현황 최신화"
+        onclick="refreshUserProgress('{{ username }}')"
+      >
+        🔄
+      </div>
+
+      <!-- 이전 페이지로 이동 FAB -->
+      <div
+        class="fab fab-back"
+        title="이전 페이지로 이동"
+        onclick="goToParentPage()"
+      >
+        🔙
       </div>
     </div>
-
-    <div
-      id="copyFab"
-      class="fab"
-      style="bottom: 180px; display: none"
-      onclick="copySelectedProblems()"
-    >
-      📋
-    </div>
-    {% endif %}
-
     <div
       id="groupInfo"
       data-title="{{ group_title }}"
@@ -216,7 +240,6 @@
           />
           <span class="checkmark"></span>
         </label>
-
         <a
           href="http://edu.doingcoding.com/problem/{{ problem.pid }}"
           target="_blank"
@@ -224,6 +247,7 @@
         >
           {{ problem.title }}
         </a>
+
         <button
           class="copy-btn"
           data-title="{{ problem.title }}"
@@ -234,9 +258,36 @@
       </div>
       {% endfor %}
     </div>
+
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
     <script>
+      async function switchGroupType() {
+        const currentUrl = window.location.href;
+        const parts = currentUrl.split("/group/");
+        if (parts.length < 2) return;
+
+        const groupName = parts[1];
+        const hasPrefixS = groupName.startsWith("S");
+
+        // 접두사 변경
+        const newGroup = hasPrefixS ? groupName.slice(1) : "S" + groupName;
+        const newUrl = parts[0] + "/group/" + newGroup;
+
+        try {
+          // HEAD 요청으로 페이지 존재 여부만 확인
+          const res = await fetch(newUrl, { method: "HEAD" });
+
+          if (res.ok) {
+            window.location.href = newUrl;
+          } else {
+            showToast("해당 그룹 페이지가 존재하지 않습니다.");
+          }
+        } catch (err) {
+          showToast("페이지 확인 중 오류가 발생했습니다.");
+        }
+      }
+
       function showToast(message) {
         const toast = document.createElement("div");
         toast.className = "toast";
@@ -285,7 +336,7 @@
         // 복사 버튼 토글
         const copyFab = document.getElementById("copyFab");
         if (copyFab) {
-          copyFab.style.display = assignMode ? "block" : "none";
+          copyFab.style.display = assignMode ? "flex" : "none";
         }
 
         // 버튼 그룹 보이기/숨기기
