@@ -1,7 +1,7 @@
 {
     "1. 기초문법1": {
         "P101v01": {
-            "chapter_id": "p101",   
+            "chapter_id": "p101",
             "title": "Lv1 출력",
             "total": 20,
             "problem_names": {

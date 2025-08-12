@@ -13,9 +13,8 @@ import os
 
 load_dotenv()
 
-USERNAME = os.getenv("USERNAME")
-PASSWORD = os.getenv("PASSWORD")
-BASE_URL = os.getenv("BASE_URL")
+
+BASE_URL = os.getenv("API_BASE_URL")
 
 
 def get_text(btns, result):
@@ -160,27 +159,18 @@ difficultys_names = [
 ]
 
 
-def do_crawling():
+# utils/questions_crawler.py (혹은 현재 파일)
+def do_crawling(output_dir: str = None, filename: str = "all_problems.json") -> str:
     # 전체 문제를 담을 dict
     all_problems = {}
 
     for i in range(len(difficultys)):
-        qTags = []  # 문제 태그(제목)
-        qFormats = []  # 문제 ID 형식
-        qRows = []  # 문제 개수
-        qProblemNames = []  # 문제 제목들
-
         qTags, qRows, qFormats, qProblemNames = crawl_questions(i)
 
-        # 단원 이름을 키로 사용
         chapter_name = f"{i+1}. {difficultys_names[i]}"
         all_problems[chapter_name] = {}
 
-        # 이제 데이터를 저장하기
-        # id를 기준으로 하나의 딕셔너리 구성
-        problem_info = {}
         for pid, title, total, names in zip(qFormats, qTags, qRows, qProblemNames):
-            # problem_info[pid] = {"title": title, "total": total, "problem_names": names}
             all_problems[chapter_name][pid] = {
                 "chapter_id": difficultys[i],
                 "title": title,
@@ -188,14 +178,17 @@ def do_crawling():
                 "problem_names": names,
             }
 
-    # 현재 파일 기준 상위 폴더로 이동 후, problems_data 폴더 지정
-    output_dir = os.path.join(os.path.dirname(__file__), "..", "problems_data")
+    # 저장 경로 계산
+    if output_dir is None:
+        # utils/.. → src/problems_data
+        output_dir = os.path.join(os.path.dirname(__file__), "..", "problems_data")
     os.makedirs(output_dir, exist_ok=True)
-    # save_path = os.path.join(output_dir, f"{i+1}. {difficultys_names[i]}.json")
-    save_path = os.path.join(output_dir, "all_problems.json")
 
+    save_path = os.path.join(output_dir, filename)
     with open(save_path, "w", encoding="utf-8") as f:
         json.dump(all_problems, f, ensure_ascii=False, indent=4)
+
+    return os.path.abspath(save_path)
 
 
 if __name__ == "__main__":

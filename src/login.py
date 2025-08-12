@@ -16,12 +16,15 @@ from dotenv import load_dotenv
 
 load_dotenv()  # .env 파일에서 환경변수 불러오기
 
-COOKIE_PATH = "cookies.json"
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+COOKIE_PATH = os.path.join(BASE_DIR, "cookies.json")
+
 BASE_URL = os.environ.get("API_BASE_URL")
 
 LOGIN_URL = f"{BASE_URL}/api/profile"  # 인증 확인용 URL
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROBLEM_DIR = os.path.join(BASE_DIR, "problems_data")
 USER_DATA_DIR = os.path.join(BASE_DIR, "users_data")
 
