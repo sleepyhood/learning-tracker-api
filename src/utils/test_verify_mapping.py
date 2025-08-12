@@ -138,5 +138,5 @@ if __name__ == "__main__":
     # 인자: user_file은 필요시 지정하세요
     # 예) python -m utils.verify_mapping src/users_data/학생아이디.json
 
-    user_file = r"src/users_data/신승현1222.json"
+    user_file = r"src/users_data/osw1110.json"
     main(user_file=user_file)
