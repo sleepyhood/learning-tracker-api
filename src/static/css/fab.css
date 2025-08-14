@@ -1,3 +1,13 @@
+       body {
+        font-family: sans-serif;
+        background: linear-gradient(135deg, #e0e0e0, #ffffff);
+        margin: 0;
+        /* padding: 40px 20px; */
+        min-height: 100vh;
+        text-align: left; /* 전체 기본은 왼쪽 정렬 */
+      }
+
+ 
  .assign-btn {
     /* background-color: #2196f3; */
     color: #222;
@@ -184,3 +194,65 @@ padding: 20px 10px;
   outline: none;
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
 }
+
+
+
+  header {
+        position: relative;
+        top: 0;
+        left: 0;
+        box-sizing: border-box;
+        background: rgba(255, 255, 255, 0.5); /* 살짝 더 보기 좋게 */
+
+        z-index: 999;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px); /* 블러 효과 추가 (선택사항) */
+
+        justify-content: space-between; /* 제목과 검색폼 좌우 배치 */
+        align-items: center; /* 수직 중앙 정렬 */
+        display: flex; /* 이 부분 꼭 추가하세요! */
+        /*justify-content: flex-end;*/
+
+        padding: 0 25px; /* 좌우 여백 */
+      }
+      #search-form {
+        align-items: center;
+        margin: 8px;
+      }
+      .search-wrapper {
+        display: flex;
+        align-items: center;
+        position: relative;
+        margin: 0 auto;
+      }
+
+      #username-input {
+        padding: 8px 12px;
+        border-radius: 20px 20px 20px 20px;
+        border: 1px solid #ccc;
+        outline: none;
+        transition: width 0.3s ease;
+        width: 0;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      #username-input.show {
+        width: 180px;
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      #search-btn {
+        margin-right: 16px;
+        padding: 8px 12px; /* 세미콜론 꼭 붙이기! */
+
+        border-radius: 20px 20px 20px 20px;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      form {
+        margin: 0;
+        padding: 0;
+      }

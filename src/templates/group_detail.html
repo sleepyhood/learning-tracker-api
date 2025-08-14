@@ -9,15 +9,6 @@
     />
 
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        max-width: 900px;
-        margin: 40px auto;
-        background: linear-gradient(135deg, #e0e0e0, #ffffff);
-        padding: 0 20px;
-        color: #222;
-      }
-
       h2 {
         text-align: center;
         margin-bottom: 30px;
@@ -146,12 +137,39 @@
     </style>
   </head>
   <body>
+    <header>
+      <a href="/" style="text-decoration: none; color: inherit">
+        <h1>풀이현황</h1>
+      </a>
+      <form id="search-form" method="POST" action="/">
+        <div class="search-wrapper">
+          <input
+            type="text"
+            id="username-input"
+            name="username"
+            placeholder="유저명"
+            required
+          />
+          <ul id="autocomplete-list" class="autocomplete-box"></ul>
+
+          <button type="submit" id="search-btn">
+            <img
+              src="/static/search-icon.png"
+              alt="검색"
+              width="30"
+              height="auto"
+            />
+          </button>
+        </div>
+      </form>
+    </header>
+
     <h2>{{ username }} 님의 {{ group_title }} 문제별 풀이 현황</h2>
 
     <div class="fab-container">
       <div class="fab-group">
         <!-- 관리자 전용 FAB: 숙제 모드 -->
-        {% if admin_type == 'Admin' %}
+        {% if is_admin%}
 
         <div
           id="copyFab"

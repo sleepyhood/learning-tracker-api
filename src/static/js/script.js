@@ -207,3 +207,69 @@ function refreshUserProgress(username) {
       console.error("Fetch error:", err);
     });
 }
+
+// 헤더에 있는 기능
+
+document.addEventListener("DOMContentLoaded", () => {
+  let usernameList = [];
+
+  fetch("/proxy/user_rank")
+    .then((res) => res.json())
+    .then((data) => {
+      usernameList = data.usernames; // ✅ 누락된 부분
+
+      console.log(usernameList); // ["설재경0216", "다른이름", ...]
+    })
+    .catch((err) => console.error("Error:", err));
+
+  const searchBtn = document.getElementById("search-btn");
+  const searchInput = document.getElementById("username-input");
+  const searchForm = document.getElementById("search-form");
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const usernameParam = urlParams.get("username");
+
+  // 유저명 자동안성
+  searchInput.addEventListener("input", () => {
+    const inputValue = searchInput.value.toLowerCase();
+
+    // usernameList에서 필터링
+    const matches = usernameList.filter((name) =>
+      name.toLowerCase().includes(inputValue)
+    );
+
+    showAutocomplete(matches, searchInput, searchForm); // 자동완성 박스 띄우기 (아래 함수 구현)
+  });
+
+  // URL 파라미터로 자동 submit될 경우
+  if (usernameParam) {
+    searchInput.classList.add("show");
+    searchInput.value = decodeURIComponent(usernameParam);
+    searchForm.submit();
+  }
+
+  // 버튼 클릭 시 input 슬라이드 토글
+  searchBtn.addEventListener("click", (e) => {
+    if (!searchInput.classList.contains("show")) {
+      e.preventDefault(); // 처음 클릭 시 검색 막고 input만 보여주기
+      searchInput.classList.add("show");
+      searchInput.focus();
+    }
+  });
+});
+
+function showAutocomplete(matches, searchInput, searchForm) {
+  const list = document.getElementById("autocomplete-list");
+  list.innerHTML = ""; // 초기화
+
+  matches.slice(0, 5).forEach((name) => {
+    const li = document.createElement("li");
+    li.textContent = name;
+    li.addEventListener("click", () => {
+      searchInput.value = name;
+      list.innerHTML = "";
+      searchForm.submit();
+    });
+    list.appendChild(li);
+  });
+}

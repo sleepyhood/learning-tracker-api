@@ -1,118 +1,93 @@
+# streak_utils.py
 from datetime import datetime, timedelta
 from collections import defaultdict
-
-from zoneinfo import ZoneInfo  # Python 3.9 이상
-
-import json
-
-import os
+from zoneinfo import ZoneInfo
+import json, os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PARENT_DIR = os.path.dirname(BASE_DIR)  # 한 단계 위 폴더
-PROBLEM_DIR = os.path.join(PARENT_DIR, "problems_data/all_problems.json")
+PARENT_DIR = os.path.dirname(BASE_DIR)
+PROBLEM_FILE = os.path.join(PARENT_DIR, "problems_data/all_problems.json")
 
-with open(PROBLEM_DIR, "r", encoding="utf-8") as f:
-    data = json.load(f)
-
-# 문제 ID -> 제목 매핑 생성
-problem_id_to_title = {}
-
-for category, category_data in data.items():
-    for chapter_id, chapter_data in category_data.items():
-        for problem_id, title in chapter_data.get("problem_names", {}).items():
-            problem_id_to_title[problem_id] = title
+# 문제 제목 매핑 (lazy load)
+_problem_title_map = None
 
 
-def group_submissions_by_date(submissions):
-    date_problem_map = defaultdict(list)
+def _load_title_map():
+    global _problem_title_map
+    if _problem_title_map is None:
+        with open(PROBLEM_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        m = {}
+        for _, category_data in data.items():
+            for _, chapter_data in category_data.items():
+                for pid, title in chapter_data.get("problem_names", {}).items():
+                    m[str(pid)] = title
+        _problem_title_map = m
+    return _problem_title_map
+
+
+def generate_streak_data(submissions, days: int = 7):
+    """
+    submissions: /api/submissions 결과 리스트 (필터링 OK)
+    days: 보여줄 일수 (기본 7, 30/90 등)
+    """
     kst = ZoneInfo("Asia/Seoul")
+    title_map = _load_title_map()
+
+    # 문제별 '최초 정답'만 카운트 (기존 로직 유지)
+    first_corrects = dict()  # problem_id(str) -> info
 
     for rec in submissions:
-        # UTC 기준 datetime 생성
-        dt_utc = datetime.fromisoformat(rec["create_time"].replace("Z", "+00:00"))
-        # 한국 시간으로 변환
-        dt = dt_utc.astimezone(kst)
-        date_str = dt.strftime("%Y-%m-%d")
+        if rec.get("result") != 0:
+            continue
 
-        # 정확히 푼 문제만 포함
-        if rec["result"] == 0:
-            date_problem_map[date_str].append(
-                {
-                    "problem": rec["problem"],
-                    "score": rec["statistic_info"]["score"],
-                    "language": rec["language"],
-                    "time": dt.strftime("%H:%M:%S"),
-                }
-            )
-
-    return date_problem_map
-
-
-def generate_streak_data(submissions):
-    kst = ZoneInfo("Asia/Seoul")
-    first_corrects = dict()  # 문제 ID → 최초 정답 날짜
-
-    for rec in submissions:
-        if rec["result"] != 0:
-            continue  # 정답이 아닌 경우 무시
-
-        pid = rec["problem"]
-        server_sub_id = rec["id"]
+        pid = rec.get("problem")
+        if isinstance(pid, dict):
+            pid = pid.get("_id") or pid.get("id") or str(pid)
+        pid = str(pid)
 
         dt_utc = datetime.fromisoformat(rec["create_time"].replace("Z", "+00:00"))
         dt_kst = dt_utc.astimezone(kst)
         date_str = dt_kst.strftime("%Y-%m-%d")
 
-        # 문제 제목 찾아 넣기
-        title = problem_id_to_title.get(pid, pid)  # 없으면 ID를 대체 표시
-
-        # 이미 기록된 문제면 무시 (최초 정답만 고려)
         if pid not in first_corrects:
             first_corrects[pid] = {
                 "date": date_str,
                 "time": dt_kst.strftime("%H:%M:%S"),
-                "score": rec["statistic_info"].get("score", 0),
-                "language": rec["language"],
+                "score": rec.get("statistic_info", {}).get("score", 0),
+                "language": rec.get("language"),
                 "problem": pid,
-                "title": title,  # 제목 추가
-                "server_sub_id": server_sub_id,  # 여기 추가
+                "title": title_map.get(pid, pid),
+                "server_sub_id": rec.get("id"),
             }
 
-    # 날짜별로 문제 묶기
-    date_problem_map = defaultdict(list)
+    # 날짜별 묶기
+    by_date = defaultdict(list)
     for info in first_corrects.values():
-        date_problem_map[info["date"]].append(
+        by_date[info["date"]].append(
             {
                 "problem": info["problem"],
-                "title": info["title"],  # 제목 포함
+                "title": info["title"],
                 "score": info["score"],
                 "language": info["language"],
                 "time": info["time"],
-                "server_sub_id": info[
-                    "server_sub_id"
-                ],  # rec["id"] → info["server_sub_id"]로 수정
+                "server_sub_id": info["server_sub_id"],
             }
         )
 
-    # 마지막 7일간의 스트릭 데이터 생성
+    # 연속 days일 생성
     today = datetime.now(tz=kst).date()
     streak_data = []
-
-    for i in range(6, -1, -1):  # 최근 7일
+    for i in range(days - 1, -1, -1):
         day = today - timedelta(days=i)
-        day_str = day.strftime("%Y-%m-%d")
-        print_day = day.strftime("%m-%d")
-        weekday = ["월", "화", "수", "목", "금", "토", "일"][day.weekday()]
-        problems = date_problem_map.get(day_str, [])
-
+        day_key = day.strftime("%Y-%m-%d")
+        problems = by_date.get(day_key, [])
         streak_data.append(
             {
-                "date": print_day,
-                "weekday": weekday,
+                "date": day.strftime("%m-%d"),
+                "weekday": ["월", "화", "수", "목", "금", "토", "일"][day.weekday()],
                 "count": len(problems),
-                "details": problems,
-                "server_sub_id": rec["id"],  # 여기에 id 추가
+                "details": problems,  # 각 문제의 server_sub_id는 여기에 있음
             }
         )
-
     return streak_data

@@ -11,6 +11,7 @@ from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from datetime import datetime
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
@@ -32,10 +33,15 @@ USER_DATA_DIR = os.path.join(BASE_DIR, "users_data")
 MAX_DATA_AGE_SECONDS = 86400  # 하루(60*60*24)
 
 
-def load_cookies(cookie_path=None):
+def load_cookies(cookie_path=COOKIE_PATH):
+
+    print(f"[load_cookies] 받은 cookie_path: {cookie_path}")
+
     if os.path.exists(cookie_path):
         with open(cookie_path, "r") as f:
             return json.load(f)
+
+    print(f"login.py: 쿠키 못 찾음")
     return None
 
 
@@ -87,22 +93,34 @@ def selenium_login(username, password):
 
 
 def get_authenticated_session(cookie_dict):
-    session = requests.Session()
+    if not cookie_dict:
+        print("cookie_dict가 존재하지 않습니다.")
+        return None
 
-    try:
-        for name, value in cookie_dict.items():
-            session.cookies.set(name, value)
-    except Exception as e:
-        print(f"cookie_dict가 존재하지 않습니다.")
+    session = requests.Session()
+    domain = urlparse(BASE_URL).hostname
+    # 저장 시 넣었던 timestamp는 무시
+    for name, value in cookie_dict.items():
+        if name == "timestamp":
+            continue
+        # 도메인/경로 함께 지정 (requests가 올바르게 전송하도록)
+        session.cookies.set(name, value, domain=domain, path="/")
     return session
 
 
 def is_cookie_valid(session):
     print(f"BASE_URL: {BASE_URL}")
     try:
-        res = session.get(f"{BASE_URL}/api/profile")
-        data = res.json()
-        return res.status_code == 200 and data.get("data", {}).get("user") is not None
+        res = session.get(f"{BASE_URL}/api/profile", timeout=10)
+        print(f"is_cookie_valid의 response: {res.status_code}")
+        if res.status_code != 200:
+            return False
+        try:
+            data = res.json()
+        except ValueError:
+            return False
+
+        return data.get("data", {}).get("user") is not None
     except Exception as e:
         print("❌ 쿠키 유효성 검사 실패:", e)
         return False
@@ -124,6 +142,7 @@ def do_login(username=None, password=None):
         if cookies:
             print("✅ 저장된 쿠키 로드")
             session = get_authenticated_session(cookies)
+            print(f"session: {session}")
             if not is_cookie_valid(session):
                 print("❌ 쿠키 만료됨. 재로그인 필요")
                 cookies = selenium_login(username, password)

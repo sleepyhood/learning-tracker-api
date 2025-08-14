@@ -12,66 +12,6 @@
     />
 
     <style>
-      header {
-        position: relative;
-        top: 0;
-        left: 0;
-        box-sizing: border-box;
-        background: rgba(255, 255, 255, 0.5); /* 살짝 더 보기 좋게 */
-
-        z-index: 999;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        backdrop-filter: blur(10px); /* 블러 효과 추가 (선택사항) */
-
-        justify-content: space-between; /* 제목과 검색폼 좌우 배치 */
-        align-items: center; /* 수직 중앙 정렬 */
-        display: flex; /* 이 부분 꼭 추가하세요! */
-        /*justify-content: flex-end;*/
-
-        padding: 0 25px; /* 좌우 여백 */
-      }
-      #search-form {
-        align-items: center;
-        margin: 8px;
-      }
-      .search-wrapper {
-        display: flex;
-        align-items: center;
-        position: relative;
-        margin: 0 auto;
-      }
-
-      #username-input {
-        padding: 8px 12px;
-        border-radius: 20px 20px 20px 20px;
-        border: 1px solid #ccc;
-        outline: none;
-        transition: width 0.3s ease;
-        width: 0;
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      #username-input.show {
-        width: 180px;
-        opacity: 1;
-        pointer-events: auto;
-      }
-
-      #search-btn {
-        margin-right: 16px;
-        padding: 8px 12px; /* 세미콜론 꼭 붙이기! */
-
-        border-radius: 20px 20px 20px 20px;
-        color: white;
-        border: none;
-        cursor: pointer;
-      }
-      form {
-        margin: 0;
-        padding: 0;
-      }
-
       body {
         font-family: sans-serif;
         background: linear-gradient(135deg, #e0e0e0, #ffffff);
@@ -408,12 +348,77 @@
         background: rgba(255, 255, 255, 0.4);
         transform: scale(1.05);
       }
+
+      .chip {
+        display: inline-block;
+        padding: 2px 8px;
+        margin-left: 6px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid #e0e0e0;
+        background: #f8f8f8;
+        color: #444;
+      }
+      .chip-role.admin {
+        background: #eef6ff;
+        border-color: #bbd8ff;
+        color: #1f5fbf;
+      }
+      .chip-role.user {
+        background: #f3f3f3;
+      }
+      .chip-lang {
+        background: #f0fff4;
+        border-color: #bde5c8;
+        color: #1a7f37;
+      }
+
+      .streak-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 12px 0 8px;
+      }
+      .streak-controls {
+        display: flex;
+        gap: 8px;
+      }
+
+      .streak-btn {
+        color: #777;
+
+        border: none;
+        padding: 10px 12px;
+        margin-right: 6px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 700;
+
+        cursor: pointer;
+        transition: background-color 0.2s;
+        box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
+
+        white-space: nowrap; /* 줄바꿈 방지 */
+        display: inline-block; /* 필요시 */
+      }
+      .streak-btn.active {
+        color: #222;
+
+        border: 5px solid rgba(0, 128, 0, 0.4);
+        box-shadow: 0px 3px 6px rgba(0, 128, 0, 0.5);
+      }
     </style>
   </head>
 
   <body>
     <div id="overlay"></div>
-
+    <div
+      id="submission-popover"
+      style="display: none; position: absolute; z-index: 1001"
+      class="details"
+    ></div>
     <header>
       <a href="/" style="text-decoration: none; color: inherit">
         <h1>풀이현황</h1>
@@ -468,7 +473,22 @@
         height="100"
         style="border-radius: 50%; margin-bottom: 12px"
       />
-      <h2 style="margin: 8px 0 4px">{{ username }}</h2>
+      <h2 style="margin: 8px 0 4px">
+        {{ username }}
+        <br />
+        <span class="chip chip-role {{ 'admin' if is_admin else 'user' }}"
+          >{{ role_label }}</span
+        >
+        {% if primary_lang %}
+        <span
+          class="chip chip-lang"
+          title="최근 상위 언어:
+      {% for l,c in primary_lang_top3 %}{{l}} {{c}}회{% if not loop.last %}, {% endif %}{% endfor %}"
+        >
+          주 사용 언어: {{ primary_lang }}
+        </span>
+        {% endif %}
+      </h2>
       <p style="margin: 2px 0; font-weight: 600">
         마지막 로그인: {{ last_login }}
       </p>
@@ -503,15 +523,23 @@
       </div>
     </div>
 
+    <div class="streak-header">
+      <div class="streak-title"></div>
+      <div class="streak-controls">
+        <button class="streak-btn" data-days="7">7일</button>
+        <button class="streak-btn" data-days="30">30일</button>
+        <button class="streak-btn" data-days="90">90일</button>
+      </div>
+    </div>
+
     <div class="streak-container">
-      <div class="streak-grid">
+      <div id="streak-grid" class="streak-grid">
         {% for day in streak_data %}
         <div class="streak-cell" data-count="{{ day.count }}">
           <div class="date-info">
             <div class="weekday">{{ day.weekday }}</div>
             <div class="date">{{ day.date }}</div>
           </div>
-
           <span class="count">{{ day.count }}</span>
 
           {% if day.details %}
@@ -523,9 +551,8 @@
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {{ prob.title }}
-              </a>
-              <br />
+                {{ prob.title }} </a
+              ><br />
               ({{ prob.language }}, {{ prob.score }}점, {{ prob.time }})
             </div>
             {% endfor %}
@@ -602,49 +629,145 @@
             btn.innerHTML = originalText;
           });
       }
-      document.querySelectorAll(".streak-cell").forEach((cell) => {
-        const originalDetail = cell.querySelector(".details");
 
-        cell.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (!originalDetail) return;
+      // 초기 active 표시
+      const initialDays = Number("{{ streak_days|default(7) }}");
+      document.querySelectorAll(".streak-btn").forEach((b) => {
+        if (Number(b.dataset.days) === initialDays) b.classList.add("active");
+      });
+      const overlayEl = document.getElementById("overlay"); // ← 이름 통일!
+      const streakGrid = document.getElementById("streak-grid");
+      const popover = document.getElementById("submission-popover");
 
-          const isVisible = originalDetail.style.display === "block";
+      // 헬퍼: 팝오버에 HTML 주입
+      function renderDetailsHTML(list) {
+        if (!list || !list.length)
+          return "<div style='padding:8px'>제출 내역 없음</div>";
+        return list
+          .map(
+            (p) => `
+      <div class="prob-item" style="padding:6px 10px; white-space:nowrap">
+        <a href="http://edu.doingcoding.com/status/${p.server_sub_id}" target="_blank" rel="noopener noreferrer">
+          ${p.title}
+        </a><br/>
+        (${p.language}, ${p.score}점, ${p.time})
+      </div>
+    `
+          )
+          .join("");
+      }
 
-          // 모든 팝업 숨기기
+      // 이벤트 위임: 그리드 어디를 클릭하든 가장 가까운 .streak-cell 찾기
+      streakGrid.addEventListener("click", (e) => {
+        const cell = e.target.closest(".streak-cell");
+        if (!cell) return;
+
+        // data-details에 JSON 문자열로 심어두는 방법 or window.__streakData 캐시에 접근
+        // 여기서는 DOM 안의 숨겨진 .details를 읽되, '옮기지 않고' innerHTML만 복사
+        const detailsEl = cell.querySelector(".details");
+        if (!detailsEl) return;
+
+        // 토글 처리
+        const currentlyVisible = popover.style.display === "block";
+        if (currentlyVisible && popover.__ownerCell === cell) {
+          popover.style.display = "none";
+          overlayEl.style.display = "none";
+          popover.__ownerCell = null;
+          return;
+        }
+
+        // 내용 갱신
+        popover.innerHTML = detailsEl.innerHTML;
+
+        // 위치 계산 (셀 아래 중앙)
+        const rect = cell.getBoundingClientRect();
+        popover.style.top = `${
+          rect.top + window.scrollY + cell.offsetHeight
+        }px`;
+        popover.style.left = `${rect.left + rect.width / 2}px`;
+        popover.style.transform = "translateX(-50%)";
+
+        popover.style.display = "block";
+        overlayEl.style.zIndex = "1000";
+        overlayEl.style.display = "block";
+        popover.__ownerCell = cell; // 현재 주인 셀 저장
+      });
+
+      // 배경 클릭 시 닫기
+      overlayEl.addEventListener("click", () => {
+        popover.style.display = "none";
+        overlayEl.style.display = "none";
+        popover.__ownerCell = null;
+      });
+
+      function renderStreakGrid(streakData) {
+        streakGrid.innerHTML = streakData
+          .map(
+            (day) => `
+    <div class="streak-cell" data-count="${day.count}">
+      <div class="date-info">
+        <div class="weekday">${day.weekday}</div>
+        <div class="date">${day.date}</div>
+      </div>
+      <span class="count">${day.count}</span>
+      ${
+        day.details && day.details.length
+          ? `
+        <div class="details" style="display:none">
+          ${day.details
+            .map(
+              (prob) => `
+            <div class="prob-item">
+              <a href="http://edu.doingcoding.com/status/${prob.server_sub_id}" target="_blank" rel="noopener noreferrer">
+                ${prob.title}
+              </a><br/>
+              (${prob.language}, ${prob.score}점, ${prob.time})
+            </div>
+          `
+            )
+            .join("")}
+        </div>
+      `
+          : ""
+      }
+    </div>
+  `
+          )
+          .join("");
+      }
+
+      // 기간 버튼 클릭 → AJAX
+      document.querySelectorAll(".streak-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
           document
-            .querySelectorAll(".details")
-            .forEach((d) => (d.style.display = "none"));
-          overlay.style.display = "none";
-
-          if (!isVisible) {
-            // 팝업 위치 조정 전 body로 이동
-            document.body.appendChild(originalDetail);
-            const rect = cell.getBoundingClientRect();
-            originalDetail.style.position = "absolute";
-            originalDetail.style.top = `${
-              rect.top + window.scrollY + cell.offsetHeight
-            }px`;
-            originalDetail.style.left = `${rect.left + rect.width / 2}px`;
-            originalDetail.style.transform = "translateX(-50%)";
-
-            // z-index 설정
-            originalDetail.style.zIndex = "1001";
-            overlay.style.zIndex = "1000";
-
-            // 보이기
-            originalDetail.style.display = "block";
-            overlay.style.display = "block";
+            .querySelectorAll(".streak-btn")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const days = btn.dataset.days;
+          try {
+            const res = await fetch(
+              `/api/streak?view=${viewMode}&username=${encodeURIComponent(
+                viewUsername
+              )}&days=${days}`
+            );
+            const data = await res.json();
+            if (data.streak_data) {
+              renderStreakGrid(data.streak_data);
+            } else {
+              alert("스트릭 데이터를 불러오지 못했습니다.");
+            }
+          } catch (e) {
+            alert("네트워크 오류가 발생했습니다.");
           }
         });
       });
 
       // 배경 클릭 시 팝업 닫기
-      overlay.addEventListener("click", () => {
+      overlayEl.addEventListener("click", () => {
         document
           .querySelectorAll(".details")
           .forEach((d) => (d.style.display = "none"));
-        overlay.style.display = "none";
+        overlayEl.style.display = "none";
       });
 
       // 중앙 텍스트용 Chart.js 커스텀 플러그인
@@ -760,69 +883,6 @@
           plugins: [centerTextPlugin(`${item.percent}%`)],
         });
       });
-      document.addEventListener("DOMContentLoaded", () => {
-        let usernameList = [];
-
-        fetch("/proxy/user_rank")
-          .then((res) => res.json())
-          .then((data) => {
-            usernameList = data.usernames; // ✅ 누락된 부분
-
-            console.log(usernameList); // ["설재경0216", "다른이름", ...]
-          })
-          .catch((err) => console.error("Error:", err));
-
-        const searchBtn = document.getElementById("search-btn");
-        const searchInput = document.getElementById("username-input");
-        const searchForm = document.getElementById("search-form");
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const usernameParam = urlParams.get("username");
-
-        // 유저명 자동안성
-        searchInput.addEventListener("input", () => {
-          const inputValue = searchInput.value.toLowerCase();
-
-          // usernameList에서 필터링
-          const matches = usernameList.filter((name) =>
-            name.toLowerCase().includes(inputValue)
-          );
-
-          showAutocomplete(matches, searchInput, searchForm); // 자동완성 박스 띄우기 (아래 함수 구현)
-        });
-
-        // URL 파라미터로 자동 submit될 경우
-        if (usernameParam) {
-          searchInput.classList.add("show");
-          searchInput.value = decodeURIComponent(usernameParam);
-          searchForm.submit();
-        }
-
-        // 버튼 클릭 시 input 슬라이드 토글
-        searchBtn.addEventListener("click", (e) => {
-          if (!searchInput.classList.contains("show")) {
-            e.preventDefault(); // 처음 클릭 시 검색 막고 input만 보여주기
-            searchInput.classList.add("show");
-            searchInput.focus();
-          }
-        });
-      });
-
-      function showAutocomplete(matches, searchInput, searchForm) {
-        const list = document.getElementById("autocomplete-list");
-        list.innerHTML = ""; // 초기화
-
-        matches.slice(0, 5).forEach((name) => {
-          const li = document.createElement("li");
-          li.textContent = name;
-          li.addEventListener("click", () => {
-            searchInput.value = name;
-            list.innerHTML = "";
-            searchForm.submit();
-          });
-          list.appendChild(li);
-        });
-      }
     </script>
   </body>
 </html>
