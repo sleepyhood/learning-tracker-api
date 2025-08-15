@@ -1,0 +1,347 @@
+
+---
+
+# 1) 현재 아키텍처 개요 (요약)
+
+## 프런트/웹
+
+* **Flask + Jinja 템플릿**: `templates/index.html`, `chapter_detail.html`, `group_detail.html`, `base.html`
+* **Chart.js 시각화**: 진행도 카드/차트, 그룹·챕터별 상세 뷰
+* **자바스크립트**: `static/js/script.js`에 “숙제 모드(assignMode)” 토대가 존재 (UI는 준비, 백엔드 미구현)
+
+## 백엔드(Flask)
+
+* 엔드포인트: 루트 대시보드, 챕터/그룹 상세, **문제 목록 강제 업데이트**(`/update_problems`) 등
+* **세션/인증**: `login.py`, `utils/request.py`
+
+  * Selenium으로 DoingCoding 로그인 → `cookies.json` 저장 → `requests.Session`에 주입하여 API 호출
+* **환경설정**: `config.py`
+
+  * 경로 상수(`PROBLEM_DIR`, `USER_DATA_DIR` 등), `API_BASE_URL`을 `.env`에서 읽음
+* **도메인/유틸**:
+
+  * `problems_data/all_problems.json` : 레거시 문제코드(예: `P101v0101`)를 **챕터/그룹**으로 묶은 내부 카탈로그
+  * `utils/questions_api.py` : DoingCoding 문제 메타 API 페치(페이징/슬립 포함)
+  * `utils/questions_crawler.py` : 보조 수집(셀레니움)
+  * `utils/legacy_map.py` : 서버 문제ID ↔ 레거시 코드 양방향 매핑 파일 생성
+  * `utils/summarizer.py` : 사용자 풀이/현황 집계
+  * `utils/streak_utils.py` : 최근 N일 활동(Seoul TZ) 히트맵 데이터 생성
+  * `utils/utils_common.py` : 파일 캐시, 사용자 데이터 스냅샷 저장 등
+
+## 데이터 저장(As‑Is)
+
+* **파일 캐시 중심**:
+
+  * 문제 메타: `problems_data/*`
+  * 사용자별 풀이 스냅샷: `users_data/*.json`
+  * 매핑파일: `server_legacy_map*.json`, `server_problems.json` 등
+* 장점: 빠른 프로토타이핑 / 디버그 용이
+* 한계: 동시성/무결성/검색성 약함, 집계·리포트 자동화에 제약, 복구/백업 번거로움
+
+---
+
+# 2) 핵심 보완 포인트 (실행 난이도 낮은 순)
+
+1. **구조화(모듈 경계 명확화)**
+
+   * Flask Blueprints로 레이어 나누기: `auth`, `sync`, `progress`, `assignments`, `admin`
+   * `adapters/doingcoding` 패키지로 **API 클라이언트**와 **크롤러(fallback)** 인터페이스 통합
+   * `services/` 계층을 두어 비즈니스 로직(요약/집계/숙제)을 라우터에서 분리
+
+2. **에러/재시도/레이트리밋**
+
+   * `requests` 호출 래퍼에 **지수 백오프 + 최대 재시도 + 슬립** 표준화
+   * API/크롤링 실패 시 **폴백** 전략(최근 캐시 사용 + 사용자에게 토스트/배지 노출)
+
+3. **로그/관측성**
+
+   * 표준 로거(구조화 JSON) + 요청/응답 핵심 필드(경로, status\_code, ms) 기록
+   * 사용자 동기화 잡의 시작/성공/실패 카운터(메트릭) 집계
+
+4. **보안/개인정보**
+
+   * `users_data`의 파일명에 **이름 노출 금지**(내부 user\_id로 교체)
+   * `cookies.json`은 로컬이라도 **암호화 저장**(예: Fernet) + 만료/무효 감지 후 재인증 루틴
+
+5. **동기화 자동화**
+
+   * 지금 README TODO에 있는 `cron/CLI`를 실제로 도입:
+
+     * `sync users --days 30 --class <id>` 형태 CLI → 내부에서 큐에 작업 enqueue
+     * 실패한 사용자만 재시도하는 **데드레터 큐** 개념 적용
+
+6. **숙제(과제) 백엔드 구현**
+
+   * 프런트 `assignMode`가 고른 문제들을 서버에 저장하고, 반/개인에 배포 → 진행률/지각 관리
+   * 자동 매핑: 레거시 코드/제목으로 선택된 문제를 서버 문제ID에 매핑해 저장
+
+---
+
+# 3) DB 설계 방향 (PostgreSQL 권장)
+
+> 목표: 파일 캐시를 DB로 대체/보완해 **영속성, 쿼리 성능, 통계 자동화**를 확보.
+> 프레임워크는 **SQLAlchemy + Alembic**(Flask와 궁합 좋음) 기준으로 설명할게.
+
+## 핵심 테이블(요약)
+
+### 3.1 카탈로그/문제 메타
+
+* **chapters**(id, title, order\_index)
+
+* **groups**(id, chapter\_id FK, title, order\_index, chapter\_url\_slug)
+
+* **problems**(id PK, site, server\_problem\_id, legacy\_code, title, difficulty, tags\[], chapter\_id, group\_id, order\_in\_group)
+
+  * `UNIQUE(site, server_problem_id)`
+  * `UNIQUE(site, legacy_code)` (레거시 코드가 실제로 유일하다면)
+  * 인덱스: `(chapter_id, group_id, order_in_group)`, `GIN(tags)`
+
+* **problem\_aliases**(problem\_id FK, alias\_type, alias\_value)
+
+  * 예: title 변형, 과거 코드 등 추가 매핑 수용
+
+### 3.2 계정/수업
+
+* **users**(id, email, name, role\[admin/instructor/student], created\_at)
+* **classes**(id, title, start\_date, end\_date)
+* **enrollments**(class\_id, user\_id, role\[student/assistant]) PK 복합
+* **external\_accounts**(user\_id, site, handle, **enc\_cookies**, last\_synced\_at, status)
+
+  * `UNIQUE(user_id, site)`
+
+### 3.3 진행/제출
+
+* **submissions**(id, user\_id, problem\_id, verdict\[AC/WA/TLE…], language, runtime\_ms, memory\_kb, submitted\_at)
+
+  * `UNIQUE(user_id, problem_id, submitted_at)`
+
+* **user\_problem\_status**(user\_id, problem\_id, latest\_verdict, first\_solved\_at, last\_attempt\_at, attempt\_count)
+
+  * 최근 상태를 빠르게 조회하기 위한 **요약 테이블**(트리거/배치로 유지)
+
+* **progress\_snapshots**(user\_id, date, solved\_count, attempt\_count, last\_synced\_at)
+
+  * streak/캘린더용 일간 스냅샷
+
+### 3.4 숙제(과제)
+
+* **assignments**(id, class\_id FK, title, opens\_at, due\_at, weight, is\_published, allow\_late)
+* **assignment\_problems**(assignment\_id, problem\_id) PK 복합
+* **assignment\_submissions**(id, assignment\_id, student\_id, problem\_id, submission\_id NULLABLE, status\[pending/passed/failed/late], score, feedback, created\_at)
+
+  * `UNIQUE(assignment_id, student_id, problem_id)`
+
+### 3.5 운영/감사
+
+* **sync\_jobs**(id, scope\[user/class], scope\_id, started\_at, finished\_at, status, error)
+* **audit\_logs**(id, actor\_id, action, target, payload, created\_at)
+
+> **머티리얼라이즈드 뷰 추천**
+>
+> * `mv_user_weekly_progress(user_id, week_start, solved, attempts)`
+> * `mv_assignment_stats(assignment_id, submitted, passed, late_rate, avg_score)`
+
+## 예시 DDL (요지)
+
+```sql
+CREATE TABLE users (
+  id BIGSERIAL PRIMARY KEY,
+  email TEXT UNIQUE,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin','instructor','student')),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE classes (
+  id BIGSERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  start_date DATE,
+  end_date DATE
+);
+
+CREATE TABLE enrollments (
+  class_id BIGINT REFERENCES classes(id),
+  user_id BIGINT REFERENCES users(id),
+  role TEXT DEFAULT 'student',
+  PRIMARY KEY (class_id, user_id)
+);
+
+CREATE TABLE problems (
+  id BIGSERIAL PRIMARY KEY,
+  site TEXT NOT NULL,                -- 'doingcoding'
+  server_problem_id TEXT,            -- 서버 고유 ID
+  legacy_code TEXT,                  -- P101v0101 등
+  chapter_id BIGINT,
+  group_id BIGINT,
+  title TEXT,
+  difficulty INT,
+  tags TEXT[],
+  order_in_group INT,
+  UNIQUE (site, server_problem_id),
+  UNIQUE (site, legacy_code)
+);
+
+CREATE TABLE submissions (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT REFERENCES users(id),
+  problem_id BIGINT REFERENCES problems(id),
+  verdict TEXT,
+  language TEXT,
+  runtime_ms INT,
+  memory_kb INT,
+  submitted_at TIMESTAMPTZ,
+  UNIQUE (user_id, problem_id, submitted_at)
+);
+
+CREATE TABLE assignments (
+  id BIGSERIAL PRIMARY KEY,
+  class_id BIGINT REFERENCES classes(id),
+  title TEXT NOT NULL,
+  opens_at TIMESTAMPTZ,
+  due_at TIMESTAMPTZ,
+  weight INT DEFAULT 1,
+  is_published BOOLEAN DEFAULT FALSE,
+  allow_late BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE assignment_problems (
+  assignment_id BIGINT REFERENCES assignments(id),
+  problem_id BIGINT REFERENCES problems(id),
+  PRIMARY KEY (assignment_id, problem_id)
+);
+
+CREATE TABLE assignment_submissions (
+  id BIGSERIAL PRIMARY KEY,
+  assignment_id BIGINT REFERENCES assignments(id),
+  student_id BIGINT REFERENCES users(id),
+  problem_id BIGINT REFERENCES problems(id),
+  submission_id BIGINT REFERENCES submissions(id),
+  status TEXT,     -- pending/passed/failed/late
+  score INT DEFAULT 0,
+  feedback TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (assignment_id, student_id, problem_id)
+);
+```
+
+> **인덱스 팁**
+>
+> * `submissions(user_id, problem_id, submitted_at)`
+> * `problems(chapter_id, group_id, order_in_group)`
+> * `assignment_submissions(assignment_id, status)`
+> * `GIN(problems.tags)` (태그 검색)
+
+---
+
+# 4) 동기화/가공 파이프라인 (파일 → DB 이전 전략)
+
+## 4.1 문제 메타(카탈로그) 이행
+
+1. `server_problems.json` / API로 **서버 문제목록** 수집
+2. `all_problems.json`(레거시 카탈로그)와 `server_legacy_map.json`을 이용해
+
+   * `problems.legacy_code`, `problems.server_problem_id`를 **연결**
+   * `chapters`, `groups`를 생성/업서트
+3. **검증 스크립트**(`utils/test_verify_mapping.py` 기반):
+
+   * 미매핑/다중매핑 레포트 출력 → 수동 보정
+
+## 4.2 사용자 진행/제출 이행
+
+1. 현 `users_data/*.json`에서 사용자별 “문제별 최신 상태/제출 이력” 파싱
+2. `submissions`에 이벤트 단위(가능한 범위)로 적재, 없으면 `user_problem_status`만 집계
+3. 적재 후 `mv_user_weekly_progress` 등을 리프레시
+
+## 4.3 잡/스케줄
+
+* \*\*Redis + RQ(혹은 Celery)\*\*로 `sync_user`, `sync_class`, `build_reports` 작업 큐 구성
+* `APScheduler`로 **야간 동기화**(예: 02:00 KST), **주간 리포트**(월 08:00) 예약
+
+---
+
+# 5) 숙제(과제) 기능 구체화
+
+## 5.1 플로우
+
+1. **생성**: 강사가 UI에서 챕터/그룹/문제를 선택(이미 `assignMode` 토대 있음)
+2. **배정**: 반/학생에게 배포(`assignments`, `assignment_problems`, `enrollments` 활용)
+3. **진행 집계**: 학생 제출을 `submissions`(or API 상태)에서 끌어와 `assignment_submissions` 업데이트
+4. **마감/지각**: `due_at` 비교해 `status=late` 전환, 예외 시 `allow_late` 활용
+5. **리포트**: 반/개인 통과율, 태그/난이도 분포, 재시도 횟수 등
+
+## 5.2 API(Flask 라우트 예시)
+
+* `POST /api/assignments` : 생성 (title, due\_at, class\_id, problems\[])
+* `GET /api/assignments/{id}/status` : 제출 현황 요약(미제출/통과/지각)
+* `POST /api/assignments/{id}/publish` : 공개/비공개 토글
+* `POST /api/assignments/{id}/regrade` : 재채점/재수집 트리거(큐)
+
+> 프런트: `script.js`에 있는 선택 목록을 `POST /api/assignments`로 제출하도록 연결하면 MVP 완성.
+
+---
+
+# 6) 보안/개인정보·운영 체크리스트
+
+* **이름이 담긴 파일명** → 내부 ID로 치환 / DB 이행 후 파일 제거
+* **쿠키/토큰 암호화 저장** + 만료 자동감지 → 재로그인 핸들링(수동/자동)
+* **에러/접근 로깅**(audit) + 관리자 화면에서 사유 입력 가능(선택)
+* **백업**: DB 일일 스냅샷 + S3 버전닝, 키 로테이션
+
+---
+
+# 7) 현실적인 단계별 적용 플랜 (2\~4주 분량)
+
+**W1. DB 도입 & 마이그레이션**
+
+* PostgreSQL + SQLAlchemy + Alembic 세팅
+* 문제 카탈로그(챕터/그룹/문제/매핑) import 스크립트 작성
+* 사용자 캐시(users\_data) → `user_problem_status` 적재 PoC
+
+**W2. 동기화 워커 & API 래퍼**
+
+* `adapters/doingcoding`(**API 우선**, 크롤러는 fallback) + 재시도/슬립 표준화
+* RQ(or Celery) + APScheduler로 야간 동기화
+* 대시보드가 DB를 조회하도록 변경(파일 의존 제거)
+
+**W3. 숙제 MVP**
+
+* `assignments`, `assignment_*` 테이블 + 라우트 구현
+* 프런트 `assignMode`와 연결(선택 → POST → 배정 → 현황 카드)
+* 반/개인 과제 리포트(HTML) 1종
+
+**W4. 고도화**
+
+* `mv_*` 뷰 + 주간 자동 리포트/슬랙 알림
+* 권한/RBAC 정교화(반 단위 스코프)
+* 표절/유사도 스캐너 PoC(선택)
+
+---
+
+# 8) 파일 구조 제안(리팩터 후)
+
+```
+src/
+  app.py
+  config.py
+  adapters/
+    doingcoding_api.py
+    doingcoding_crawler.py
+    __init__.py
+  services/
+    catalog.py           # 문제/매핑 관리
+    sync.py              # 동기화 잡 로직
+    progress.py          # streak/요약
+    assignments.py
+  routes/
+    auth.py
+    sync.py
+    progress.py
+    assignments.py
+  models/                # SQLAlchemy
+    base.py
+    user.py, class.py, problem.py, submission.py, assignment.py ...
+  templates/
+  static/
+```
+
+---
