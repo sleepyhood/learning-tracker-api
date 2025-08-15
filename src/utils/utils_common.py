@@ -10,10 +10,7 @@ from pprint import pprint
 from utils.streak_utils import generate_streak_data
 from flask import session as fsession
 
-# config.py 또는 main.py 상단
-from dotenv import load_dotenv
 import os
-
 import re
 from urllib.parse import quote
 from utils.questions_crawler import do_crawling
@@ -28,31 +25,18 @@ from utils.questions_api import save_server_problems_json
 from utils.legacy_map import build_legacy_map
 from login import COOKIE_PATH
 
-load_dotenv()
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-PROBLEM_DIR = os.path.join(BASE_DIR, "problems_data")
-USER_DATA_DIR = os.path.join(BASE_DIR, "users_data")
-
-PROBLEM_FILE = os.path.join(PROBLEM_DIR, "all_problems.json")
-SERVER_DUMP_FILE = os.path.join(PROBLEM_DIR, "server_problems.json")
-
-# ✅ 추천: 파일명 명확화
-SERVER_TO_LEGACY_FILE = os.path.join(PROBLEM_DIR, "server_legacy_map.json")
-LEGACY_TO_SERVER_FILE = os.path.join(PROBLEM_DIR, "server_legacy_map_reverse.json")
-UNMATCHED_FILE = os.path.join(PROBLEM_DIR, "legacy_unmatched.json")
-
-# app = Flask(__name__)
-
-
-USER_DATA_DIR = os.path.join(BASE_DIR, "users_data")
-
-BASE_URL = os.environ.get("API_BASE_URL")
-
-if not BASE_URL:
-    raise RuntimeError("환경 변수 API_BASE_URL이 설정되지 않았습니다.")
-
+from config import (
+    USER_DATA_DIR,
+    PROBLEM_DIR,
+    BASE_URL,
+    PROBLEM_FILE,
+    SERVER_DUMP_FILE,
+    SERVER_TO_LEGACY_FILE,
+    LEGACY_TO_SERVER_FILE,
+    UNMATCHED_FILE,
+    USER_DATA_DIR,
+    COOKIE_PATH,
+)  # 필요 시 조정
 
 #########
 
@@ -342,7 +326,6 @@ def sync_user_problems_cache(
     프로필을 가져와 문제 상태를 캐시에 저장하고 (USER_DATA_DIR/<username>.json),
     (profile_json, user_path) 를 반환.
     """
-    from app import USER_DATA_DIR, PROBLEM_DIR, BASE_URL  # 필요 시 조정
 
     os.makedirs(USER_DATA_DIR, exist_ok=True)
 

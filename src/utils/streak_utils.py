@@ -4,9 +4,9 @@ from collections import defaultdict
 from zoneinfo import ZoneInfo
 import json, os
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PARENT_DIR = os.path.dirname(BASE_DIR)
-PROBLEM_FILE = os.path.join(PARENT_DIR, "problems_data/all_problems.json")
+from config import (
+    PROBLEM_FILE,
+)  # 필요 시 조정
 
 # 문제 제목 매핑 (lazy load)
 _problem_title_map = None

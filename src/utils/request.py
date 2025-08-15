@@ -10,11 +10,11 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 from dotenv import load_dotenv
 
-load_dotenv()  # .env 파일에서 환경변수 불러오기
+from utils.utils_common import (
+    BASE_URL,
+    COOKIE_PATH,
+)  # 필요 시 조정
 
-COOKIE_PATH = "cookies.json"
-
-BASE_URL = os.environ.get("API_BASE_URL")
 LOGIN_URL = f"{BASE_URL}/api/profile"  # 인증 필요한 URL
 
 

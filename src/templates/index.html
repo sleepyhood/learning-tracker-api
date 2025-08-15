@@ -118,81 +118,134 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       }
       /* 전체 그리드 정렬 */
+
+      :root {
+        --bg-0: rgba(2, 2, 2, 0.3); /* 0개 */
+        --cell: clamp(20px, 8vw, 100px);
+        --gap: 10px; /* 간격도 살짝 키움 */
+        --radius: 12px;
+        --green-0: rgba(2, 2, 2, 0.3);
+        --green-1: #c8f7c5; /* 약한 */
+        --green-2: #98e29a;
+        --green-3: #5cc477;
+        --green-4: #2aa164;
+        --green-5: #10724d; /* 강한 */
+        --glow: 0 0 0px rgba(0, 0, 0, 0); /* 기본은 없음 */
+        --popover-bg: #fff;
+        --popover-fg: #222;
+        --border: rgba(0, 0, 0, 0.08);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg-0: rgba(255, 255, 255, 0.1);
+          --popover-bg: #15181c;
+          --popover-fg: #e9eef5;
+          --border: rgba(255, 255, 255, 0.12);
+        }
+      }
+      @media (max-width: 640px) {
+        .streak-grid {
+          grid-template-columns: repeat(4, var(--cell)); /* 작은 화면에선 4열 */
+        }
+      }
+
       .streak-grid {
         display: grid;
-
-        grid-template-columns: repeat(7, 1fr); /* 7칸 고정 */
-
-        gap: 16px;
-        padding: 20px;
-        max-width: 1000px;
-        margin: 0 auto;
+        gap: var(--gap);
+        grid-template-columns: repeat(7, var(--cell)); /* 7열 유지 */
+        justify-content: center; /* ← 그리드 트랙을 가로 가운데 */
+        justify-items: center; /* ← 각 셀 내부도 가운데 정렬(선택) */
+        width: fit-content; /* ← 그리드 자체 폭을 내용에 맞춤 */
+        margin-inline: auto; /* ← 그리드 블록을 가운데 배치 */
       }
-
-      /* 각 셀 디자인 */
       .streak-cell {
-        padding: 12px;
-        border-radius: 15px;
-        text-align: center;
-        backdrop-filter: blur(10px);
-        background: rgba(255, 255, 255, 0.1);
+        /* 기존 속성 유지 */
+        width: var(--cell);
+        height: var(--cell);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        background: var(--bg-0);
+        position: relative;
+        transition: transform 0.12s ease, box-shadow 0.2s ease,
+          outline-color 0.2s ease;
+        outline: 0 solid transparent;
 
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        transition: transform 0.2s, background 0.3s;
-        cursor: default;
-      }
-
-      .streak-cell:hover {
-        cursor: pointer;
-        transform: translateY(-4px) scale(1.02);
-        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
-      }
-
-      /* 녹색 강도 단계화 (count 기반) */
-      .streak-cell[data-count="1"],
-      .streak-cell[data-count="2"] {
-        background-color: rgba(0, 128, 0, 0.25);
-      }
-      .streak-cell[data-count="3"],
-      .streak-cell[data-count="4"] {
-        background-color: rgba(0, 128, 0, 0.45);
-      }
-      .streak-cell[data-count="5"],
-      .streak-cell[data-count="6"] {
-        background-color: rgba(0, 128, 0, 0.55);
-      }
-      .streak-cell[data-count="7"],
-      .streak-cell[data-count="8"] {
-        background-color: rgba(0, 128, 0, 0.65);
-      }
-      .streak-cell[data-count="9"],
-      .streak-cell[data-count="10"] {
-        background-color: rgba(0, 128, 0, 0.75);
-      }
-      .streak-cell[data-count="11"],
-      .streak-cell[data-count="12"] {
-        background-color: rgba(0, 128, 0, 0.85);
-      }
-      .streak-cell[data-count="13"],
-      .streak-cell[data-count="14"],
-      .streak-cell[data-count="15"],
-      .streak-cell[data-count="16"],
-      .streak-cell[data-count="17"],
-      .streak-cell[data-count="18"],
-      .streak-cell[data-count="19"],
-      .streak-cell[data-count="20"] {
-        background-color: rgba(0, 128, 0, 0.95);
+        /* ⬇️ 추가 */
+        display: flex;
+        flex-direction: column; /* 요일/날짜 위, count 아래 */
+        align-items: center; /* 가로 가운데 */
+        justify-content: center; /* 세로 가운데 */
+        text-align: center; /* 텍스트 가운데 */
+        gap: 6px; /* 요소 사이 간격 */
+        box-sizing: border-box;
+        padding: 6px; /* 살짝 여백(선택) */
       }
 
-      /* count 0이면 배경 투명 유지 */
+      /* margin으로 가운데가 미세하게 틀어지는 걸 방지: gap으로만 띄우기 */
+      .date-info {
+        margin: 0;
+      }
+
+      /* 단계별 배경 톤 */
+
+      .streak-cell[data-tier="1"] {
+        background: color-mix(in oklab, var(--green-1) 35%, transparent);
+      }
+      .streak-cell[data-tier="2"] {
+        background: color-mix(in oklab, var(--green-2) 55%, transparent);
+      }
+      .streak-cell[data-tier="3"] {
+        background: color-mix(in oklab, var(--green-3) 70%, transparent);
+      }
+      .streak-cell[data-tier="4"] {
+        background: color-mix(in oklab, var(--green-4) 80%, transparent);
+      }
+      .streak-cell[data-tier="5"] {
+        background: color-mix(in oklab, var(--green-5) 90%, transparent);
+      }
       .streak-cell[data-count="0"] {
-        background-color: rgba(2, 2, 2, 0.3);
+        background: color-mix(in oklab, var(--green-0) 35%, transparent);
+      }
+      /* 호버/포커스 상호작용 */
+      .streak-cell:hover {
+        transform: translateY(-1px) scale(1.04);
+      }
+      .streak-cell:focus-visible {
+        outline: 2px solid color-mix(in oklab, var(--green-3) 60%, transparent);
       }
 
-      /* 문제 푼 날은 커서 포인터 */
-      .streak-cell[data-count]:not([data-count="0"]) {
-        cursor: pointer;
+      /* 마일스톤(10+개) → 테두리 글로우 + 안쪽 링 */
+      @keyframes glowPulse {
+        0% {
+          box-shadow: 0 0 0px rgba(46, 204, 113, 0);
+        }
+        50% {
+          box-shadow: 0 0 12px rgba(46, 204, 113, 0.35);
+        }
+        100% {
+          box-shadow: 0 0 0px rgba(46, 204, 113, 0);
+        }
+      }
+      .streak-cell[data-milestone="1"] {
+        outline: 2px solid rgba(46, 204, 113, 0.55);
+        box-shadow: 0 0 10px rgba(46, 204, 113, 0.25);
+        animation: glowPulse 2.2s ease-in-out infinite;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .streak-cell[data-milestone="1"] {
+          animation: none;
+        }
+      }
+
+      /* 안쪽 링(살짝 고급스러운 느낌) */
+      .streak-cell[data-milestone="1"]::after {
+        content: "";
+        position: absolute;
+        inset: 2px;
+        border-radius: calc(var(--radius) - 2px);
+        border: 1px solid rgba(46, 204, 113, 0.35);
+        pointer-events: none;
       }
 
       /* 날짜와 요일 강조 */
@@ -257,7 +310,7 @@
         border-radius: 14px;
         padding: 14px 20px;
 
-        width: 500px;
+        width: min(500px, calc(100vw - 32px)); /* 화면에 맞게 줄이기 */
         max-height: 280px;
         overflow-y: auto;
 
@@ -409,11 +462,36 @@
         border: 5px solid rgba(0, 128, 0, 0.4);
         box-shadow: 0px 3px 6px rgba(0, 128, 0, 0.5);
       }
+
+      #submission-popover.details {
+        background: var(--popover-bg);
+        color: var(--popover-fg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        padding: 10px 12px;
+      }
+      #submission-popover .prob-item + .prob-item {
+        border-top: 1px dashed var(--border);
+        margin-top: 6px;
+        padding-top: 6px;
+      }
+
+      /* KST 기준 오늘 */
+      .streak-cell[data-today="1"] {
+        outline: 2px dashed rgba(125, 146, 255, 0.6);
+      }
     </style>
   </head>
 
   <body>
-    <div id="overlay"></div>
+    <div id="overlay" aria-hidden="true" style="display: none"></div>
+    <div
+      id="submission-popover"
+      class="details"
+      role="dialog"
+      style="display: none"
+    ></div>
     <div
       id="submission-popover"
       style="display: none; position: absolute; z-index: 1001"
@@ -535,7 +613,18 @@
     <div class="streak-container">
       <div id="streak-grid" class="streak-grid">
         {% for day in streak_data %}
-        <div class="streak-cell" data-count="{{ day.count }}">
+        <div
+          class="streak-cell"
+          data-count="{{ day.count }}"
+          {%
+          if
+          day.details
+          %}
+          data-details="{{ day.details | tojson | forceescape }}"
+          {%
+          endif
+          %}
+        >
           <div class="date-info">
             <div class="weekday">{{ day.weekday }}</div>
             <div class="date">{{ day.date }}</div>
@@ -597,6 +686,179 @@
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
     <script>
+      // 싱글톤 생성 유틸
+      function ensureEl(id, { className = "", style = "" } = {}) {
+        let el = document.getElementById(id);
+        if (!el) {
+          el = document.createElement("div");
+          el.id = id;
+          if (className) el.className = className;
+          if (style) el.setAttribute("style", style);
+          document.body.appendChild(el);
+        }
+        return el;
+      }
+
+      // 전역 엘리먼트 확보 (없으면 만든다)
+      const overlayEl = ensureEl("overlay", { style: "display:none" });
+      const popover = ensureEl("submission-popover", {
+        className: "details", // ← 반드시 .details
+        style: "display:none; position:absolute;",
+      });
+
+      const streakGrid = document.getElementById("streak-grid");
+
+      // 오늘(mm-dd) 문자열은 매번 계산하지 말고 모듈 전역으로 1회 캐시
+      const TODAY_MMDD = (() => {
+        const kst = new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Seoul",
+        });
+        const d = new Date(kst);
+        return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+          d.getDate()
+        ).padStart(2, "0")}`;
+      })();
+
+      // 초기 active 표시
+      document.addEventListener("DOMContentLoaded", () => {
+        const initialDays = Number("{{ streak_days|default(7) }}");
+        document.querySelectorAll(".streak-btn").forEach((b) => {
+          if (Number(b.dataset.days) === initialDays) b.classList.add("active");
+        });
+      });
+
+      (function hydrateInitialDetails() {
+        document.querySelectorAll(".streak-cell").forEach((cell) => {
+          if (cell.dataset.details) return;
+          const box = cell.querySelector(".details");
+          if (!box) return;
+
+          // ...파싱 로직 동일...
+
+          cell.dataset.details = JSON.stringify(list);
+          box.remove();
+        });
+        // 팝오버가 없던 초기 로드에서도, 이제 전역 팝오버가 보장되어 있음
+      })();
+
+      if (!streakGrid.__bound) {
+        streakGrid.addEventListener("click", (e) => {
+          const cell = e.target.closest(".streak-cell");
+          if (!cell) return;
+
+          const raw = cell.dataset.details;
+          if (!raw) return;
+
+          const list = JSON.parse(raw);
+          const same =
+            popover.__ownerCell === cell && popover.style.display === "block";
+          document.body.appendChild(popover);
+          if (same) {
+            popover.style.display = "none";
+            overlayEl.style.display = "none";
+            popover.__ownerCell = null;
+            return;
+          }
+
+          popover.innerHTML = list.length
+            ? list
+                .map(
+                  (p) => `
+      <div class="prob-item">
+        <a href="http://edu.doingcoding.com/status/${p.server_sub_id}" target="_blank" rel="noopener">
+          ${p.title}
+        </a><br/>(${p.language}, ${p.score}점, ${p.time})
+      </div>
+    `
+                )
+                .join("")
+            : `<div style="padding:8px">제출 내역 없음</div>`;
+
+          const rect = cell.getBoundingClientRect();
+          popover.style.top = `${
+            rect.top + window.scrollY + cell.offsetHeight + 8
+          }px`;
+          popover.style.left = `${rect.left + rect.width / 2}px`;
+          popover.style.transform = "translateX(-50%)";
+          popover.style.display = "block";
+          popover.style.zIndex = "10000"; // overlay(9998)보다 높게
+          popover.style.position = "absolute"; // 바디에 붙었으니 절대좌표
+          overlayEl.style.display = "block";
+          popover.__ownerCell = cell;
+        });
+
+        overlayEl.addEventListener("click", () => {
+          popover.style.display = "none";
+          overlayEl.style.display = "none";
+          popover.__ownerCell = null;
+        });
+
+        streakGrid.__bound = true;
+      }
+
+      (function primeInitialGrid() {
+        const cells = document.querySelectorAll(".streak-cell");
+        if (!cells.length) return;
+
+        cells.forEach((cell) => {
+          const c = Number(cell.dataset.count || 0);
+          let tier = calcTier(c);
+
+          if (tier) cell.dataset.tier = String(tier);
+          if (c >= 10) cell.dataset.milestone = "1";
+        });
+
+        // 오늘 표시도 최초 1회
+        const kst = new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Seoul",
+        });
+        const d = new Date(kst);
+
+        document.querySelectorAll(".streak-cell .date").forEach((el) => {
+          if (el.textContent.trim() === TODAY_MMDD) {
+            el.closest(".streak-cell")?.setAttribute("data-today", "1");
+          }
+        });
+      })();
+
+      // 렌더 함수 (빠름)
+      function renderStreakGrid(streakData) {
+        // 1) 프래그먼트에 누적
+        const frag = document.createDocumentFragment();
+
+        for (const day of streakData) {
+          const c = Number(day.count || 0);
+
+          // tier/milestone 미리 계산
+          let tier = calcTier(c);
+          const milestone = c >= 10 ? "1" : "";
+
+          const cell = document.createElement("div");
+          cell.className = "streak-cell";
+          cell.dataset.count = String(c);
+          if (tier) cell.dataset.tier = String(tier);
+          if (milestone) cell.dataset.milestone = "1";
+          if (day.date === TODAY_MMDD) cell.dataset.today = "1";
+
+          // 보이는 최소 내용만 넣기 (details는 data-*에 JSON 저장)
+          cell.innerHTML = `
+      <div class="date-info">
+        <div class="weekday">${day.weekday}</div>
+        <div class="date">${day.date}</div>
+      </div>
+      <span class="count">${c}</span>
+    `;
+          if (day.details && day.details.length) {
+            cell.dataset.details = JSON.stringify(day.details);
+          }
+
+          frag.appendChild(cell);
+        }
+
+        // 2) 단 한 번에 DOM 교체
+        streakGrid.replaceChildren(frag);
+      }
+
       // 문제 업데이트 버튼
       function updateProblems() {
         const btn = document.getElementById("update-btn");
@@ -630,69 +892,6 @@
           });
       }
 
-      // 초기 active 표시
-      const initialDays = Number("{{ streak_days|default(7) }}");
-      document.querySelectorAll(".streak-btn").forEach((b) => {
-        if (Number(b.dataset.days) === initialDays) b.classList.add("active");
-      });
-      const overlayEl = document.getElementById("overlay"); // ← 이름 통일!
-      const streakGrid = document.getElementById("streak-grid");
-      const popover = document.getElementById("submission-popover");
-
-      // 헬퍼: 팝오버에 HTML 주입
-      function renderDetailsHTML(list) {
-        if (!list || !list.length)
-          return "<div style='padding:8px'>제출 내역 없음</div>";
-        return list
-          .map(
-            (p) => `
-      <div class="prob-item" style="padding:6px 10px; white-space:nowrap">
-        <a href="http://edu.doingcoding.com/status/${p.server_sub_id}" target="_blank" rel="noopener noreferrer">
-          ${p.title}
-        </a><br/>
-        (${p.language}, ${p.score}점, ${p.time})
-      </div>
-    `
-          )
-          .join("");
-      }
-
-      // 이벤트 위임: 그리드 어디를 클릭하든 가장 가까운 .streak-cell 찾기
-      streakGrid.addEventListener("click", (e) => {
-        const cell = e.target.closest(".streak-cell");
-        if (!cell) return;
-
-        // data-details에 JSON 문자열로 심어두는 방법 or window.__streakData 캐시에 접근
-        // 여기서는 DOM 안의 숨겨진 .details를 읽되, '옮기지 않고' innerHTML만 복사
-        const detailsEl = cell.querySelector(".details");
-        if (!detailsEl) return;
-
-        // 토글 처리
-        const currentlyVisible = popover.style.display === "block";
-        if (currentlyVisible && popover.__ownerCell === cell) {
-          popover.style.display = "none";
-          overlayEl.style.display = "none";
-          popover.__ownerCell = null;
-          return;
-        }
-
-        // 내용 갱신
-        popover.innerHTML = detailsEl.innerHTML;
-
-        // 위치 계산 (셀 아래 중앙)
-        const rect = cell.getBoundingClientRect();
-        popover.style.top = `${
-          rect.top + window.scrollY + cell.offsetHeight
-        }px`;
-        popover.style.left = `${rect.left + rect.width / 2}px`;
-        popover.style.transform = "translateX(-50%)";
-
-        popover.style.display = "block";
-        overlayEl.style.zIndex = "1000";
-        overlayEl.style.display = "block";
-        popover.__ownerCell = cell; // 현재 주인 셀 저장
-      });
-
       // 배경 클릭 시 닫기
       overlayEl.addEventListener("click", () => {
         popover.style.display = "none";
@@ -700,75 +899,82 @@
         popover.__ownerCell = null;
       });
 
-      function renderStreakGrid(streakData) {
-        streakGrid.innerHTML = streakData
-          .map(
-            (day) => `
-    <div class="streak-cell" data-count="${day.count}">
-      <div class="date-info">
-        <div class="weekday">${day.weekday}</div>
-        <div class="date">${day.date}</div>
-      </div>
-      <span class="count">${day.count}</span>
-      ${
-        day.details && day.details.length
-          ? `
-        <div class="details" style="display:none">
-          ${day.details
-            .map(
-              (prob) => `
-            <div class="prob-item">
-              <a href="http://edu.doingcoding.com/status/${prob.server_sub_id}" target="_blank" rel="noopener noreferrer">
-                ${prob.title}
-              </a><br/>
-              (${prob.language}, ${prob.score}점, ${prob.time})
-            </div>
-          `
-            )
-            .join("")}
-        </div>
-      `
-          : ""
+      function calcTier(c) {
+        if (c >= 1 && c <= 2) return 1;
+        if (c <= 4) return 2;
+        if (c <= 7) return 3;
+        if (c <= 12) return 4;
+        if (c >= 13) return 5;
+        return 0;
       }
-    </div>
-  `
-          )
-          .join("");
-      }
+      /*스트릭 가져오기*/
+      // 서버 주입 값(없을 수도 있음)
+      const SERVER_VIEW_MODE = "{{ view_mode|default('') }}";
+      const SERVER_VIEW_USERNAME = "{{ view_username|default('') }}";
 
-      // 기간 버튼 클릭 → AJAX
-      document.querySelectorAll(".streak-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          document
-            .querySelectorAll(".streak-btn")
-            .forEach((b) => b.classList.remove("active"));
-          btn.classList.add("active");
-          const days = btn.dataset.days;
-          try {
-            const res = await fetch(
-              `/api/streak?view=${viewMode}&username=${encodeURIComponent(
-                viewUsername
-              )}&days=${days}`
-            );
-            const data = await res.json();
-            if (data.streak_data) {
-              renderStreakGrid(data.streak_data);
-            } else {
-              alert("스트릭 데이터를 불러오지 못했습니다.");
-            }
-          } catch (e) {
-            alert("네트워크 오류가 발생했습니다.");
-          }
-        });
-      });
+      // 경로에서 /user/<username> 추출
+      const m = location.pathname.match(/^\/user\/([^\/]+)/);
+      const PATH_VIEW_MODE = m ? "user" : "me";
+      const PATH_VIEW_USERNAME = m ? decodeURIComponent(m[1]) : "";
 
-      // 배경 클릭 시 팝업 닫기
-      overlayEl.addEventListener("click", () => {
+      // 최종 값
+      const viewMode = SERVER_VIEW_MODE || PATH_VIEW_MODE;
+      const viewUsername = SERVER_VIEW_USERNAME || PATH_VIEW_USERNAME;
+
+      console.log("viewMode=", viewMode);
+
+      document.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".streak-btn");
+        if (!btn) return;
+
+        e.preventDefault(); // 혹시 모를 submit 방지
         document
-          .querySelectorAll(".details")
-          .forEach((d) => (d.style.display = "none"));
-        overlayEl.style.display = "none";
+          .querySelectorAll(".streak-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        const days = btn.dataset.days;
+        console.log("viewUsername=", viewUsername, "days=", days);
+
+        try {
+          const url = `/api/streak?viewMode=${viewMode}&viewUsername=${encodeURIComponent(
+            viewUsername
+          )}&days=${days}`;
+          console.log("viewMode: ", viewMode);
+          console.log("[streak] fetching:", url);
+
+          const res = await fetch(url, {
+            headers: { Accept: "application/json" },
+          });
+          if (!res.ok) {
+            const txt = await res.text();
+            console.error("streak api error:", res.status, txt);
+            alert(`API 호출 실패 (${res.status})`);
+            return;
+          }
+          const data = await res.json();
+          if (data.streak_data) {
+            renderStreakGrid(data.streak_data);
+          } else {
+            console.error("payload:", data);
+            alert("스트릭 데이터를 불러오지 못했습니다.");
+          }
+        } catch (err) {
+          console.error("fetch failed:", err);
+          alert("네트워크 오류가 발생했습니다.");
+        }
       });
+      window.addEventListener("scroll", repositionPopover, { passive: true });
+      window.addEventListener("resize", repositionPopover);
+      function repositionPopover() {
+        if (popover.style.display !== "block" || !popover.__ownerCell) return;
+        const cell = popover.__ownerCell;
+        const rect = cell.getBoundingClientRect();
+        popover.style.top = `${
+          rect.top + window.scrollY + cell.offsetHeight + 8
+        }px`;
+        popover.style.left = `${rect.left + rect.width / 2}px`;
+      }
 
       // 중앙 텍스트용 Chart.js 커스텀 플러그인
       function centerTextPlugin(text) {

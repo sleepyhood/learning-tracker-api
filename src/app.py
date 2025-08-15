@@ -40,35 +40,26 @@ from utils.utils_common import (
     resolve_legacy_map_dict,
 )
 
-load_dotenv()
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+from config import (
+    USER_DATA_DIR,
+    PROBLEM_DIR,
+    BASE_URL,
+    PROBLEM_FILE,
+    SERVER_DUMP_FILE,
+    SERVER_TO_LEGACY_FILE,
+    LEGACY_TO_SERVER_FILE,
+    UNMATCHED_FILE,
+    USER_DATA_DIR,
+    COOKIE_PATH,
+)  # 필요 시 조정
 
-PROBLEM_DIR = os.path.join(BASE_DIR, "problems_data")
-USER_DATA_DIR = os.path.join(BASE_DIR, "users_data")
-COOKIE_PATH = os.path.join(BASE_DIR, "cookies.json")
 
-PROBLEM_FILE = os.path.join(PROBLEM_DIR, "all_problems.json")
-SERVER_DUMP_FILE = os.path.join(PROBLEM_DIR, "server_problems.json")
-
-# ✅ 추천: 파일명 명확화
-SERVER_TO_LEGACY_FILE = os.path.join(PROBLEM_DIR, "server_legacy_map.json")
-LEGACY_TO_SERVER_FILE = os.path.join(PROBLEM_DIR, "server_legacy_map_reverse.json")
-UNMATCHED_FILE = os.path.join(PROBLEM_DIR, "legacy_unmatched.json")
+#########
 
 # app = Flask(__name__)
 app = Flask(__name__, static_folder="static")
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)  # ✅ 여기에 바로 설정
-
-
-BASE_URL = os.environ.get("API_BASE_URL")
-
-
-if not BASE_URL:
-    raise RuntimeError("환경 변수 API_BASE_URL이 설정되지 않았습니다.")
-
-
-#########
 
 # --- imports 상단 ---
 from flask import session as fsession
@@ -112,8 +103,13 @@ def update_problems():
 # ✅ AJAX: streak만 교체
 @app.route("/api/streak")
 def api_streak():
-    username = request.args.get("username")
-    view = request.args.get("view", "me")  # "me" or "user"
+
+    streak_username = request.args.get("viewUsername")
+    view_mode = request.args.get("viewMode")  # "me" or "user"
+
+    print(f"streak_username: {streak_username}")
+    print(f"view_mode: {view_mode}")
+
     days = int(request.args.get("days", 7))
 
     s, redir = ensure_login_or_redirect()
@@ -121,8 +117,10 @@ def api_streak():
         return jsonify({"error": "unauthorized"}), 401
 
     try:
-        if view == "user" and username:
-            prof = fetch_profile(s, username=username)
+        if view_mode == "user":
+            if not streak_username:
+                return jsonify({"error": "username required for view=user"}), 400
+            prof = fetch_profile(s, username=streak_username)
             is_me = False
         else:
             prof = fetch_profile(s, username=None)
@@ -130,13 +128,16 @@ def api_streak():
         payload = prof.get("data", {})
         user_data = payload.get("user", {})
         uname = user_data.get("username")
+        print(f"api_streak의 prof: {prof}")
 
         submissions = fetch_submissions_window(
             s, uname, myself=(1 if is_me else 0), days=max(days, 7), limit=100
         )
         filtered = filter_main_account_submissions(submissions, uname)
         streak = generate_streak_data(filtered, days=days)
+        print(f"streak: {streak}")
         return jsonify({"streak_data": streak})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -252,8 +253,7 @@ def index():
     vm["streak_days"] = days
 
     return render_template(
-        "index.html",
-        **vm,  # 공통 데이터 주입
+        "index.html", **vm, view_mode="me", view_username=""  # 공통 데이터 주입
     )
 
 
@@ -274,7 +274,7 @@ def user(username):
     other_json = fetch_profile(s, username=username)
     vm = build_dashboard_viewmodel(s, other_json, is_me=False, days=days)
     vm["streak_days"] = days
-    return render_template("index.html", **vm)
+    return render_template("index.html", **vm, view_mode="user", view_username=username)
 
 
 from flask import render_template, redirect
