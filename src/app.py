@@ -7,6 +7,7 @@ from login import load_cookies, get_authenticated_session, is_cookie_valid
 from datetime import datetime, timezone, timedelta
 from pprint import pprint
 from utils.streak_utils import generate_streak_data
+from pathlib import Path
 
 
 # config.py 또는 main.py 상단
@@ -56,6 +57,81 @@ from config import (
 
 
 #########
+
+
+import uuid
+
+# UUID 레지스트리(레거시ID ↔ UUID 매핑) 파일 경로
+UUIDS_PATH = Path("meta/uuids.json")
+UUIDS_PATH.parent.mkdir(parents=True, exist_ok=True)
+if not UUIDS_PATH.exists():
+    UUIDS_PATH.write_text("{}", encoding="utf-8")
+
+KST = timezone(timedelta(hours=9))
+
+# app.py 어딘가(라우트 위) 유틸 함수로 추가
+
+def resolve_uuid(student_id: str) -> str:
+    """레거시 student_id에 대응하는 UUID를 반환(없으면 생성)."""
+    m = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+    if student_id not in m:
+        m[student_id] = str(uuid.uuid4())
+        UUIDS_PATH.write_text(json.dumps(m, ensure_ascii=False, indent=2), encoding="utf-8")
+    return m[student_id]
+
+def reverse_lookup(user_uuid: str) -> str | None:
+    """UUID에서 레거시 student_id를 찾아 반환."""
+    m = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+    for sid, u in m.items():
+        if u == user_uuid:
+            return sid
+    return None
+
+def _user_file_path(student_id: str) -> Path:
+    safe = sanitize_filename(student_id)
+    return Path(USER_DATA_DIR) / f"{safe}.json"
+
+def _load_user_doc(student_id: str) -> dict:
+    """기존 파일이 배열형(oi_problems만 저장)이어도 dict 구조로 승격."""
+    p = _user_file_path(student_id)
+    if not p.exists():
+        return {"profile": {"student_id": student_id}, "oi_problems": [], "homework_logs": []}
+    raw = json.loads(p.read_text(encoding="utf-8"))
+    if isinstance(raw, list):
+        # 과거 포맷: 문제배열만 저장하던 파일
+        return {"profile": {"student_id": student_id}, "oi_problems": raw, "homework_logs": []}
+    # dict 보장 + 기본키 보강
+    raw.setdefault("profile", {"student_id": student_id})
+    raw.setdefault("oi_problems", raw.get("problems", []))
+    raw.setdefault("homework_logs", [])
+    return raw
+
+def _save_user_doc(student_id: str, doc: dict):
+    p = _user_file_path(student_id)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
+
+def append_homework_log(student_id: str, payload: dict) -> dict:
+    """숙제 로그 1건을 추가하고 저장."""
+    doc = _load_user_doc(student_id)
+    # UUID 주입
+    doc.setdefault("user_uuid", resolve_uuid(student_id))
+    # 타임스탬프 기본값
+    log = dict(payload)
+    log.setdefault("ts", datetime.now(tz=KST).isoformat())
+    # 최소 필드 보강
+    log.setdefault("channel", "kakao")
+    log.setdefault("message", "")
+    log.setdefault("title", "")
+    log.setdefault("url", "")
+    log.setdefault("problems", [])
+    doc["homework_logs"].append(log)
+    _save_user_doc(student_id, doc)
+    return doc
+
+
+#########
+
 
 # app = Flask(__name__)
 app = Flask(__name__, static_folder="static")
@@ -125,6 +201,7 @@ def api_streak():
         else:
             prof = fetch_profile(s, username=None)
             is_me = True
+
         payload = prof.get("data", {})
         user_data = payload.get("user", {})
         uname = user_data.get("username")
@@ -191,21 +268,53 @@ def refresh_user(username):
         data = res.json()
         user_data = data["data"]["user"]
         # print(f"user_data: {user_data}")
+        problems = data["data"]["oi_problems_status"]["problems"]
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
     # 저장
-    filename = f"{sanitize_filename(user_data['username'])}.json"
-    user_path = os.path.join(USER_DATA_DIR, filename)
-    with open(user_path, "w", encoding="utf-8") as f:
-        json.dump(
-            data["data"]["oi_problems_status"]["problems"],
-            f,
-            ensure_ascii=False,
-            indent=2,
-        )
+    # ✅ 문서형으로 저장 (UUID/oi_problems/homework_logs 포함)
+    student_id = user_data["username"]
+    doc = _load_user_doc(student_id)
+    doc["profile"] = {
+        "student_id": student_id,
+        "name": user_data.get("realname") or user_data.get("username"),
+        "class_id": user_data.get("class_id"),
+    }
+    doc["user_uuid"] = resolve_uuid(student_id)
+    doc["oi_problems"] = problems
+    doc.setdefault("homework_logs", doc.get("homework_logs", []))
 
-    return jsonify({"success": True, "updated_at": datetime.now().isoformat()})
+    _save_user_doc(student_id, doc)
+    return jsonify({"success": True, "updated_at": datetime.now(tz=KST).isoformat(), "user_uuid": doc["user_uuid"]})
+
+
+# ✅ 복사/전송 시 호출: 숙제 로그를 학생 JSON에 append
+@app.post("/api/students/<id_or_uuid>/homework_logs")
+def api_save_homework_log(id_or_uuid):
+    # id_or_uuid 가 UUID이면 역변환
+    if "-" in id_or_uuid:
+        sid = reverse_lookup(id_or_uuid)
+        if not sid:
+            return jsonify({"ok": False, "error": "unknown uuid"}), 404
+    else:
+        sid = id_or_uuid
+
+    payload = request.get_json(force=True)  # {title,url,problems[],message,due_at,channel}
+    doc = append_homework_log(sid, payload)
+    return jsonify({"ok": True, "user_uuid": doc.get("user_uuid"), "count": len(doc["homework_logs"])})
+
+# ✅ 뷰어: UUID로 학생 숙제로그 열람 (템플릿: templates/homework_view.html 필요)
+@app.get("/students/<user_uuid>/homework")
+def view_homework_logs(user_uuid):
+    sid = reverse_lookup(user_uuid)
+    if not sid:
+        return "학생을 찾을 수 없습니다.", 404
+    doc = _load_user_doc(sid)
+    logs = list(reversed(doc.get("homework_logs", [])))
+    student = doc.get("profile", {})
+    # 예: 간단 템플릿으로 렌더 (표/리스트)
+    return render_template("homework_view.html", student=student, logs=logs, user_uuid=user_uuid)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -272,6 +381,7 @@ def user(username):
 
     days = int(request.args.get("days", 7))
     other_json = fetch_profile(s, username=username)
+    print(f"other_json: {other_json}")
     vm = build_dashboard_viewmodel(s, other_json, is_me=False, days=days)
     vm["streak_days"] = days
     return render_template("index.html", **vm, view_mode="user", view_username=username)
@@ -361,6 +471,14 @@ def group_detail(username, chapter, group_id):
         return str(e), 404
     except json.JSONDecodeError as e:
         return f"데이터 파싱 오류: {e}", 500
+    
+        # ✅ UUID 준비: 파일에 없더라도 매핑 생성해서 확보
+    try:
+        user_uuid = user_data.get("user_uuid")
+    except AttributeError:
+        user_uuid = None
+    if not user_uuid:
+        user_uuid = resolve_uuid(username)
 
     # 그룹 요약
     try:
@@ -389,6 +507,7 @@ def group_detail(username, chapter, group_id):
         group_title=result["group_title"],
         problem_names=result["problem_names"],
         chapter_url_html=chapter_url,
+        user_uuid=user_uuid,     # ✅ 추가
         **role_ctx,  # role_label, is_admin
     )
 

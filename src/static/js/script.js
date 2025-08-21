@@ -4,6 +4,31 @@ let assignMode = false;
 let selectedProblems = []; // {title, link, chapter}
 let lastChecked = null;
 
+
+async function postHomeworkLog({ title, url, problems, message, dueAt=null, channel="kakao" }) {
+  const groupInfo = document.getElementById("groupInfo");
+  const userUuid = groupInfo?.dataset.userUuid;
+
+  if (!userUuid) {
+    console.warn("user_uuid가 페이지에 없습니다. 로그 저장을 생략합니다.");
+    return;
+  }
+
+  const res = await fetch(`/api/students/${userUuid}/homework_logs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, url, problems, message, due_at: dueAt, channel })
+  });
+
+  if (!res.ok) {
+    const t = await res.text();
+    console.error("숙제 로그 저장 실패:", t);
+    showToast("⚠️ 로그 저장 실패(복사는 완료됨)");
+  }
+}
+
+
+
 function goToParentPage() {
   const currentURL = window.location.href;
 
@@ -57,33 +82,28 @@ function toggleAssignMode() {
     assignControls.style.display = "flex";
   }
 }
-function copySelectedProblems() {
-  const selected = Array.from(
-    document.querySelectorAll(".assign-checkbox:checked")
-  );
+async function copySelectedProblems() {
+  const selected = Array.from(document.querySelectorAll(".assign-checkbox:checked"));
   if (selected.length === 0) {
     showToast("⚠️ 선택된 문제가 없습니다!");
     return;
   }
 
-  // 그룹 정보
   const groupInfo = document.getElementById("groupInfo");
   const groupTitle = groupInfo.dataset.title;
   const groupUrl = groupInfo.dataset.url;
 
-  // 문제 제목 목록
   const problemTitles = selected.map((cb) => `${cb.dataset.title}`);
 
-  const assignedDate = new Date(); // 출제일 예시
+  // 메시지 본문 구성(기존 그대로)
+  const assignedDate = new Date();
   const days = ["일", "월", "화", "수", "목", "금", "토"];
   const y = assignedDate.getFullYear();
   const m = String(assignedDate.getMonth() + 1).padStart(2, "0");
   const d = String(assignedDate.getDate()).padStart(2, "0");
   const day = days[assignedDate.getDay()];
-
   const assignedDateStr = `${y}.${m}.${d}(${day})`;
 
-  // 복사할 텍스트에 포함
   const lines = [
     `\n📘 ${groupTitle}`,
     `🔗 ${groupUrl}`,
@@ -93,18 +113,32 @@ function copySelectedProblems() {
     ...problemTitles,
     "=========================",
   ];
-
   const text = lines.join("\n");
 
-  navigator.clipboard
-    .writeText(text)
-    .then(() =>
-      showToast(
-        `📘 ${groupTitle} 단원\n✅ 선택된 ${problemTitles.length} 문제가 복사되었습니다!`
-      )
-    )
-    .catch((err) => alert("복사 실패: " + err));
+  try {
+    await navigator.clipboard.writeText(text);
+
+    // ✅ 문제 배열(payload) 구성: code/pid + title
+    const problemsPayload = selected.map((cb) => ({
+      code: cb.dataset.pid || "",
+      title: cb.dataset.title || ""
+    }));
+
+    // ✅ 복사 성공 후 서버에 로그 저장
+    await postHomeworkLog({
+      title: groupTitle,
+      url: groupUrl,
+      problems: problemsPayload,
+      message: text,
+      // dueAt: 나중에 "다음 수업" 계산기가 생기면 ISO 포맷으로 넣어주세요.
+    });
+
+    showToast(`📘 ${groupTitle} 단원\n✅ 선택된 ${problemTitles.length} 문제가 복사되었습니다!`);
+  } catch (err) {
+    alert("복사 실패: " + err);
+  }
 }
+
 
 function toggleProblemSelection(problemId) {
   if (!assignMode) return;

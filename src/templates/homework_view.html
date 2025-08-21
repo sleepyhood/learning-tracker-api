@@ -1,0 +1,173 @@
+<!-- templates/homework_view.html -->
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>숙제 기록 · {{ student.get('name', student.get('student_id','')) }}</title>
+  <style>
+    :root { --bg:#0b1020; --panel:#141a33; --muted:#8ea0c7; --text:#e6ebff; --accent:#6ea8fe; --ok:#2ecc71; --warn:#ffb84d; --bad:#ff6b6b; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; background:var(--bg); color:var(--text); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+    .header { display:flex; align-items:center; gap:12px; margin-bottom: 16px; }
+    .title { font-size: 1.5rem; font-weight: 700; }
+    .sub { color: var(--muted); font-size: .95rem; }
+    .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius: 999px; background: #101632; color: var(--muted); font-size: .85rem; border:1px solid #1f2a4d; }
+    .row { display:flex; gap: 16px; flex-wrap: wrap; }
+    .card { flex:1 1 100%; background: var(--panel); border:1px solid #1f2a4d; border-radius: 14px; padding: 14px 14px 10px; box-shadow: 0 4px 20px rgba(0,0,0,.25); }
+    .card-head { display:flex; align-items:center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .card-title { font-weight: 700; font-size: 1.05rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .badge { padding:3px 8px; border-radius: 999px; font-size:.8rem; border:1px solid #2a345c; color:#cfe0ff; background:#101735; text-transform: uppercase; letter-spacing:.02em; }
+    .meta { color: var(--muted); font-size:.9rem; display:flex; gap:12px; flex-wrap:wrap; margin-bottom: 8px; }
+    .problems { margin:8px 0 10px; padding-left: 18px; }
+    .problems li { margin:2px 0; }
+    .msg { background:#0e1430; border:1px dashed #2a345c; border-radius:10px; padding:10px; white-space:pre-wrap; font-size:.95rem; line-height:1.45; }
+    .actions { display:flex; gap:8px; margin-top:10px; }
+    .btn { appearance:none; border:1px solid #2a345c; background:#0f1738; color:#e6ebff; padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:600; }
+    .btn:hover { filter: brightness(1.08); }
+    .btn-copy { border-color:#27407a;}
+    .toolbar { display:flex; gap:8px; align-items:center; margin: 16px 0 22px; }
+    .input { width: 260px; max-width: 100%; background:#0e1430; color:#e6ebff; border:1px solid #2a345c; border-radius:10px; padding:10px 12px; }
+    .empty { padding: 24px; text-align:center; color: var(--muted); border:1px dashed #2a345c; border-radius:14px; }
+    .footer { margin: 28px 0; color: var(--muted); font-size:.9rem; }
+    @media (min-width: 700px) {
+      .card { flex:1 1 calc(50% - 16px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">숙제 기록</div>
+      <span class="pill">
+        학생: <strong>{{ student.get('name', student.get('student_id','-')) }}</strong>
+      </span>
+      {% if student.get('student_id') %}
+      <span class="pill">ID: {{ student.get('student_id') }}</span>
+      {% endif %}
+      <span class="pill">UUID: {{ user_uuid }}</span>
+    </div>
+
+    <div class="sub">
+      총 <strong>{{ logs|length }}</strong>건 · 최신순 표시
+    </div>
+
+    <div class="toolbar">
+      <input id="filterInput" class="input" placeholder="제목·메시지·문제명 검색…" />
+      <button class="btn" onclick="copyAll()">전체 메시지 복사</button>
+      {% if student.get('student_id') %}
+      <a class="btn" href="/user/{{ student.get('student_id') }}">학생 대시보드로</a>
+      {% endif %}
+    </div>
+
+    {% if logs %}
+      <div id="cards" class="row">
+        {% for log in logs %}
+        <article class="card" data-search="{{ (log.title ~ ' ' ~ (log.message or '') ~ ' ' ~ (log.problems|map(attribute='title')|join(' '))) | lower }}">
+          <div class="card-head">
+            <div class="card-title">{{ log.title or "제목 없음" }}</div>
+            <span class="badge">{{ (log.channel or "kakao")|upper }}</span>
+          </div>
+
+          <div class="meta">
+            <span>보낸 시각: <span class="ts" data-iso="{{ log.ts }}">{{ log.ts }}</span></span>
+            {% if log.due_at %}<span>마감: <span class="ts" data-iso="{{ log.due_at }}">{{ log.due_at }}</span></span>{% endif %}
+            {% if log.url %}<span>링크: <a href="{{ log.url }}" target="_blank" rel="noopener">{{ log.url }}</a></span>{% endif %}
+            {% if log.assignment_id %}<span>#{{ log.assignment_id }}</span>{% endif %}
+          </div>
+
+          {% if log.problems and log.problems|length > 0 %}
+          <ol class="problems">
+            {% for p in log.problems %}
+            <li>
+              {% if p.code %}<code>{{ p.code }}</code> – {% endif %}
+              {{ p.title }}
+            </li>
+            {% endfor %}
+          </ol>
+          {% endif %}
+
+          {% if log.message %}
+          <div class="msg" id="msg-{{ loop.index }}">{{ log.message }}</div>
+          {% endif %}
+
+          <div class="actions">
+            {% if log.message %}
+            <button class="btn btn-copy" onclick="copyText(`#msg-{{ loop.index }}`)">본문 복사</button>
+            {% endif %}
+            {% if log.url %}
+            <a class="btn" href="{{ log.url }}" target="_blank" rel="noopener">문제 페이지 열기</a>
+            {% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">아직 저장된 숙제 기록이 없습니다.</div>
+    {% endif %}
+
+    <div class="footer">
+      ※ 시간은 브라우저 현지시간으로 표시됩니다. · 로그는 발송 시점에 자동 저장되었습니다.
+    </div>
+  </div>
+
+  <script>
+    function copyText(sel) {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      const text = el.innerText;
+      navigator.clipboard.writeText(text)
+        .then(()=> toast('📋 복사되었습니다'))
+        .catch(()=> toast('복사 실패'));
+    }
+    function copyAll() {
+      const msgs = Array.from(document.querySelectorAll('.msg')).map(m => m.innerText);
+      if (!msgs.length) { toast('복사할 메시지가 없습니다'); return; }
+      navigator.clipboard.writeText(msgs.join('\n\n----------------\n\n'))
+        .then(()=> toast('전체 메시지를 복사했습니다'))
+        .catch(()=> toast('복사 실패'));
+    }
+    function toast(msg, ms=1800) {
+      const t = document.createElement('div');
+      t.textContent = msg;
+      t.style.position='fixed'; t.style.bottom='20px'; t.style.left='50%'; t.style.transform='translateX(-50%)';
+      t.style.background='#101735'; t.style.border='1px solid #2a345c'; t.style.color='#e6ebff';
+      t.style.padding='10px 14px'; t.style.borderRadius='999px'; t.style.zIndex=9999; t.style.opacity='0';
+      t.style.transition='opacity .15s ease';
+      document.body.appendChild(t);
+      requestAnimationFrame(()=> t.style.opacity='1');
+      setTimeout(()=>{ t.style.opacity='0'; t.addEventListener('transitionend', ()=> t.remove()); }, ms);
+    }
+    // ISO → 로컬 문자열
+    function formatISO(iso) {
+      try {
+        const d = new Date(iso);
+        if (isNaN(d)) return iso;
+        const pad = n => String(n).padStart(2,'0');
+        const days = ['일','월','화','수','목','금','토'];
+        return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}(${days[d.getDay()]}) ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      } catch { return iso; }
+    }
+    // 시간 라벨 치환
+    document.querySelectorAll('.ts').forEach(el => {
+      const iso = el.dataset.iso;
+      if (iso) el.textContent = formatISO(iso);
+    });
+    // 간단 검색 필터
+    const filter = document.getElementById('filterInput');
+    const cards = document.getElementById('cards');
+    if (filter && cards) {
+      filter.addEventListener('input', () => {
+        const q = filter.value.trim().toLowerCase();
+        cards.querySelectorAll('.card').forEach(card => {
+          const hay = card.dataset.search || '';
+          card.style.display = hay.includes(q) ? '' : 'none';
+        });
+      });
+    }
+  </script>
+</body>
+</html>
