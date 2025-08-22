@@ -40,6 +40,11 @@ from config import (
 
 #########
 
+from pathlib import Path
+import uuid
+
+UUIDS_PATH = Path("meta/uuids.json")
+UUIDS_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 # --- 유틸들 ---
 
@@ -100,13 +105,76 @@ def resolve_legacy_map_path():
     return legacy_to_server_file if os.path.exists(legacy_to_server_file) else None
 
 
+if not UUIDS_PATH.exists():
+    UUIDS_PATH.write_text("{}", encoding="utf-8")
+
+
+def resolve_uuid(student_id: str) -> str:
+    m = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+    if student_id not in m:
+        m[student_id] = str(uuid.uuid4())
+        UUIDS_PATH.write_text(
+            json.dumps(m, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    return m[student_id]
+
+
+def reverse_lookup(user_uuid: str) -> str | None:
+    m = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+    for sid, u in m.items():
+        if u == user_uuid:
+            return sid
+    return None
+
+
+def user_doc_path_by_uuid(user_uuid: str) -> Path:
+    return Path(USER_DATA_DIR) / f"{user_uuid}.json"
+
+
+def load_user_doc_for(username: str) -> dict:
+    """UUID 문서를 로드(없으면 초기 구조 생성)."""
+    u = resolve_uuid(username)
+    p = user_doc_path_by_uuid(u)
+    if not p.exists():
+        return {
+            "user_uuid": u,
+            "profile": {"student_id": username, "name": username},
+            "oi_problems": {},
+            "homework_logs": [],
+        }
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+def save_user_doc(doc: dict):
+    u = doc["user_uuid"]
+    p = user_doc_path_by_uuid(u)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def cache_user_problems(username: str, problems: dict):
+    """
+    듀얼 저장:
+      - 문서(users_data/<uuid>.json): oi_problems 갱신(숙제로그/프로필 보존)
+      - 캐시(users_data/<username>.json): 문제-only (기존 summarize_progress 호환)
+    반환값은 '캐시 경로'(기존 호출부와 동일하게 사용되도록).
+    """
     os.makedirs(USER_DATA_DIR, exist_ok=True)
-    filename = f"{sanitize_filename(username)}.json"
-    user_path = os.path.join(USER_DATA_DIR, filename)
-    with open(user_path, "w", encoding="utf-8") as f:
-        json.dump(problems, f, ensure_ascii=False, indent=2)
-    return user_path
+
+    # 1) 문서 업데이트 (UUID 파일)
+    doc = load_user_doc_for(username)
+    doc["profile"]["student_id"] = username
+    # real_name/class_id 등은 가능하면 여기서 덮어쓰세요(상위 호출에서 넘길 때)
+    doc["oi_problems"] = problems or {}
+    save_user_doc(doc)
+
+    # 2) 문제-only 캐시 (기존 summarize_progress가 읽는 파일)
+    cache_filename = f"{sanitize_filename(username)}.json"
+    cache_path = os.path.join(USER_DATA_DIR, cache_filename)
+    with open(cache_path, "w", encoding="utf-8") as f:
+        json.dump(problems or {}, f, ensure_ascii=False, indent=2)
+
+    return cache_path
 
 
 def fetch_submissions_window(s, username, myself: int, days=30, limit=100):
@@ -363,3 +431,14 @@ def resolve_legacy_map_dict():
         with open(path, encoding="utf-8") as f:
             return json.load(f)
     return {}
+
+
+def resolve_uuid(student_id: str) -> str:
+    """레거시 student_id에 대응하는 UUID를 반환(없으면 생성)."""
+    m = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+    if student_id not in m:
+        m[student_id] = str(uuid.uuid4())
+        UUIDS_PATH.write_text(
+            json.dumps(m, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    return m[student_id]

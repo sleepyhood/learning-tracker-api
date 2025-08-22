@@ -4,21 +4,37 @@ let assignMode = false;
 let selectedProblems = []; // {title, link, chapter}
 let lastChecked = null;
 
-
-async function postHomeworkLog({ title, url, problems, message, dueAt=null, channel="kakao" }) {
+async function postHomeworkLog({
+  title,
+  url,
+  problems,
+  message,
+  dueAt = null,
+  channel = "kakao",
+}) {
   const groupInfo = document.getElementById("groupInfo");
   const userUuid = groupInfo?.dataset.userUuid;
 
   if (!userUuid) {
-    console.warn("user_uuid가 페이지에 없습니다. 로그 저장을 생략합니다.");
-    return;
+    console.error("[HW] user_uuid 없음: 로그 저장 불가");
+    showToast("⚠️ 로그 저장 실패(user_uuid 없음)");
+    throw new Error("user_uuid missing");
   }
 
   const res = await fetch(`/api/students/${userUuid}/homework_logs`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, url, problems, message, due_at: dueAt, channel })
+    body: JSON.stringify({
+      title,
+      url,
+      problems,
+      message,
+      due_at: dueAt,
+      channel,
+    }),
   });
+  const textRes = await res.text(); // ← 응답 본문 미리 찍어보기
+  console.log("[HW] save response:", res.status, textRes);
 
   if (!res.ok) {
     const t = await res.text();
@@ -26,8 +42,6 @@ async function postHomeworkLog({ title, url, problems, message, dueAt=null, chan
     showToast("⚠️ 로그 저장 실패(복사는 완료됨)");
   }
 }
-
-
 
 function goToParentPage() {
   const currentURL = window.location.href;
@@ -82,10 +96,16 @@ function toggleAssignMode() {
     assignControls.style.display = "flex";
   }
 }
+let __copying = false;
+
 async function copySelectedProblems() {
-  const selected = Array.from(document.querySelectorAll(".assign-checkbox:checked"));
+  if (__copying) return;
+  __copying = true;
+
+  const selected = [...document.querySelectorAll(".assign-checkbox:checked")];
   if (selected.length === 0) {
     showToast("⚠️ 선택된 문제가 없습니다!");
+    __copying = false;
     return;
   }
 
@@ -93,18 +113,16 @@ async function copySelectedProblems() {
   const groupTitle = groupInfo.dataset.title;
   const groupUrl = groupInfo.dataset.url;
 
-  const problemTitles = selected.map((cb) => `${cb.dataset.title}`);
-
-  // 메시지 본문 구성(기존 그대로)
-  const assignedDate = new Date();
+  const problemTitles = selected.map((cb) => cb.dataset.title);
+  const now = new Date();
   const days = ["일", "월", "화", "수", "목", "금", "토"];
-  const y = assignedDate.getFullYear();
-  const m = String(assignedDate.getMonth() + 1).padStart(2, "0");
-  const d = String(assignedDate.getDate()).padStart(2, "0");
-  const day = days[assignedDate.getDay()];
-  const assignedDateStr = `${y}.${m}.${d}(${day})`;
+  const assignedDateStr = `${now.getFullYear()}.${String(
+    now.getMonth() + 1
+  ).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")}(${
+    days[now.getDay()]
+  })`;
 
-  const lines = [
+  const text = [
     `\n📘 ${groupTitle}`,
     `🔗 ${groupUrl}`,
     `🗓 출제일: ${assignedDateStr}`,
@@ -112,33 +130,32 @@ async function copySelectedProblems() {
     "",
     ...problemTitles,
     "=========================",
-  ];
-  const text = lines.join("\n");
+  ].join("\n");
 
   try {
+    // 1) 복사 & 즉시 토스트
     await navigator.clipboard.writeText(text);
+    showToast(`📘 ${groupTitle}\n✅ ${problemTitles.length}개 복사 완료`);
 
-    // ✅ 문제 배열(payload) 구성: code/pid + title
+    // 2) 서버로 로그 (여기서 problemsPayload는 "이 자리에서" 만든다)
     const problemsPayload = selected.map((cb) => ({
-      code: cb.dataset.pid || "",
-      title: cb.dataset.title || ""
+      legacy_code: cb.dataset.pid || "", // 또는 code
+      title: cb.dataset.title || "",
     }));
 
-    // ✅ 복사 성공 후 서버에 로그 저장
+    // 실패해도 복사 토스트는 이미 떠있으니 UX 안전
     await postHomeworkLog({
       title: groupTitle,
       url: groupUrl,
       problems: problemsPayload,
       message: text,
-      // dueAt: 나중에 "다음 수업" 계산기가 생기면 ISO 포맷으로 넣어주세요.
     });
-
-    showToast(`📘 ${groupTitle} 단원\n✅ 선택된 ${problemTitles.length} 문제가 복사되었습니다!`);
   } catch (err) {
     alert("복사 실패: " + err);
+  } finally {
+    __copying = false;
   }
 }
-
 
 function toggleProblemSelection(problemId) {
   if (!assignMode) return;
@@ -223,7 +240,7 @@ function showToast(message, duration = 3000) {
 function refreshUserProgress(username) {
   // const username = "{{ username }}"; // Jinja 템플릿에서 사용자 이름 삽입
 
-  fetch(`/refresh_user/${username}`)
+  fetch(`/refresh_user/${encodeURIComponent(username)}`)
     .then((res) => res.json())
     .then((data) => {
       if (data.success) {

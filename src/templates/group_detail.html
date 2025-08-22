@@ -233,12 +233,13 @@
       </div>
     </div>
     <!-- 변경: uuid, username도 함께 내려주기(백업용) -->
-    <div id="groupInfo"
-        data-title="{{ group_title }}"
-        data-url="{{ chapter_url_html }}"
-        data-user-uuid="{{ user_uuid }}"
-        data-username="{{ username }}">
-    </div>
+    <div
+      id="groupInfo"
+      data-title="{{ group_title }}"
+      data-url="{{ chapter_url_html }}"
+      data-user-uuid="{{ user_uuid }}"
+      data-username="{{ username }}"
+    ></div>
 
     <div class="problem-list">
       {% for problem in problem_names %}
@@ -332,13 +333,13 @@
           try {
             await navigator.clipboard.writeText(text);
 
-      // ✅ 복사 성공 후 서버에 로그 저장
-      await postHomeworkLog({
-        title,
-        url,
-        problems: [],     // 단순 복사 버튼은 문제 리스트가 없으므로 비워 둠
-        message: text
-      });
+            // ✅ 복사 성공 후 서버에 로그 저장
+            await postHomeworkLog({
+              title,
+              url,
+              problems: [], // 단순 복사 버튼은 문제 리스트가 없으므로 비워 둠
+              message: text,
+            });
 
             btn.disabled = true;
             showToast(`${text}\n\n📋 복사되었습니다!`);

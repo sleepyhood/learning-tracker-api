@@ -9,10 +9,12 @@ from pprint import pprint
 from utils.streak_utils import generate_streak_data
 from pathlib import Path
 
+from flask_cors import CORS
 
 # config.py 또는 main.py 상단
 from dotenv import load_dotenv
 import os
+from uuid import uuid4
 
 
 from urllib.parse import quote
@@ -39,6 +41,7 @@ from utils.utils_common import (
     ensure_user_cache_or_404,
     resolve_legacy_map_path,
     resolve_legacy_map_dict,
+    resolve_uuid,
 )
 
 
@@ -58,7 +61,11 @@ from config import (
 
 #########
 
-
+from utils.utils_user_doc import (
+    load_doc_by_any,
+    save_doc_by_any,
+    _user_doc_path_by_uuid,
+)
 import uuid
 
 # UUID 레지스트리(레거시ID ↔ UUID 매핑) 파일 경로
@@ -71,13 +78,6 @@ KST = timezone(timedelta(hours=9))
 
 # app.py 어딘가(라우트 위) 유틸 함수로 추가
 
-def resolve_uuid(student_id: str) -> str:
-    """레거시 student_id에 대응하는 UUID를 반환(없으면 생성)."""
-    m = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
-    if student_id not in m:
-        m[student_id] = str(uuid.uuid4())
-        UUIDS_PATH.write_text(json.dumps(m, ensure_ascii=False, indent=2), encoding="utf-8")
-    return m[student_id]
 
 def reverse_lookup(user_uuid: str) -> str | None:
     """UUID에서 레거시 student_id를 찾아 반환."""
@@ -87,44 +87,86 @@ def reverse_lookup(user_uuid: str) -> str | None:
             return sid
     return None
 
+
 def _user_file_path(student_id: str) -> Path:
     safe = sanitize_filename(student_id)
     return Path(USER_DATA_DIR) / f"{safe}.json"
+
 
 def _load_user_doc(student_id: str) -> dict:
     """기존 파일이 배열형(oi_problems만 저장)이어도 dict 구조로 승격."""
     p = _user_file_path(student_id)
     if not p.exists():
-        return {"profile": {"student_id": student_id}, "oi_problems": [], "homework_logs": []}
+        return {
+            "profile": {"student_id": student_id},
+            "oi_problems": [],
+            "homework_logs": [],
+        }
     raw = json.loads(p.read_text(encoding="utf-8"))
     if isinstance(raw, list):
         # 과거 포맷: 문제배열만 저장하던 파일
-        return {"profile": {"student_id": student_id}, "oi_problems": raw, "homework_logs": []}
+        return {
+            "profile": {"student_id": student_id},
+            "oi_problems": raw,
+            "homework_logs": [],
+        }
     # dict 보장 + 기본키 보강
     raw.setdefault("profile", {"student_id": student_id})
     raw.setdefault("oi_problems", raw.get("problems", []))
     raw.setdefault("homework_logs", [])
     return raw
 
+
 def _save_user_doc(student_id: str, doc: dict):
-    p = _user_file_path(student_id)
+    p = _user_file_path(resolve_uuid(student_id))
+    print(f"p: {p}")
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
 
+
 def append_homework_log(student_id: str, payload: dict) -> dict:
     """숙제 로그 1건을 추가하고 저장."""
-    doc = _load_user_doc(student_id)
+    doc = _load_user_doc(resolve_uuid(student_id))
+
     # UUID 주입
     doc.setdefault("user_uuid", resolve_uuid(student_id))
-    # 타임스탬프 기본값
+
+    # payload 기본값 먼저 보강
+    payload = payload or {}
+    payload.setdefault("channel", "kakao")
+    payload.setdefault("message", "")
+    payload.setdefault("title", "")
+    payload.setdefault("url", "")
+    payload.setdefault("problems", [])
+
+    # 로그 베이스(얕은 복사 OK) + problems는 새 리스트로 교체 (중요!)
     log = dict(payload)
+    log["id"] = log.get("id") or str(uuid4())  # 고유 ID
+
+    log["problems"] = []
+
+    # 매핑 로드
+    with open(LEGACY_TO_SERVER_FILE, encoding="utf-8") as f:
+        legacy_to_server = json.load(f)
+
+    # 순회는 원본의 "스냅샷"(복사본) 위에서
+    for code in list(payload["problems"]):
+        if isinstance(code, dict):
+            legacy_code = code.get("legacy_code")
+        else:
+            legacy_code = code
+        log["problems"].append(
+            {
+                "legacy_code": legacy_code,
+                "server_problem_id": legacy_to_server.get(legacy_code),
+            }
+        )
+
+    # 타임스탬프
     log.setdefault("ts", datetime.now(tz=KST).isoformat())
-    # 최소 필드 보강
-    log.setdefault("channel", "kakao")
-    log.setdefault("message", "")
-    log.setdefault("title", "")
-    log.setdefault("url", "")
-    log.setdefault("problems", [])
+
+    # 저장
+    doc.setdefault("homework_logs", [])
     doc["homework_logs"].append(log)
     _save_user_doc(student_id, doc)
     return doc
@@ -136,6 +178,7 @@ def append_homework_log(student_id: str, payload: dict) -> dict:
 # app = Flask(__name__)
 app = Flask(__name__, static_folder="static")
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)  # ✅ 여기에 바로 설정
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
 # --- imports 상단 ---
 from flask import session as fsession
@@ -286,12 +329,124 @@ def refresh_user(username):
     doc.setdefault("homework_logs", doc.get("homework_logs", []))
 
     _save_user_doc(student_id, doc)
-    return jsonify({"success": True, "updated_at": datetime.now(tz=KST).isoformat(), "user_uuid": doc["user_uuid"]})
+    return jsonify(
+        {
+            "success": True,
+            "updated_at": datetime.now(tz=KST).isoformat(),
+            "user_uuid": doc["user_uuid"],
+        }
+    )
+
+
+@app.get("/api/students/<user_uuid>/homework_status")
+def api_homework_status(user_uuid):
+
+    def _iter_items(x):
+        if isinstance(x, dict):
+            return x.items()
+        elif isinstance(x, list):
+            return enumerate(x)
+        else:
+            return []
+
+    sid = reverse_lookup(user_uuid)
+    if not sid:
+        return jsonify({"ok": False, "error": "unknown uuid"}), 404
+
+    doc = _load_user_doc(sid)
+    logs = doc.get("homework_logs", [])
+    oi = doc.get("oi_problems", {})  # { "27": {"_id":"P101v0101","status":0}, ... }
+
+    # 레거시코드 -> 현재상태 맵(빠른 조회)
+    legacy_status = {}
+    for _, item in _iter_items(oi):
+        code = item.get("_id")  # ex) "P101v0101" or "S101v0111"
+        status = item.get("status", -1)  # 0 통과, 1 오답 등(당신 정의대로)
+        if code:
+            legacy_status[code] = status
+
+    out = []
+    for idx, log in enumerate(logs):
+        probs = log.get("problems", [])
+        total = len(probs)
+        passed = 0
+        wrong = 0
+        pending = 0
+        detail = []
+        for p in probs:
+            code = p["legacy_code"] if isinstance(p, dict) else p
+            st = legacy_status.get(code, None)
+            if st == 0:
+                passed += 1
+            elif st is None:
+                pending += 1
+            else:
+                wrong += 1
+            detail.append({"legacy_code": code, "status": st})
+
+        out.append(
+            {
+                "index": idx,
+                "title": log.get("title"),
+                "url": log.get("url"),
+                "created_at": log.get("created_at"),
+                "due_at": log.get("due_at"),
+                "counts": {
+                    "total": total,
+                    "passed": passed,
+                    "wrong": wrong,
+                    "pending": pending,
+                },
+                "detail": detail,
+                "late": (
+                    log.get("due_at")
+                    and datetime.fromisoformat(log["due_at"]) < datetime.now(KST)
+                ),
+            }
+        )
+    return jsonify({"ok": True, "items": out})
+
+
+# DELETE /api/students/<id_or_uuid>/homework_logs/<log_key>
+# log_key: 로그의 uuid id 또는 index(0-based)
+@app.delete("/api/students/<id_or_uuid>/homework_logs/<log_key>")
+def api_delete_homework_log(id_or_uuid, log_key):
+    u = id_or_uuid if "-" in id_or_uuid else resolve_uuid(id_or_uuid)
+    if not u:
+        return jsonify({"ok": False, "error": "unknown user"}), 404
+
+    doc = _load_user_doc(u)  # 반드시 uuid.json을 여는 함수
+    logs = doc.get("homework_logs", [])
+    # print(f"logs: {logs}")
+    removed = None
+    # 1) id로 삭제
+    for i, x in enumerate(logs):
+        if str(x.get("id", "")) == log_key:
+            removed = logs.pop(i)
+            break
+
+    # 2) index로 삭제(뷰가 역순 렌더라는 가정하에 보정)
+    if removed is None:
+        try:
+            idx_view = int(log_key)
+            idx_real = len(logs) - 1 - idx_view  # !!! 역순 보정
+            if 0 <= idx_real < len(logs):
+                removed = logs.pop(idx_real)
+        except ValueError:
+            pass
+
+    if removed is None:
+        return jsonify({"ok": False, "error": "log not found"}), 404
+
+    _save_user_doc(u, doc)
+    return jsonify({"ok": True, "count": len(logs)})
 
 
 # ✅ 복사/전송 시 호출: 숙제 로그를 학생 JSON에 append
-@app.post("/api/students/<id_or_uuid>/homework_logs")
+@app.route("/api/students/<id_or_uuid>/homework_logs", methods=["POST", "OPTIONS"])
 def api_save_homework_log(id_or_uuid):
+    if request.method == "OPTIONS":
+        return ("", 204)
     # id_or_uuid 가 UUID이면 역변환
     if "-" in id_or_uuid:
         sid = reverse_lookup(id_or_uuid)
@@ -300,9 +455,20 @@ def api_save_homework_log(id_or_uuid):
     else:
         sid = id_or_uuid
 
-    payload = request.get_json(force=True)  # {title,url,problems[],message,due_at,channel}
+    payload = request.get_json(
+        force=True
+    )  # {title,url,problems[],message,due_at,channel}
+    # print(f"payload: {payload}")
     doc = append_homework_log(sid, payload)
-    return jsonify({"ok": True, "user_uuid": doc.get("user_uuid"), "count": len(doc["homework_logs"])})
+    print(f"doc[homework_logs]: {doc["homework_logs"]}")
+    return jsonify(
+        {
+            "ok": True,
+            "user_uuid": doc.get("user_uuid"),
+            "count": len(doc["homework_logs"]),
+        }
+    )
+
 
 # ✅ 뷰어: UUID로 학생 숙제로그 열람 (템플릿: templates/homework_view.html 필요)
 @app.get("/students/<user_uuid>/homework")
@@ -310,11 +476,17 @@ def view_homework_logs(user_uuid):
     sid = reverse_lookup(user_uuid)
     if not sid:
         return "학생을 찾을 수 없습니다.", 404
-    doc = _load_user_doc(sid)
+    doc = _load_user_doc(user_uuid)
     logs = list(reversed(doc.get("homework_logs", [])))
     student = doc.get("profile", {})
     # 예: 간단 템플릿으로 렌더 (표/리스트)
-    return render_template("homework_view.html", student=student, logs=logs, user_uuid=user_uuid)
+    return render_template(
+        "homework_view.html",
+        student=student,
+        logs=logs,
+        user_uuid=user_uuid,
+        is_admin=True,
+    )
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -358,6 +530,7 @@ def index():
     # 기본 7일, 쿼리스트링으로 초기값 변경 가능 (?days=30)
     days = int(request.args.get("days", 7))
     me_json = fetch_profile(s, username=None)
+    # print(f"app.py-me_json: {me_json}")
     vm = build_dashboard_viewmodel(s, me_json, is_me=True, days=days)
     vm["streak_days"] = days
 
@@ -471,7 +644,7 @@ def group_detail(username, chapter, group_id):
         return str(e), 404
     except json.JSONDecodeError as e:
         return f"데이터 파싱 오류: {e}", 500
-    
+
         # ✅ UUID 준비: 파일에 없더라도 매핑 생성해서 확보
     try:
         user_uuid = user_data.get("user_uuid")
@@ -498,7 +671,7 @@ def group_detail(username, chapter, group_id):
 
     # 세션 role→템플릿 컨텍스트
     role_ctx = role_ctx_from_session()
-
+    # print(f"result: {result}")
     return render_template(
         "group_detail.html",
         username=username,
@@ -507,7 +680,7 @@ def group_detail(username, chapter, group_id):
         group_title=result["group_title"],
         problem_names=result["problem_names"],
         chapter_url_html=chapter_url,
-        user_uuid=user_uuid,     # ✅ 추가
+        user_uuid=user_uuid,  # ✅ 추가
         **role_ctx,  # role_label, is_admin
     )
 

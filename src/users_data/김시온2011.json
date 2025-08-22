@@ -2393,42 +2393,5 @@
     "_id": "SP101v1023",
     "score": 99,
     "status": 0
-  },
-  "profile": {
-    "student_id": "김시온2011"
-  },
-  "oi_problems": [],
-  "homework_logs": [
-    {
-      "title": "SLv14 기초1종합50제",
-      "url": "http://edu.doingcoding.com/p101?tag=SLv14%20%EA%B8%B0%EC%B4%881%EC%A2%85%ED%95%A950%EC%A0%9C",
-      "problems": [
-        {
-          "code": "SP101v1432",
-          "title": "32. [조건6] 계산기를 프로그램"
-        },
-        {
-          "code": "SP101v1434",
-          "title": "34. [반복-While2] 우리반 점수 총점 프로그램"
-        },
-        {
-          "code": "SP101v1435",
-          "title": "35. [반복-While3] 우리반 점수 총점과 평균 프로그램"
-        },
-        {
-          "code": "SP101v1436",
-          "title": "36. [반복-for1] 입력한 수 부터 0까지 출력"
-        },
-        {
-          "code": "SP101v1437",
-          "title": "37. [반복-for2] N개를 입력받아 총합과 평균을 출력"
-        }
-      ],
-      "message": "\n📘 SLv14 기초1종합50제\n🔗 http://edu.doingcoding.com/p101?tag=SLv14%20%EA%B8%B0%EC%B4%881%EC%A2%85%ED%95%A950%EC%A0%9C\n🗓 출제일: 2025.08.21(목)\n⏰ 마감: 다음 수업시간 전까지\n\n32. [조건6] 계산기를 프로그램\n34. [반복-While2] 우리반 점수 총점 프로그램\n35. [반복-While3] 우리반 점수 총점과 평균 프로그램\n36. [반복-for1] 입력한 수 부터 0까지 출력\n37. [반복-for2] N개를 입력받아 총합과 평균을 출력\n=========================",
-      "due_at": null,
-      "channel": "kakao",
-      "ts": "2025-08-21T19:55:24.651410+09:00"
-    }
-  ],
-  "user_uuid": "11781cd0-dcb2-4e37-9bc4-9d2b9adc04aa"
+  }
 }
