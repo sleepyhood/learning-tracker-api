@@ -14,32 +14,28 @@ async function postHomeworkLog({
 }) {
   const groupInfo = document.getElementById("groupInfo");
   const userUuid = groupInfo?.dataset.userUuid;
-
   if (!userUuid) {
     console.error("[HW] user_uuid 없음: 로그 저장 불가");
     showToast("⚠️ 로그 저장 실패(user_uuid 없음)");
     throw new Error("user_uuid missing");
   }
 
+  const payload = { title, url, problems, message, channel };
+  if (dueAt != null) payload.due_at = dueAt; // null이면 아예 보내지 않음
+
   const res = await fetch(`/api/students/${userUuid}/homework_logs`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title,
-      url,
-      problems,
-      message,
-      due_at: dueAt,
-      channel,
-    }),
+    body: JSON.stringify(payload),
   });
-  const textRes = await res.text(); // ← 응답 본문 미리 찍어보기
-  console.log("[HW] save response:", res.status, textRes);
+
+  const bodyText = await res.text();
+  console.log("[HW] save response:", res.status, bodyText);
 
   if (!res.ok) {
-    const t = await res.text();
-    console.error("숙제 로그 저장 실패:", t);
+    console.error("숙제 로그 저장 실패:", bodyText);
     showToast("⚠️ 로그 저장 실패(복사는 완료됨)");
+    // 필요하면 여기서 throw 유지/제거 선택
   }
 }
 
@@ -96,8 +92,8 @@ function toggleAssignMode() {
     assignControls.style.display = "flex";
   }
 }
-let __copying = false;
 
+let __copying = false;
 async function copySelectedProblems() {
   if (__copying) return;
   __copying = true;
@@ -133,25 +129,24 @@ async function copySelectedProblems() {
   ].join("\n");
 
   try {
-    // 1) 복사 & 즉시 토스트
     await navigator.clipboard.writeText(text);
     showToast(`📘 ${groupTitle}\n✅ ${problemTitles.length}개 복사 완료`);
 
-    // 2) 서버로 로그 (여기서 problemsPayload는 "이 자리에서" 만든다)
     const problemsPayload = selected.map((cb) => ({
-      legacy_code: cb.dataset.pid || "", // 또는 code
+      legacy_code: cb.dataset.pid || "",
       title: cb.dataset.title || "",
     }));
 
-    // 실패해도 복사 토스트는 이미 떠있으니 UX 안전
     await postHomeworkLog({
       title: groupTitle,
       url: groupUrl,
       problems: problemsPayload,
       message: text,
+      // dueAt: 값이 있으면 넣고, 없으면 생략됨
     });
   } catch (err) {
-    alert("복사 실패: " + err);
+    // 메시지 구분: 복사 실패인지, 로그 실패인지
+    alert("작업 중 오류: " + err.message);
   } finally {
     __copying = false;
   }

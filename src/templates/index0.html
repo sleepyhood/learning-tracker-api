@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <title>진도율 시각화</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}"> -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/fab.css') }}"
+    />
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/unified.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/quick_fix.css') }}"
+    />
+  </head>
+
+  <body>
+    <div id="overlay" aria-hidden="true" style="display: none"></div>
+    <div
+      id="submission-popover"
+      class="details"
+      role="dialog"
+      style="display: none"
+    ></div>
+    <div
+      id="submission-popover"
+      style="display: none; position: absolute; z-index: 1001"
+      class="details"
+    ></div>
+    <header>
+      <a href="/" style="text-decoration: none; color: inherit">
+        <h1>풀이현황</h1>
+      </a>
+      <form id="search-form" method="POST" action="/">
+        <div class="search-wrapper">
+          <input
+            type="text"
+            id="username-input"
+            name="username"
+            placeholder="유저명"
+            required
+          />
+          <ul id="autocomplete-list" class="autocomplete-box"></ul>
+
+          <button type="submit" id="search-btn">
+            <img
+              src="/static/search-icon.png"
+              alt="검색"
+              width="30"
+              height="auto"
+            />
+          </button>
+        </div>
+      </form>
+    </header>
+
+    <div class="fab-container">
+      <!-- 공통 FAB: 현황 새로고침 -->
+      <div
+        class="fab fab-refresh"
+        title="풀이 현황 최신화"
+        onclick="refreshUserProgress('{{ username }}')"
+      >
+        🔄
+      </div>
+      <!-- 이전 페이지로 이동 FAB -->
+      <div
+        class="fab fab-back"
+        title="이전 페이지로 이동"
+        onclick="goToParentPage()"
+      >
+        🔙
+      </div>
+    </div>
+    <div class="page">
+      <div id="profile-container" class="chart-card">
+        <img
+          src="{{ avatar_path }}"
+          alt="User Avatar"
+          width="100"
+          height="100"
+          style="border-radius: 50%; margin-bottom: 12px"
+        />
+        <h2 style="margin: 8px 0 4px">
+          {{ username }}
+          <br />
+          <span class="chip chip-role {{ 'admin' if is_admin else 'user' }}"
+            >{{ role_label }}</span
+          >
+          {% if primary_lang %}
+          <span
+            class="chip chip-lang"
+            title="최근 상위 언어:
+      {% for l,c in primary_lang_top3 %}{{l}} {{c}}회{% if not loop.last %}, {% endif %}{% endfor %}"
+          >
+            주 사용 언어: {{ primary_lang }}
+          </span>
+          {% endif %}
+        </h2>
+
+        <!-- 숙제 내역 버튼 -->
+        <div style="margin: 8px 0">
+          <a
+            href="{{ url_for('view_homework_logs', user_uuid=user_uuid) }}"
+            class="chip chip-action"
+            style="
+              background-color: #1976d2;
+              color: white;
+              padding: 6px 12px;
+              border-radius: 16px;
+              text-decoration: none;
+              font-size: 14px;
+            "
+          >
+            📝 숙제 내역 보기
+          </a>
+        </div>
+
+        <p style="margin: 2px 0; font-weight: 600">
+          마지막 로그인: {{ last_login }}
+        </p>
+
+        <div
+          id="profile-stats"
+          style="
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+          "
+        >
+          <div>
+            <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
+              {{ accepted_number }}
+            </div>
+            <div style="font-size: 13px; color: #555">해결한 문제</div>
+          </div>
+          <div>
+            <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
+              {{ submission_number }}
+            </div>
+            <div style="font-size: 13px; color: #555">제출 횟수</div>
+          </div>
+          <div>
+            <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
+              {{ total_score }}
+            </div>
+            <div style="font-size: 13px; color: #555">점수</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="streak-header">
+        <div class="streak-title"></div>
+        <div class="streak-controls">
+          <button class="streak-btn" data-days="7">7일</button>
+          <button class="streak-btn" data-days="30">30일</button>
+          <button class="streak-btn" data-days="90">90일</button>
+        </div>
+      </div>
+
+      <div class="streak-container">
+        <div id="streak-grid" class="streak-grid">
+          {% for day in streak_data %}
+          <div
+            class="streak-cell"
+            data-count="{{ day.count }}"
+            {%
+            if
+            day.details
+            %}
+            data-details="{{ day.details | tojson | forceescape }}"
+            {%
+            endif
+            %}
+          >
+            <div class="date-info">
+              <div class="weekday">{{ day.weekday }}</div>
+              <div class="date">{{ day.date }}</div>
+            </div>
+            <span class="count">{{ day.count }}</span>
+
+            {% if day.details %}
+            <div class="details">
+              {% for prob in day.details %}
+              <div class="prob-item">
+                <a
+                  href="http://edu.doingcoding.com/status/{{ prob.server_sub_id }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ prob.title }} </a
+                ><br />
+                ({{ prob.language }}, {{ prob.score }}점, {{ prob.time }})
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <h2 id="result-title" style="display: none"></h2>
+
+      <div id="charts-container"></div>
+
+      <footer style="padding: 20px; text-align: center">
+        <button id="update-btn" class="footer-btn" onclick="updateProblems()">
+          🔄 문제 목록 업데이트
+        </button>
+        <!-- ⏰ 마지막 업데이트 시각 표시 -->
+        <!-- ⏰ 마지막 업데이트 시각 표시 -->
+        <div
+          id="update-time"
+          style="margin-top: 10px; font-size: 14px; color: #ccc"
+        ></div>
+
+        <button
+          class="footer-btn"
+          onclick="fetch('/logout').then(() => alert('로그아웃 되었습니다.'))"
+        >
+          🚪 로그아웃
+        </button>
+        <button
+          class="footer-btn"
+          onclick="fetch('/clear_data').then(() => alert('데이터가 초기화되었습니다.'))"
+        >
+          🧹 캐시 지우기
+        </button>
+      </footer>
+    </div>
+    <!-- 
+ <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+<script src="{{ url_for('static', filename='js/refreshUserProgress.js') }}"></script> -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+    <script>
+      // 싱글톤 생성 유틸
+      function ensureEl(id, { className = "", style = "" } = {}) {
+        let el = document.getElementById(id);
+        if (!el) {
+          el = document.createElement("div");
+          el.id = id;
+          if (className) el.className = className;
+          if (style) el.setAttribute("style", style);
+          document.body.appendChild(el);
+        }
+        return el;
+      }
+
+      // 전역 엘리먼트 확보 (없으면 만든다)
+      const overlayEl = ensureEl("overlay", { style: "display:none" });
+      const popover = ensureEl("submission-popover", {
+        className: "details", // ← 반드시 .details
+        style: "display:none; position:absolute;",
+      });
+
+      const streakGrid = document.getElementById("streak-grid");
+
+      // 오늘(mm-dd) 문자열은 매번 계산하지 말고 모듈 전역으로 1회 캐시
+      const TODAY_MMDD = (() => {
+        const kst = new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Seoul",
+        });
+        const d = new Date(kst);
+        return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+          d.getDate()
+        ).padStart(2, "0")}`;
+      })();
+
+      // 초기 active 표시
+      document.addEventListener("DOMContentLoaded", () => {
+        const initialDays = Number("{{ streak_days|default(7) }}");
+        document.querySelectorAll(".streak-btn").forEach((b) => {
+          if (Number(b.dataset.days) === initialDays) b.classList.add("active");
+        });
+      });
+
+      (function hydrateInitialDetails() {
+        document.querySelectorAll(".streak-cell").forEach((cell) => {
+          if (cell.dataset.details) return;
+          const box = cell.querySelector(".details");
+          if (!box) return;
+
+          // ...파싱 로직 동일...
+
+          cell.dataset.details = JSON.stringify(list);
+          box.remove();
+        });
+        // 팝오버가 없던 초기 로드에서도, 이제 전역 팝오버가 보장되어 있음
+      })();
+
+      if (!streakGrid.__bound) {
+        streakGrid.addEventListener("click", (e) => {
+          const cell = e.target.closest(".streak-cell");
+          if (!cell) return;
+
+          const raw = cell.dataset.details;
+          if (!raw) return;
+
+          const list = JSON.parse(raw);
+          const same =
+            popover.__ownerCell === cell && popover.style.display === "block";
+          document.body.appendChild(popover);
+          if (same) {
+            popover.style.display = "none";
+            overlayEl.style.display = "none";
+            popover.__ownerCell = null;
+            return;
+          }
+
+          popover.innerHTML = list.length
+            ? list
+                .map(
+                  (p) => `
+      <div class="prob-item">
+        <a href="http://edu.doingcoding.com/status/${p.server_sub_id}" target="_blank" rel="noopener">
+          ${p.title}
+        </a><br/>(${p.language}, ${p.score}점, ${p.time})
+      </div>
+    `
+                )
+                .join("")
+            : `<div style="padding:8px">제출 내역 없음</div>`;
+
+          const rect = cell.getBoundingClientRect();
+          popover.style.top = `${
+            rect.top + window.scrollY + cell.offsetHeight + 8
+          }px`;
+          popover.style.left = `${rect.left + rect.width / 2}px`;
+          popover.style.transform = "translateX(-50%)";
+          popover.style.display = "block";
+          popover.style.zIndex = "10000"; // overlay(9998)보다 높게
+          popover.style.position = "absolute"; // 바디에 붙었으니 절대좌표
+          overlayEl.style.display = "block";
+          popover.__ownerCell = cell;
+        });
+
+        overlayEl.addEventListener("click", () => {
+          popover.style.display = "none";
+          overlayEl.style.display = "none";
+          popover.__ownerCell = null;
+        });
+
+        streakGrid.__bound = true;
+      }
+
+      (function primeInitialGrid() {
+        const cells = document.querySelectorAll(".streak-cell");
+        if (!cells.length) return;
+
+        cells.forEach((cell) => {
+          const c = Number(cell.dataset.count || 0);
+          let tier = calcTier(c);
+
+          if (tier) cell.dataset.tier = String(tier);
+          if (c >= 10) cell.dataset.milestone = "1";
+        });
+
+        // 오늘 표시도 최초 1회
+        const kst = new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Seoul",
+        });
+        const d = new Date(kst);
+
+        document.querySelectorAll(".streak-cell .date").forEach((el) => {
+          if (el.textContent.trim() === TODAY_MMDD) {
+            el.closest(".streak-cell")?.setAttribute("data-today", "1");
+          }
+        });
+      })();
+
+      // 렌더 함수 (빠름)
+      function renderStreakGrid(streakData) {
+        // 1) 프래그먼트에 누적
+        const frag = document.createDocumentFragment();
+
+        for (const day of streakData) {
+          const c = Number(day.count || 0);
+
+          // tier/milestone 미리 계산
+          let tier = calcTier(c);
+          const milestone = c >= 10 ? "1" : "";
+
+          const cell = document.createElement("div");
+          cell.className = "streak-cell";
+          cell.dataset.count = String(c);
+          if (tier) cell.dataset.tier = String(tier);
+          if (milestone) cell.dataset.milestone = "1";
+          if (day.date === TODAY_MMDD) cell.dataset.today = "1";
+
+          // 보이는 최소 내용만 넣기 (details는 data-*에 JSON 저장)
+          cell.innerHTML = `
+      <div class="date-info">
+        <div class="weekday">${day.weekday}</div>
+        <div class="date">${day.date}</div>
+      </div>
+      <span class="count">${c}</span>
+    `;
+          if (day.details && day.details.length) {
+            cell.dataset.details = JSON.stringify(day.details);
+          }
+
+          frag.appendChild(cell);
+        }
+
+        // 2) 단 한 번에 DOM 교체
+        streakGrid.replaceChildren(frag);
+      }
+
+      // 문제 업데이트 버튼
+      function updateProblems() {
+        const btn = document.getElementById("update-btn");
+        const timeDisplay = document.getElementById("update-time");
+        const originalText = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = "⏳ 업데이트 중...";
+
+        fetch("/update_problems", { method: "POST" })
+          .then((res) => {
+            if (res.ok) {
+              alert("문제 목록이 갱신되었습니다!");
+
+              // 타임스탬프 갱신
+              const now = new Date();
+              const formattedTime = now.toLocaleTimeString("ko-KR", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              });
+            } else {
+              alert("실패했습니다");
+            }
+            timeDisplay.textContent = `🕒 마지막 업데이트: ${formattedTime}`;
+          })
+          .catch(() => alert("요청 중 오류가 발생했습니다."))
+          .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          });
+      }
+
+      // 배경 클릭 시 닫기
+      overlayEl.addEventListener("click", () => {
+        popover.style.display = "none";
+        overlayEl.style.display = "none";
+        popover.__ownerCell = null;
+      });
+
+      function calcTier(c) {
+        if (c >= 1 && c <= 2) return 1;
+        if (c <= 4) return 2;
+        if (c <= 7) return 3;
+        if (c <= 12) return 4;
+        if (c >= 13) return 5;
+        return 0;
+      }
+      /*스트릭 가져오기*/
+      // 서버 주입 값(없을 수도 있음)
+      const SERVER_VIEW_MODE = "{{ view_mode|default('') }}";
+      const SERVER_VIEW_USERNAME = "{{ view_username|default('') }}";
+
+      // 경로에서 /user/<username> 추출
+      const m = location.pathname.match(/^\/user\/([^\/]+)/);
+      const PATH_VIEW_MODE = m ? "user" : "me";
+      const PATH_VIEW_USERNAME = m ? decodeURIComponent(m[1]) : "";
+
+      // 최종 값
+      const viewMode = SERVER_VIEW_MODE || PATH_VIEW_MODE;
+      const viewUsername = SERVER_VIEW_USERNAME || PATH_VIEW_USERNAME;
+
+      console.log("viewMode=", viewMode);
+
+      document.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".streak-btn");
+        if (!btn) return;
+
+        e.preventDefault(); // 혹시 모를 submit 방지
+        document
+          .querySelectorAll(".streak-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        const days = btn.dataset.days;
+        console.log("viewUsername=", viewUsername, "days=", days);
+
+        try {
+          const url = `/api/streak?viewMode=${viewMode}&viewUsername=${encodeURIComponent(
+            viewUsername
+          )}&days=${days}`;
+          console.log("viewMode: ", viewMode);
+          console.log("[streak] fetching:", url);
+
+          const res = await fetch(url, {
+            headers: { Accept: "application/json" },
+          });
+          if (!res.ok) {
+            const txt = await res.text();
+            console.error("streak api error:", res.status, txt);
+            alert(`API 호출 실패 (${res.status})`);
+            return;
+          }
+          const data = await res.json();
+          if (data.streak_data) {
+            renderStreakGrid(data.streak_data);
+          } else {
+            console.error("payload:", data);
+            alert("스트릭 데이터를 불러오지 못했습니다.");
+          }
+        } catch (err) {
+          console.error("fetch failed:", err);
+          alert("네트워크 오류가 발생했습니다.");
+        }
+      });
+      window.addEventListener("scroll", repositionPopover, { passive: true });
+      window.addEventListener("resize", repositionPopover);
+      function repositionPopover() {
+        if (popover.style.display !== "block" || !popover.__ownerCell) return;
+        const cell = popover.__ownerCell;
+        const rect = cell.getBoundingClientRect();
+        popover.style.top = `${
+          rect.top + window.scrollY + cell.offsetHeight + 8
+        }px`;
+        popover.style.left = `${rect.left + rect.width / 2}px`;
+      }
+
+      // 중앙 텍스트용 Chart.js 커스텀 플러그인
+      function centerTextPlugin(text) {
+        return {
+          id: "centerText",
+          beforeDraw(chart) {
+            const { ctx, chartArea, width, height } = chart;
+
+            if (!chartArea) return; // 아직 렌더링 준비 전이면 그리지 않음
+
+            ctx.save();
+
+            const fontSize = Math.min(width / 10, 20); // responsive size
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#444";
+
+            const centerX = (chartArea.left + chartArea.right) / 2;
+            const centerY = (chartArea.top + chartArea.bottom) / 2;
+
+            ctx.fillText(text, centerX, centerY);
+            ctx.restore();
+          },
+        };
+      }
+
+      const progressData = JSON.parse(`{{ progress_data | tojson  }}`);
+      const username = "{{ username }}";
+
+      // 사용자 조회
+      // const form = document.getElementById("search-form");
+      //const input = document.getElementById("username-input");
+      const resultTitle = document.getElementById("result-title");
+      // const container = document.getElementById("charts-container");
+
+      // document.getElementById("result-title").textContent = `${username} 님의 챕터별 진도`;
+      document.getElementById("result-title").style.display = "block";
+
+      const container = document.getElementById("charts-container");
+      container.innerHTML = progressData
+        .map(
+          (item, idx) => `
+            <div class="chart-card" data-href="/user/${encodeURIComponent(
+              username
+            )}/chapter/${encodeURIComponent(item.chapter)}">
+              <canvas id="chart-${idx}" width="160" height="160"></canvas>
+              <p style="margin-top: 12px; font-weight: bold;">${
+                item.chapter
+              }</p>
+            </div>
+          `
+        )
+        .join("");
+
+      document.querySelectorAll(".chart-card").forEach((card) => {
+        card.addEventListener("click", () => {
+          const href = card.dataset.href;
+          if (href) window.location.href = href;
+        });
+      });
+
+      progressData.forEach((item, idx) => {
+        const canvas = document.getElementById(`chart-${idx}`);
+        const ctx = canvas.getContext("2d");
+
+        const gradient = ctx.createLinearGradient(0, 0, 200, 200);
+        if (item.percent === 100)
+          gradient.addColorStop(0, "rgb(142,234,220)"),
+            gradient.addColorStop(1, "rgb(46,147,248)");
+        else if (item.percent >= 80)
+          gradient.addColorStop(0, "rgb(128,240,131)"),
+            gradient.addColorStop(1, "rgb(44,206,190)");
+        else if (item.percent >= 51)
+          gradient.addColorStop(0, "rgb(219,234,134)"),
+            gradient.addColorStop(1, "rgb(50,214,58)");
+        else if (item.percent >= 21)
+          gradient.addColorStop(0, "rgb(236,219,135)"),
+            gradient.addColorStop(1, "rgb(245,151,35)");
+        else if (item.percent >= 1)
+          gradient.addColorStop(0, "rgb(236,167,184)"),
+            gradient.addColorStop(1, "rgb(241,53,35)");
+        else gradient.addColorStop(0, "#ddd"), gradient.addColorStop(1, "#ddd");
+
+        new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["완료", "미완료"],
+            datasets: [
+              {
+                data: [item.percent, 100 - item.percent],
+                backgroundColor: [gradient, "#f0f0f0"],
+                borderWidth: 0,
+                borderRadius: 100,
+              },
+            ],
+          },
+          options: {
+            cutout: "60%",
+            plugins: {
+              legend: { display: false },
+              tooltip: { enabled: false },
+              title: {
+                display: true,
+                text: `${item.percent}%`,
+                color: "#444",
+                font: { size: 20, weight: "bold" },
+                position: "center",
+              },
+            },
+          },
+          plugins: [centerTextPlugin(`${item.percent}%`)],
+        });
+      });
+    </script>
+  </body>
+</html>

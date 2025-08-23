@@ -1,0 +1,87 @@
+
+/* === Quick overrides to restore layout consistency === */
+
+/* 1) Clamp page width and center content */
+.page {
+  width: min(1200px, calc(100vw - 48px));
+  margin-inline: auto;
+}
+
+/* 2) Header should not consume vertical space beyond its content */
+header {
+  min-height: auto !important;
+  padding-block: 10px !important;
+}
+
+/* 3) Profile card stays compact */
+#profile-container {
+  max-width: 360px !important;
+  margin: 24px auto 8px !important;
+  text-align: center;
+}
+
+/* Stats grid inside the card – do not stretch full width */
+#profile-container #profile-stats {
+  max-width: 320px;
+  margin: 12px auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+/* 4) Streak controls + grid */
+.streak-header {
+  width: min(1200px, calc(100vw - 48px));
+  margin: 8px auto 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.streak-container {
+  width: min(1200px, calc(100vw - 48px));
+  margin: 6px auto 18px;
+}
+
+/* 5) Charts grid (group/level cards) */
+#charts-container {
+  width: min(1200px, calc(100vw - 48px));
+  margin: 12px auto 0 !important;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+/* 6) Footer buttons centered under the grid */
+footer {
+  width: min(1200px, calc(100vw - 48px));
+  margin: 12px auto 36px;
+  text-align: center;
+}
+
+/* 7) FABs: bottom-right fixed */
+.fab-container {
+  position: fixed !important;
+  right: 18px;
+  bottom: 18px;
+  inset-inline-end: 18px;
+  inset-block-end: 18px;
+}
+
+/* ==== Homework page === */
+.hw .container,
+.hw .row,
+.hw footer,
+.hw header,
+.hw .cards {
+  width: min(1200px, calc(100vw - 48px));
+  margin-inline: auto;
+}
+.hw .row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+}
+.hw .card {
+  border-radius: 16px;
+}

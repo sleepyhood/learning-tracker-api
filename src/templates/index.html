@@ -567,6 +567,25 @@
         </span>
         {% endif %}
       </h2>
+
+      <!-- 숙제 내역 버튼 -->
+      <div style="margin: 8px 0">
+        <a
+          href="{{ url_for('view_homework_logs', user_uuid=user_uuid) }}"
+          class="chip chip-action"
+          style="
+            background-color: #1976d2;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 16px;
+            text-decoration: none;
+            font-size: 14px;
+          "
+        >
+          📝 숙제 내역 보기
+        </a>
+      </div>
+
       <p style="margin: 2px 0; font-weight: 600">
         마지막 로그인: {{ last_login }}
       </p>

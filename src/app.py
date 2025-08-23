@@ -530,12 +530,18 @@ def index():
     # 기본 7일, 쿼리스트링으로 초기값 변경 가능 (?days=30)
     days = int(request.args.get("days", 7))
     me_json = fetch_profile(s, username=None)
-    # print(f"app.py-me_json: {me_json}")
+    print(f"app.py-me_json: {me_json.get('data').get('user').get('username')}")
     vm = build_dashboard_viewmodel(s, me_json, is_me=True, days=days)
     vm["streak_days"] = days
-
+    my_name = me_json.get("data").get("user").get("username")
+    my_uuid = resolve_uuid(my_name)
     return render_template(
-        "index.html", **vm, view_mode="me", view_username=""  # 공통 데이터 주입
+        "index.html",
+        **vm,
+        view_mode="me",
+        view_username="",
+        user_uuid=my_uuid,  # uuid 필드
+        # 공통 데이터 주입
     )
 
 
@@ -557,7 +563,17 @@ def user(username):
     print(f"other_json: {other_json}")
     vm = build_dashboard_viewmodel(s, other_json, is_me=False, days=days)
     vm["streak_days"] = days
-    return render_template("index.html", **vm, view_mode="user", view_username=username)
+
+    other_name = other_json.get("data").get("user").get("username")
+    other_uuid = resolve_uuid(other_name)
+
+    return render_template(
+        "index.html",
+        **vm,
+        view_mode="user",
+        view_username=username,
+        user_uuid=other_uuid,  # uuid 필드
+    )
 
 
 from flask import render_template, redirect
