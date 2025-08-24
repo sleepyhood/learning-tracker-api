@@ -141,7 +141,7 @@ def crawl_questions(select):
 
         print(f"{tmpTags[i]}의 총 row 개수: {len(rows)} 와 문제 형식: {_format}")
         print(problem_dict)
-        # time.sleep(0.5)
+        time.sleep(0.5)
     driver.quit()
     return validTags, validRows, validFormats, validProblemNames
 

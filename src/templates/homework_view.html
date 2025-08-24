@@ -554,7 +554,7 @@
                 if (!row) return;
 
                 row.classList.remove("passed", "wrong", "pending");
-                row.classList.add(p.status); // passed | wrong | pending
+                row.classList.add(p.status); // passed | partial | wrong | pending
 
                 const mark =
                   row.querySelector(".mark") ||
@@ -568,6 +568,8 @@
                 mark.textContent =
                   p.status === "passed"
                     ? "✅"
+                    : p.status == "partial"
+                    ? "⚠️"
                     : p.status === "wrong"
                     ? "❌"
                     : "…";

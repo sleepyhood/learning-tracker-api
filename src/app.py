@@ -402,12 +402,15 @@ def compute_homework_status(doc: dict):
         return (p.get("score", 0) >= 100) or (p.get("status") == 0)
 
     def is_attempted(p):
-        return (p.get("score", 0) > 0) or (p.get("status") not in (None,))
+        return (p.get("score", 0) == 0) or (p.get("status") in (-1))
+
+    def is_partial(p):
+        return (p.get("score", 0) > 0) or (p.get("status") in (8, 4))
 
     items = []
     for hw in doc.get("homework_logs", []):
         log_id = hw.get("log_id") or hw.get("ts")  # 안정 키
-        counts = {"total": 0, "passed": 0, "wrong": 0, "pending": 0}
+        counts = {"total": 0, "passed": 0, "wrong": 0, "partial": 0, "pending": 0}
         probs = []
 
         for prob in hw.get("problems", []):
@@ -420,9 +423,13 @@ def compute_homework_status(doc: dict):
                 p = by_numeric_key.get(str(prob["server_problem_id"]))
 
             if p:
+                # print(f"p: {p}")
                 if is_pass(p):
                     status = "passed"
                     counts["passed"] += 1
+                elif is_partial(p):
+                    status = "partial"
+                    counts["partial"] += 1
                 elif is_attempted(p):
                     status = "wrong"
                     counts["wrong"] += 1
