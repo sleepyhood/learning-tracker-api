@@ -119,7 +119,7 @@ async function copySelectedProblems() {
   })`;
 
   const text = [
-    `\n📘 ${groupTitle}`,
+    `📘 ${groupTitle}`,
     `🔗 ${groupUrl}`,
     `🗓 출제일: ${assignedDateStr}`,
     `⏰ 마감: 다음 수업시간 전까지`,

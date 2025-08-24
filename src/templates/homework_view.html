@@ -179,6 +179,27 @@
           flex: 1 1 calc(50% - 16px);
         }
       }
+
+      .problem-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      .problem-row .title {
+        font-size: 1em;
+      }
+      .problem-row.passed .title {
+        opacity: 0.9;
+      }
+      .problem-row.wrong .title {
+        text-decoration: underline dotted;
+      }
+      .problem-row.pending .title {
+        opacity: 0.6;
+      }
+      .progress-fill {
+        transition: width 0.3s ease;
+      }
     </style>
   </head>
   <body>
@@ -213,6 +234,8 @@
           >학생 대시보드로</a
         >
         {% endif %}
+
+        <button class="btn" id="refresh-now">새로고침</button>
       </div>
 
       <section id="summary" class="mb-4"></section>
@@ -298,6 +321,7 @@
         })();
       </script>
 -->
+
       {% if logs %}
       <div id="cards" class="row">
         {% for log in logs %}
@@ -305,7 +329,9 @@
           class="card"
           data-index="{{ loop.index0 }}"
           data-id="{{ log.id or '' }}"
-          data-search="{{ (log.title ~ ' ' ~ (log.message or '') ~ ' ' ~ (log.problems|map(attribute='title')|join(' '))) | lower }}"
+          data-log-id="{{ log.log_id or log.ts }}"
+          data-search="{{ (log.title ~ ' ' ~ (log.message or '') ~ ' ' ~
+          (log.problems|map(attribute='title')|join(' '))) | lower }}"
         >
           <div class="card-head">
             <div class="card-title">{{ log.title or "제목 없음" }}</div>
@@ -348,17 +374,21 @@
               >보낸 시각:
               <span class="ts" data-iso="{{ log.ts }}">{{ log.ts }}</span></span
             >
-            {% if log.due_at %}<span
+            {% if log.due_at %}
+            <span
               >마감:
               <span class="ts" data-iso="{{ log.due_at }}"
                 >{{ log.due_at }}</span
               ></span
-            >{% endif %} {% if log.url %}<span
+            >
+            {% endif %} {% if log.url %}
+            <span
               >링크:
               <a href="{{ log.url }}" target="_blank" rel="noopener"
                 >{{ log.url }}</a
               ></span
-            >{% endif %} {% if log.assignment_id %}<span
+            >
+            {% endif %} {% if log.assignment_id %}<span
               >#{{ log.assignment_id }}</span
             >{% endif %}
           </div>
@@ -366,10 +396,32 @@
           {% if log.problems and log.problems|length > 0 %}
           <ol class="problems">
             {% for p in log.problems %}
-            <li>
-              {% if p.code %}<code>{{ p.code }}</code> – {% elif p.legacy_code
-              %}<code>{{ p.legacy_code }}</code> – {% endif %} {{
-              p.title_at_issue or p.title or "" }}
+            <li
+              class="problem-row"
+              {%
+              if
+              p.legacy_code
+              %}data-legacy-code="{{ p.legacy_code }}"
+              {%
+              endif
+              %}
+              {%
+              if
+              p.server_problem_id
+              %}data-server-problem-id="{{ p.server_problem_id }}"
+              {%
+              endif
+              %}
+            >
+              <span class="mark" aria-label="status"></span>
+              {% if p.code %}
+              <code>{{ p.code }}</code>
+              {% elif p.legacy_code %}
+              <code>{{ p.legacy_code }}</code>
+              {% endif %}
+              <span class="title">
+                – {{ p.title_at_issue or p.title or "" }}</span
+              >
             </li>
             {% endfor %}
           </ol>
@@ -409,24 +461,118 @@
 
     <script>
       (async function () {
-        // 진행도 로드
-        const res = await fetch(
-          `/api/students/${"{{ user_uuid }}"}/homework_status`
-        );
-        const data = await res.json().catch(() => ({}));
-        if (data && data.ok) {
+        const userUuid = "{{ user_uuid }}";
+        // 1) TTL 체크 후 리프레시(예: 60초↑이면)
+        try {
+          const ttlMs = 60_000;
+          const first = await fetch(
+            `/api/students/${userUuid}/homework_status`
+          ).then((r) => r.json());
+          const updatedAt = first.updated_at ? Date.parse(first.updated_at) : 0;
+          if (!updatedAt || Date.now() - updatedAt > ttlMs) {
+            await fetch(`/api/students/${userUuid}/refresh`, {
+              method: "POST",
+            });
+          }
+        } catch (e) {
+          console.warn("초기 리프레시 실패(무시하고 진행):", e);
+        }
+        // 2) 집계 반영
+        await renderHomeworkStatus();
+
+        // 수동 새로고침 버튼
+        document
+          .getElementById("refresh-now")
+          ?.addEventListener("click", async () => {
+            const btn = document.getElementById("refresh-now");
+            btn.disabled = true;
+            await fetch(`/api/students/${userUuid}/refresh`, {
+              method: "POST",
+            });
+            await renderHomeworkStatus();
+            btn.disabled = false;
+          });
+
+        // 탭 포커스 복귀 시 자동 새로고침(너무 잦지 않게 guard)
+        let lastFocusRefresh = 0;
+        window.addEventListener("focus", async () => {
+          if (Date.now() - lastFocusRefresh < 30_000) return;
+          lastFocusRefresh = Date.now();
+          await fetch(`/api/students/${userUuid}/refresh`, { method: "POST" });
+          await renderHomeworkStatus();
+        });
+
+        async function renderHomeworkStatus() {
+          const userUuid = "{{ user_uuid }}";
+
+          // 호환: CSS.escape가 없을 수 있어요.
+          const esc = (s) =>
+            window.CSS && CSS.escape
+              ? CSS.escape(String(s))
+              : String(s).replace(/"/g, '\\"');
+
+          const data = await fetch(`/api/students/${userUuid}/homework_status`)
+            .then((r) => r.json())
+            .catch(() => ({}));
+
+          if (!data || !data.ok) return;
+
           data.items.forEach((item) => {
-            const card = document.querySelector(
-              `.card[data-index="${item.index}"]`
-            );
+            // ✅ index 기반 대신 key(=log_id/ts) 우선
+            const selector = item.key
+              ? `.card[data-log-id="${esc(item.key)}"]`
+              : `.card[data-index="${esc(item.index)}"]`; // (과거 호환)
+
+            const card = document.querySelector(selector);
             if (!card) return;
-            const pct = item.counts.total
-              ? Math.round((item.counts.passed / item.counts.total) * 100)
-              : 0;
-            card.querySelector(".progress-fill").style.width = pct + "%";
-            card.querySelector(
-              ".progress-text"
-            ).textContent = `통과 ${item.counts.passed} · 오답 ${item.counts.wrong} · 미시도 ${item.counts.pending}`;
+
+            // 1) 진행률
+            const { total, passed, wrong, pending } = item.counts;
+            const pct = total ? Math.round((passed / total) * 100) : 0;
+            const fill = card.querySelector(".progress-fill");
+            const text = card.querySelector(".progress-text");
+            if (fill) fill.style.width = pct + "%";
+            if (text)
+              text.textContent = `통과 ${passed} · 오답 ${wrong} · 미시도 ${pending}`;
+
+            // 2) 문제별 마크(있을 때만)
+            if (Array.isArray(item.problems)) {
+              item.problems.forEach((p) => {
+                let row = null;
+                if (p.legacy_code) {
+                  row = card.querySelector(
+                    `.problem-row[data-legacy-code="${esc(p.legacy_code)}"]`
+                  );
+                }
+                if (!row && p.server_problem_id != null) {
+                  row = card.querySelector(
+                    `.problem-row[data-server-problem-id="${esc(
+                      p.server_problem_id
+                    )}"]`
+                  );
+                }
+                if (!row) return;
+
+                row.classList.remove("passed", "wrong", "pending");
+                row.classList.add(p.status); // passed | wrong | pending
+
+                const mark =
+                  row.querySelector(".mark") ||
+                  (() => {
+                    const s = document.createElement("span");
+                    s.className = "mark";
+                    row.prepend(s);
+                    return s;
+                  })();
+
+                mark.textContent =
+                  p.status === "passed"
+                    ? "✅"
+                    : p.status === "wrong"
+                    ? "❌"
+                    : "…";
+              });
+            }
           });
         }
 
@@ -438,8 +584,8 @@
               // 프런트: id 우선 전송
               const card = e.target.closest(".card");
               const id = card.dataset.id;
-              const idx = card.dataset.index;
-              const key = id && id.length ? id : idx; // id 없을 때만 index
+              const fallbackKey = card.dataset.logId || card.dataset.index; // ✅ log-id 우선
+              const key = id && id.length ? id : fallbackKey;
               const r = await fetch(
                 `/api/students/{{ user_uuid }}/homework_logs/${encodeURIComponent(
                   key

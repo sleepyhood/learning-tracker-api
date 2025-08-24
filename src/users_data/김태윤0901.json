@@ -331,8 +331,8 @@
   },
   "772": {
     "_id": "P401v3902",
-    "score": 84,
-    "status": 8
+    "score": 0,
+    "status": -1
   },
   "774": {
     "_id": "P401v3904",
@@ -1168,26 +1168,5 @@
     "_id": "P301v2710",
     "score": 99,
     "status": 0
-  },
-  "profile": {
-    "student_id": "김태윤0901"
-  },
-  "oi_problems": [],
-  "homework_logs": [
-    {
-      "title": "Lv39. BFS",
-      "url": "http://edu.doingcoding.com/p202?tag=Lv39%20BFS",
-      "problems": [
-        {
-          "code": "P401v3902",
-          "title": "02. [BFS - 2] 미로 탐험"
-        }
-      ],
-      "message": "\n📘 Lv39. BFS\n🔗 http://edu.doingcoding.com/p202?tag=Lv39%20BFS\n🗓 출제일: 2025.08.21(목)\n⏰ 마감: 다음 수업시간 전까지\n\n02. [BFS - 2] 미로 탐험\n=========================",
-      "due_at": null,
-      "channel": "kakao",
-      "ts": "2025-08-21T19:49:14.361502+09:00"
-    }
-  ],
-  "user_uuid": "277e05d6-86ef-424d-927d-90bad1bded25"
+  }
 }
