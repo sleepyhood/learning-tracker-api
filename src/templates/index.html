@@ -481,6 +481,270 @@
       .streak-cell[data-today="1"] {
         outline: 2px dashed rgba(125, 146, 255, 0.6);
       }
+
+      /* ===== Layout (시각화 2단) ===== */
+      .viz-2col {
+        display: grid;
+        grid-template-columns: 500px 800px;
+        gap: 16px;
+        align-items: center;
+        margin: 0px 50px;
+      }
+      @media (max-width: 960px) {
+        .viz-2col {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ===== Card ===== */
+      #latest-homework .card {
+        background: var(--surface, #121a38);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: var(--card-radius, 16px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+        padding: 14px 16px;
+        transition: transform 0.15s ease, border-color 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      #latest-homework .card:hover {
+        transform: translateY(-1px);
+        border-color: color-mix(
+          in srgb,
+          var(--accent, #4dd0ff) 35%,
+          transparent
+        );
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+      }
+
+      /* Header */
+      #latest-homework .card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      #latest-homework .card-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        /*    color: var(--text, #e6ebf5);*/
+      }
+      #latest-homework .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--accent, #4dd0ff) 16%, transparent);
+        color: var(--accent, #4dd0ff);
+        font-size: 0.75rem;
+        font-weight: 700;
+        border: 1px solid
+          color-mix(in srgb, var(--accent, #4dd0ff) 35%, transparent);
+        text-transform: uppercase;
+      }
+
+      /* ===== Progress (트랙/필/텍스트) =====
+         마크업: <div class="progress"><div class="progress-fill" style="width:0%"></div><div class="progress-text">-</div></div>
+         트랙은 ::before로 그립니다(마크업 추가 불필요)
+      */
+      #latest-homework .progress {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 10px;
+        margin: 8px 0 10px;
+      }
+      #latest-homework .progress::before {
+        content: "";
+        grid-column: 1;
+        display: block;
+        height: 8px;
+        background: var(--track, #1b2344);
+        border-radius: 999px;
+        opacity: 0.9;
+      }
+      #latest-homework .progress-fill {
+        grid-column: 1;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--accent, #4dd0ff);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        transition: width 0.28s ease;
+      }
+      #latest-homework .progress-text {
+        grid-column: 2;
+        font-size: 0.85rem;
+        color: var(--muted, #9aa4b2);
+        white-space: nowrap;
+      }
+
+      /* ===== Meta ===== */
+      #latest-homework .meta {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        font-size: 0.9rem;
+        color: var(--muted, #9aa4b2);
+      }
+      #latest-homework .meta a {
+        color: color-mix(in srgb, var(--accent, #4dd0ff) 90%, white 10%);
+        text-decoration: none;
+        border-bottom: 1px dashed
+          color-mix(in srgb, var(--accent, #4dd0ff) 40%, transparent);
+      }
+      #latest-homework .meta a:hover {
+        border-bottom-style: solid;
+      }
+
+      /* ===== Problems ===== */
+      #latest-homework .problems {
+        list-style: none;
+        margin: 8px 0 0;
+        padding: 0;
+        display: grid;
+        gap: 6px;
+      }
+      #latest-homework .problem-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 6px 8px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.02);
+        transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+      }
+      #latest-homework .problem-row:hover {
+        background: rgba(255, 255, 255, 0.04);
+      }
+      #latest-homework .problem-row .mark {
+        width: 1.25em;
+        text-align: center;
+        opacity: 0.95;
+      }
+      #latest-homework .problem-row code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas,
+          "Liberation Mono", monospace;
+        font-size: 0.85em;
+        opacity: 0.9;
+      }
+      #latest-homework .problem-row .title {
+        /*color: var(--text, #e6ebf5);*/
+      }
+
+      /* 상태 색감(아이콘 + 텍스트 보조) */
+      #latest-homework .problem-row.passed {
+        background: rgba(49, 196, 141, 0.12);
+      }
+      #latest-homework .problem-row.passed .title {
+        color: #0b6340ff;
+      }
+      #latest-homework .problem-row.wrong {
+        background: rgba(240, 90, 108, 0.12);
+      }
+      #latest-homework .problem-row.wrong .title {
+        color: #58101bff;
+        text-decoration: underline dotted rgba(255, 255, 255, 0.35);
+        text-underline-offset: 3px;
+      }
+      #latest-homework .problem-row.pending {
+        opacity: 0.8;
+      }
+
+      /* ===== Buttons ===== */
+      #latest-homework .actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      #latest-homework .btn {
+        -webkit-tap-highlight-color: transparent;
+        appearance: none;
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.03);
+        /*color: var(--text, #e6ebf5);*/
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease,
+          transform 0.05s ease;
+      }
+      #latest-homework .btn:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.22);
+      }
+      #latest-homework .btn:active {
+        transform: translateY(1px);
+      }
+
+      /* ===== Skeleton(로딩 상태) ===== */
+      #latest-homework .card.skeleton .card-title {
+        position: relative;
+        color: transparent;
+      }
+      #latest-homework .card.skeleton .card-title::after {
+        content: "";
+        display: block;
+        height: 16px;
+        border-radius: 6px;
+        background: linear-gradient(
+          100deg,
+          rgba(255, 255, 255, 0.08) 40%,
+          rgba(255, 255, 255, 0.18) 50%,
+          rgba(255, 255, 255, 0.08) 60%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.2s infinite linear;
+      }
+      #latest-homework .card.skeleton .progress::before {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      #latest-homework .card.skeleton .progress-fill {
+        width: 35% !important;
+        background: rgba(255, 255, 255, 0.18);
+        animation: pulse 0.9s ease-in-out infinite alternate;
+      }
+      @keyframes shimmer {
+        to {
+          background-position: -200% 0;
+        }
+      }
+      @keyframes pulse {
+        to {
+          opacity: 0.55;
+        }
+      }
+
+      /* ===== Color-scheme 보정 ===== */
+      @media (prefers-color-scheme: light) {
+        #latest-homework .card {
+          background: #fff;
+          border-color: rgba(0, 0, 0, 0.08);
+        }
+        #latest-homework .problem-row {
+          background: rgba(0, 0, 0, 0.03);
+        }
+        #latest-homework .problem-row:hover {
+          background: rgba(0, 0, 0, 0.05);
+        }
+        #latest-homework .problem-row.passed {
+          background: rgba(16, 185, 129, 0.12);
+        }
+        #latest-homework .problem-row.wrong {
+          background: rgba(239, 68, 68, 0.12);
+        }
+        #latest-homework .meta {
+          color: #6b7280;
+        }
+        #latest-homework .progress::before {
+          background: #e5e7eb;
+        }
+      }
     </style>
   </head>
 
@@ -542,82 +806,94 @@
         🔙
       </div>
     </div>
-
-    <div id="profile-container" class="chart-card">
-      <img
-        src="{{ avatar_path }}"
-        alt="User Avatar"
-        width="100"
-        height="100"
-        style="border-radius: 50%; margin-bottom: 12px"
-      />
-      <h2 style="margin: 8px 0 4px">
-        {{ username }}
-        <br />
-        <span class="chip chip-role {{ 'admin' if is_admin else 'user' }}"
-          >{{ role_label }}</span
-        >
-        {% if primary_lang %}
-        <span
-          class="chip chip-lang"
-          title="최근 상위 언어:
+    <div class="viz-2col">
+      <aside id="profile-container" class="chart-card">
+        <img
+          src="{{ avatar_path }}"
+          alt="User Avatar"
+          width="100"
+          height="100"
+          style="border-radius: 50%; margin-bottom: 12px"
+        />
+        <h2 style="margin: 8px 0 4px">
+          {{ username }}
+          <br />
+          <span class="chip chip-role {{ 'admin' if is_admin else 'user' }}"
+            >{{ role_label }}</span
+          >
+          {% if primary_lang %}
+          <span
+            class="chip chip-lang"
+            title="최근 상위 언어:
       {% for l,c in primary_lang_top3 %}{{l}} {{c}}회{% if not loop.last %}, {% endif %}{% endfor %}"
-        >
-          주 사용 언어: {{ primary_lang }}
-        </span>
-        {% endif %}
-      </h2>
+          >
+            주 사용 언어: {{ primary_lang }}
+          </span>
+          {% endif %}
+        </h2>
 
-      <!-- 숙제 내역 버튼 -->
-      <div style="margin: 8px 0">
-        <a
-          href="{{ url_for('view_homework_logs', user_uuid=user_uuid) }}"
-          class="chip chip-action"
+        <!-- 숙제 내역 버튼 -->
+        <div style="margin: 8px 0">
+          <a
+            href="{{ url_for('view_homework_logs', user_uuid=user_uuid) }}"
+            class="chip chip-action"
+            style="
+              background-color: #1976d2;
+              color: white;
+              padding: 6px 12px;
+              border-radius: 16px;
+              text-decoration: none;
+              font-size: 14px;
+            "
+          >
+            📝 숙제 내역 보기
+          </a>
+        </div>
+
+        <p style="margin: 2px 0; font-weight: 600">
+          마지막 로그인: {{ last_login }}
+        </p>
+
+        <div
+          id="profile-stats"
           style="
-            background-color: #1976d2;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 16px;
-            text-decoration: none;
-            font-size: 14px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 16px;
           "
         >
-          📝 숙제 내역 보기
-        </a>
-      </div>
-
-      <p style="margin: 2px 0; font-weight: 600">
-        마지막 로그인: {{ last_login }}
-      </p>
-
-      <div
-        id="profile-stats"
-        style="
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
-          margin-top: 16px;
-        "
-      >
-        <div>
-          <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
-            {{ accepted_number }}
+          <div>
+            <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
+              {{ accepted_number }}
+            </div>
+            <div style="font-size: 13px; color: #555">해결한 문제</div>
           </div>
-          <div style="font-size: 13px; color: #555">해결한 문제</div>
-        </div>
-        <div>
-          <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
-            {{ submission_number }}
+          <div>
+            <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
+              {{ submission_number }}
+            </div>
+            <div style="font-size: 13px; color: #555">제출 횟수</div>
           </div>
-          <div style="font-size: 13px; color: #555">제출 횟수</div>
-        </div>
-        <div>
-          <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
-            {{ total_score }}
+          <div>
+            <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
+              {{ total_score }}
+            </div>
+            <div style="font-size: 13px; color: #555">점수</div>
           </div>
-          <div style="font-size: 13px; color: #555">점수</div>
         </div>
-      </div>
+      </aside>
+      <section id="latest-homework">
+        <div class="card skeleton">
+          <div class="card-head">
+            <div class="card-title">최근 숙제 불러오는 중…</div>
+          </div>
+          <div class="progress">
+            <div class="progress-fill" style="width: 0%"></div>
+            <div class="progress-text">-</div>
+          </div>
+        </div>
+      </section>
     </div>
 
     <div class="streak-header">
@@ -705,6 +981,129 @@
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
     <script>
+      (async function mountLatestHomeworkCard() {
+        const userUuid = "{{ user_uuid }}";
+
+        // 선택: TTL 체크 후 최신화
+        try {
+          const ttlMs = 60_000;
+          const first = await fetch(
+            `/api/students/${userUuid}/homework_status`
+          ).then((r) => r.json());
+          const updatedAt = first.updated_at ? Date.parse(first.updated_at) : 0;
+          if (!updatedAt || Date.now() - updatedAt > ttlMs) {
+            await fetch(`/api/students/${userUuid}/refresh`, {
+              method: "POST",
+            });
+          }
+        } catch (e) {}
+
+        // 최신 숙제 로드
+        const data = await fetch(`/api/students/${userUuid}/homework_latest`)
+          .then((r) => r.json())
+          .catch(() => ({}));
+        const host = document.querySelector("#latest-homework");
+        if (!host) return;
+
+        if (!data || !data.ok || !data.log) {
+          host.innerHTML = `<div class="card"><div class="card-title">최근 숙제가 없습니다</div></div>`;
+          return;
+        }
+
+        const { log } = data;
+        const pct = log.counts.total
+          ? Math.round((log.counts.passed / log.counts.total) * 100)
+          : 0;
+
+        // 문제별 상태 매핑(legacy_code 또는 server_problem_id)
+        const statusByLegacy = Object.fromEntries(
+          (log.problem_status || []).map((p) => [p.legacy_code, p.status])
+        );
+        const statusById = Object.fromEntries(
+          (log.problem_status || []).map((p) => [
+            String(p.server_problem_id),
+            p.status,
+          ])
+        );
+
+        const problemLis = (log.problems || [])
+          .map((p) => {
+            const st = p.legacy_code
+              ? statusByLegacy[p.legacy_code]
+              : statusById[String(p.server_problem_id)];
+            const icon = st === "passed" ? "✅" : st === "wrong" ? "❌" : "…";
+            const cls = st || "pending";
+            const code = p.legacy_code
+              ? `<code>${p.legacy_code}</code>`
+              : p.server_problem_id
+              ? `<code>#${p.server_problem_id}</code>`
+              : "";
+            const title = p.title || p.title_at_issue || "";
+            return `<li class="problem-row ${cls}" data-legacy-code="${
+              p.legacy_code || ""
+            }" data-server-problem-id="${p.server_problem_id || ""}">
+      <span class="mark">${icon}</span> ${code} <span class="title"> – ${title}</span>
+    </li>`;
+          })
+          .join("");
+
+        host.innerHTML = `
+    <article class="card" data-log-id="${log.key || ""}" data-id="${
+          log.id || ""
+        }">
+      <div class="card-head" style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="card-title">${log.title || "제목 없음"}</div>
+        <span class="badge">${(log.channel || "kakao").toUpperCase()}</span>
+      </div>
+
+      <div class="progress">
+        <div><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="progress-text">통과 ${log.counts.passed} · 오답 ${
+          log.counts.wrong
+        } · 미시도 ${log.counts.pending}</div>
+      </div>
+
+      <div class="meta" style="font-size:.9rem; color:var(--muted); display:flex; gap:12px; flex-wrap:wrap;">
+        <span>보낸 시각: <span class="ts" data-iso="${log.ts}">${
+          log.ts || "-"
+        }</span></span>
+        ${
+          log.due_at
+            ? `<span>마감: <span class="ts" data-iso="${log.due_at}">${log.due_at}</span></span>`
+            : ""
+        }
+        ${
+          log.url
+            ? `<span>링크: <a href="${log.url}" target="_blank" rel="noopener">${log.url}</a></span>`
+            : ""
+        }
+      </div>
+
+      ${
+        log.problems && log.problems.length
+          ? `<ol class="problems">${problemLis}</ol>`
+          : ""
+      }
+
+      <div class="actions" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+        ${
+          log.url
+            ? `<a class="btn" href="${log.url}" target="_blank" rel="noopener">문제 페이지 열기</a>`
+            : ""
+        }
+        <button class="btn" id="reopen-homework">전체 보기</button>
+      </div>
+    </article>
+  `;
+
+        // “전체 보기” → 기존 숙제 탭으로 이동
+        document
+          .getElementById("reopen-homework")
+          ?.addEventListener("click", () => {
+            window.open(`/students/${userUuid}/homework`, "_blank");
+          });
+      })();
+
       // 싱글톤 생성 유틸
       function ensureEl(id, { className = "", style = "" } = {}) {
         let el = document.getElementById(id);

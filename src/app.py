@@ -518,6 +518,49 @@ def api_save_homework_log(id_or_uuid):
     )
 
 
+@app.get("/api/students/<user_uuid>/homework_latest")
+def homework_latest(user_uuid):
+    doc = load_doc_by_any(user_uuid)
+    logs = doc.get("homework_logs", [])
+    if not logs:
+        return jsonify({"ok": True, "log": None})
+
+    # 가장 최신: ts 기준(없으면 배열 마지막)
+    def ts_val(x):
+        return x.get("ts") or ""
+
+    latest_log = max(logs, key=ts_val) if any(x.get("ts") for x in logs) else logs[-1]
+    key = latest_log.get("log_id") or latest_log.get("ts")
+
+    # 상태/카운트 계산은 기존 compute_homework_status를 재사용
+    status = compute_homework_status(doc)
+    item = next((it for it in status["items"] if it["key"] == key), None)
+
+    # 결합 응답 (뷰에서 쓰는 필드만)
+    return jsonify(
+        {
+            "ok": True,
+            "updated_at": status.get("updated_at"),
+            "log": {
+                "key": key,
+                "id": latest_log.get("id"),
+                "title": latest_log.get("title"),
+                "url": latest_log.get("url"),
+                "due_at": latest_log.get("due_at"),
+                "ts": latest_log.get("ts"),
+                "channel": latest_log.get("channel"),
+                "problems": latest_log.get("problems", []),
+                "counts": (
+                    item["counts"]
+                    if item
+                    else {"total": 0, "passed": 0, "wrong": 0, "pending": 0}
+                ),
+                "problem_status": item["problems"] if item else [],
+            },
+        }
+    )
+
+
 # ✅ 뷰어: UUID로 학생 숙제로그 열람 (템플릿: templates/homework_view.html 필요)
 @app.get("/students/<user_uuid>/homework")
 def view_homework_logs(user_uuid):
