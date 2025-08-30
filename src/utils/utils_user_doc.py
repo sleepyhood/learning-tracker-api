@@ -18,11 +18,16 @@ from utils.utils_common import (
     resolve_uuid,
 )
 
+from config import (
 
-USER_DATA_DIR = os.path.abspath(os.getenv("USER_DATA_DIR", "./users_data"))
+    USER_DATA_DIR,
+
+)  # 필요 시 조정
+
 
 
 def _user_doc_path_by_uuid(u: str) -> str:
+        
     return os.path.join(USER_DATA_DIR, f"{u}.json")
 
 
