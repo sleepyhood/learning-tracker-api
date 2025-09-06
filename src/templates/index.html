@@ -2,796 +2,515 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>진도율 시각화</title>
 
+    <!-- Charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}"> -->
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/fab.css') }}"
     />
 
     <style>
-      /* 0) 토큰: 일관된 폭/간격/컬러 */
+      /*
+        Minimal, JSX-like look:
+        - neutral grayscale, single dark accent
+        - soft borders & large radii
+        - remove glass/blur & heavy gradients
+        - robust streak grid that doesn't break layout
+      */
       :root {
-        --content-w: 1320px; /* 중앙 정렬될 최대 콘텐츠 폭 */
-        --g: clamp(12px, 1.6vw, 20px); /* 전역 gap 스케일 */
-        --pad: clamp(10px, 1.2vw, 16px); /* 카드 내부 패딩 스케일 */
+        --content-w: 1280px;
+        --g: clamp(10px, 1.6vw, 16px);
+        --pad: clamp(10px, 1.2vw, 16px);
 
-        --bg: #f9fafb;
+        --bg: #f7f7f8;
         --surface: #ffffff;
         --text: #111827;
         --muted: #6b7280;
         --line: #e5e7eb;
         --line-strong: #d1d5db;
-        --shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-        --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.08);
 
-        --radius-lg: 16px;
+        --radius-lg: 14px;
         --radius-xl: 20px;
+        --accent: #0f172a; /* near-black accent */
 
-        --accent: #0f172a; /* 메인 액션(검정 계열) */
-        --green: #16a34a; /* 통과 */
-        --orange: #f59e0b; /* 일부 진행 */
-        --red: #ef4444; /* 실패/경고 */
+        /* streak tiers (light → dark) */
+        --tier-0: #eef2f7; /* 0 */
+        --tier-1: #e8f5e9;
+        --tier-2: #c8e6c9;
+        --tier-3: #a5d6a7;
+        --tier-4: #81c784;
+        --tier-5: #66bb6a;
       }
 
-      body {
-        font-family: sans-serif;
-        background: linear-gradient(135deg, #e0e0e0, #ffffff);
-        /* 부드러운 색 배경 */
-        text-align: center;
-        min-height: 100vh;
-        margin: 0;
-        padding: 0;
-      }
-
-      #profile-container {
-        max-width: 320px;
-        margin: 40px auto 40px;
-        padding: 24px 16px 32px;
-        text-align: center;
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(12px);
-        border-radius: 16px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-      }
-
-      #profile-container:hover {
-        cursor: default;
-        transform: none;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
-
-      /* Glass 효과는 카드에만 */
-      .chart-card {
-        max-width: 240px; /* ✅ 카드 너비 줄임 */
-        padding: 14px;
-        border-radius: 16px;
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-      }
-
-      .chart-card:hover {
-        cursor: pointer;
-        transform: translateY(-4px) scale(1.02);
-        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
-      }
-      #charts-container {
-        position: relative; /* 만약 없다면 추가 */
-        z-index: 1; /* 너무 높게 설정되어 있으면 낮춰주세요 */
-        overflow: visible !important; /* 가능하면 overflow 숨김 제거 */
-
-        display: grid;
-        grid-template-columns: repeat(
-          auto-fit,
-          minmax(220px, 1fr)
-        ); /* ✅ 더 촘촘하게 */
-        gap: 12px; /* ✅ 간격 축소 */
-        padding: 16px 12px;
-        max-width: 960px; /* ✅ 폭 조정 */
-        margin: 40px auto;
-      }
-
-      /* 다른 요소들은 Glass 효과 제거하고 깔끔하게 */
-      form {
-        margin: 30px auto;
-      }
-
-      input[type="text"] {
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid #aaa;
-        width: 240px;
-        margin-right: 8px;
-      }
-
-      button {
-        padding: 10px 16px;
-        border: none;
-        color: #222;
-        border-radius: 8px;
-        cursor: pointer;
-
-        background: rgba(255, 255, 255, 0.1);
-      }
-
-      h1,
-      h2 {
-        color: #222;
-        font-weight: 900;
-      }
-
-      /*스트릭 컨테이너 */
-      .streak-container {
-        position: relative;
-        z-index: 2; /* 차트보다 위로 나오게 */
-
-        max-width: 800px;
-        margin: 20px auto;
-        padding: 16px;
-        /*background-color: #f9f9ff;*/
-        background: rgba(255, 255, 255, 0.15); /* chart-card와 동일 */
-        backdrop-filter: blur(12px); /* 동일 blur 효과 */
-
-        border-radius: 16px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
-      /* 전체 그리드 정렬 */
-
-      :root {
-        --bg-0: rgba(2, 2, 2, 0.3); /* 0개 */
-        --cell: clamp(20px, 8vw, 100px);
-        --gap: 10px; /* 간격도 살짝 키움 */
-        --radius: 12px;
-        --green-0: rgba(2, 2, 2, 0.3);
-        --green-1: #c8f7c5; /* 약한 */
-        --green-2: #98e29a;
-        --green-3: #5cc477;
-        --green-4: #2aa164;
-        --green-5: #10724d; /* 강한 */
-        --glow: 0 0 0px rgba(0, 0, 0, 0); /* 기본은 없음 */
-        --popover-bg: #fff;
-        --popover-fg: #222;
-        --border: rgba(0, 0, 0, 0.08);
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg-0: rgba(255, 255, 255, 0.1);
-          --popover-bg: #15181c;
-          --popover-fg: #e9eef5;
-          --border: rgba(255, 255, 255, 0.12);
-        }
-      }
-      @media (max-width: 640px) {
-        .streak-grid {
-          grid-template-columns: repeat(4, var(--cell)); /* 작은 화면에선 4열 */
-        }
-      }
-
-      .streak-grid {
-        display: grid;
-        gap: var(--gap);
-        grid-template-columns: repeat(7, var(--cell)); /* 7열 유지 */
-        justify-content: center; /* ← 그리드 트랙을 가로 가운데 */
-        justify-items: center; /* ← 각 셀 내부도 가운데 정렬(선택) */
-        width: fit-content; /* ← 그리드 자체 폭을 내용에 맞춤 */
-        margin-inline: auto; /* ← 그리드 블록을 가운데 배치 */
-      }
-      .streak-cell {
-        /* 기존 속성 유지 */
-        width: var(--cell);
-        height: var(--cell);
-        border-radius: var(--radius);
-        border: 1px solid var(--border);
-        background: var(--bg-0);
-        position: relative;
-        transition: transform 0.12s ease, box-shadow 0.2s ease,
-          outline-color 0.2s ease;
-        outline: 0 solid transparent;
-
-        /* ⬇️ 추가 */
-        display: flex;
-        flex-direction: column; /* 요일/날짜 위, count 아래 */
-        align-items: center; /* 가로 가운데 */
-        justify-content: center; /* 세로 가운데 */
-        text-align: center; /* 텍스트 가운데 */
-        gap: 6px; /* 요소 사이 간격 */
+      * {
         box-sizing: border-box;
-        padding: 6px; /* 살짝 여백(선택) */
       }
-
-      /* margin으로 가운데가 미세하게 틀어지는 걸 방지: gap으로만 띄우기 */
-      .date-info {
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        background: var(--bg);
+        color: var(--text);
         margin: 0;
       }
 
-      /* 단계별 배경 톤 */
-
-      .streak-cell[data-tier="1"] {
-        background: color-mix(in oklab, var(--green-1) 35%, transparent);
-      }
-      .streak-cell[data-tier="2"] {
-        background: color-mix(in oklab, var(--green-2) 55%, transparent);
-      }
-      .streak-cell[data-tier="3"] {
-        background: color-mix(in oklab, var(--green-3) 70%, transparent);
-      }
-      .streak-cell[data-tier="4"] {
-        background: color-mix(in oklab, var(--green-4) 80%, transparent);
-      }
-      .streak-cell[data-tier="5"] {
-        background: color-mix(in oklab, var(--green-5) 90%, transparent);
-      }
-      .streak-cell[data-count="0"] {
-        background: color-mix(in oklab, var(--green-0) 35%, transparent);
-      }
-      /* 호버/포커스 상호작용 */
-      .streak-cell:hover {
-        transform: translateY(-1px) scale(1.04);
-      }
-      .streak-cell:focus-visible {
-        outline: 2px solid color-mix(in oklab, var(--green-3) 60%, transparent);
-      }
-
-      /* 마일스톤(10+개) → 테두리 글로우 + 안쪽 링 */
-      @keyframes glowPulse {
-        0% {
-          box-shadow: 0 0 0px rgba(46, 204, 113, 0);
-        }
-        50% {
-          box-shadow: 0 0 12px rgba(46, 204, 113, 0.35);
-        }
-        100% {
-          box-shadow: 0 0 0px rgba(46, 204, 113, 0);
-        }
-      }
-      .streak-cell[data-milestone="1"] {
-        outline: 2px solid rgba(46, 204, 113, 0.55);
-        box-shadow: 0 0 10px rgba(46, 204, 113, 0.25);
-        animation: glowPulse 2.2s ease-in-out infinite;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .streak-cell[data-milestone="1"] {
-          animation: none;
-        }
-      }
-
-      /* 안쪽 링(살짝 고급스러운 느낌) */
-      .streak-cell[data-milestone="1"]::after {
-        content: "";
-        position: absolute;
-        inset: 2px;
-        border-radius: calc(var(--radius) - 2px);
-        border: 1px solid rgba(46, 204, 113, 0.35);
-        pointer-events: none;
-      }
-
-      /* 날짜와 요일 강조 */
-      /* 날짜/요일 그룹 */
-      .date-info {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-bottom: 6px;
-        font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
-        color: #fff;
-      }
-
-      /* 요일 (위) */
-      .weekday {
-        font-weight: 600;
-        font-size: 13px;
-        opacity: 0.85;
-      }
-
-      /* 날짜 (아래) */
-      .date {
-        font-size: 14px;
-        font-weight: 500;
-        letter-spacing: 0.3px;
-      }
-
-      /* count 강조 */
-      .count {
-        font-size: 18px;
-        font-weight: bold;
-        color: #fff;
-      }
-      /* 포인터 커서 적용 */
-      .streak-cell[data-count]:not([data-count="0"]) {
-        cursor: pointer;
-      }
-      #overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(255, 255, 255, 0.3);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        z-index: 9998;
-        display: none; /* 기본 숨김 */
-      }
-      /* 디테일 토글 (원하는 경우에만 보여지도록) */
-      .details {
-        display: none;
-        position: absolute;
-        top: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 9999; /* overlay보다 더 높게 설정 */
-
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: none;
-
-        border-radius: 14px;
-        padding: 14px 20px;
-
-        width: min(500px, calc(100vw - 32px)); /* 화면에 맞게 줄이기 */
-        max-height: 280px;
-        overflow-y: auto;
-
-        color: #222;
-        font-size: 14px;
-        font-weight: 500;
-        line-height: 1.5;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-
-        /* 부드러운 스크롤바 스타일 */
-        scrollbar-width: thin;
-        scrollbar-color: #4caf50 #d4f0d4;
-      }
-
-      /* Webkit 기반 브라우저 스크롤바 커스텀 */
-      .details::-webkit-scrollbar {
-        width: 8px;
-      }
-      .details::-webkit-scrollbar-track {
-        background: #d4f0d4;
-        border-radius: 8px;
-      }
-      .details::-webkit-scrollbar-thumb {
-        background-color: #4caf50;
-        border-radius: 8px;
-        border: 2px solid transparent;
-        background-clip: content-box;
-      }
-
-      /* 문제별 아이템 */
-      .prob-item {
-        padding: 6px 10px;
-        margin-bottom: 6px;
-        border-radius: 8px;
-        background-color: rgba(76, 175, 80, 0.15); /* 연한 초록 배경 */
-        color: #2e7d32;
-        font-weight: 600;
-        box-shadow: inset 0 0 4px rgba(46, 125, 50, 0.3);
-        transition: background-color 0.2s ease;
-        cursor: default;
-      }
-
-      .prob-item:hover {
-        background-color: rgba(76, 175, 80, 0.3);
-      }
-
-      .prob-item a {
-        color: #2e7d32;
-        text-decoration: none;
-        font-weight: 600;
-      }
-
-      .prob-item a:hover {
-        text-decoration: underline;
-      }
-
-      footer {
+      /* ===== Layout */
+      .wrap {
+        max-width: var(--content-w);
+        margin: 0 auto;
         padding: 20px;
-        text-align: center;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-        margin: 30px auto;
-        width: fit-content;
       }
 
-      .footer-btn {
-        margin: 8px;
-        padding: 10px 16px;
-        font-size: 16px;
-        border: none;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.25);
-        color: #555;
-        font-weight: 700;
-        cursor: pointer;
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
-        transition: background 0.3s ease, transform 0.2s ease;
+      header.appbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: var(--surface);
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
       }
-
-      .footer-btn:hover {
-        background: rgba(255, 255, 255, 0.4);
-        transform: scale(1.05);
-      }
-
-      .chip {
-        display: inline-block;
-        padding: 2px 8px;
-        margin-left: 6px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 600;
-        border: 1px solid #e0e0e0;
-        background: #f8f8f8;
-        color: #444;
-      }
-      .chip-role.admin {
-        background: #eef6ff;
-        border-color: #bbd8ff;
-        color: #1f5fbf;
-      }
-      .chip-role.user {
-        background: #f3f3f3;
-      }
-      .chip-lang {
-        background: #f0fff4;
-        border-color: #bde5c8;
-        color: #1a7f37;
-      }
-
-      .streak-header {
+      .brand {
         display: flex;
         align-items: center;
-        justify-content: center;
-        margin: 12px 0 8px;
+        gap: 10px;
       }
-      .streak-controls {
+      .brand h1 {
+        font-size: 18px;
+        margin: 0;
+        font-weight: 700;
+      }
+
+      .right {
         display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .search-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
         gap: 8px;
       }
-
-      .streak-btn {
-        color: #777;
-
-        border: none;
-        padding: 10px 12px;
-        margin-right: 6px;
-        border-radius: 20px;
-        cursor: pointer;
-        font-size: 1em;
-        font-weight: 700;
-
-        cursor: pointer;
-        transition: background-color 0.2s;
-        box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
-
-        white-space: nowrap; /* 줄바꿈 방지 */
-        display: inline-block; /* 필요시 */
+      #username-input {
+        height: 36px;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        width: 220px;
       }
-      .streak-btn.active {
-        color: #222;
-
-        border: 5px solid rgba(0, 128, 0, 0.4);
-        box-shadow: 0px 3px 6px rgba(0, 128, 0, 0.5);
-      }
-
-      #submission-popover.details {
-        background: var(--popover-bg);
-        color: var(--popover-fg);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        padding: 10px 12px;
-      }
-      #submission-popover .prob-item + .prob-item {
-        border-top: 1px dashed var(--border);
-        margin-top: 6px;
-        padding-top: 6px;
-      }
-
-      /* KST 기준 오늘 */
-      .streak-cell[data-today="1"] {
-        outline: 2px dashed rgba(125, 146, 255, 0.6);
-      }
-
-      /* ===== Layout (시각화 2단) ===== */
-      .viz-2col {
-        display: grid;
-        grid-template-columns: clamp(300px, 26vw, 360px) 1fr;
-
-        gap: var(--g);
+      #search-btn {
+        display: inline-flex;
         align-items: center;
-        margin: 0px 50px;
+        justify-content: center;
+        height: 36px;
+        padding: 0 12px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #fff;
+        cursor: pointer;
+      }
+      #search-btn:hover {
+        background: #f3f4f6;
+      }
+      #autocomplete-list {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 40px;
+        margin: 0;
+        padding: 6px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        list-style: none;
+        display: none;
+      }
+
+      .header-btn {
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        color: #111;
+        font-weight: 700;
+      }
+      .header-btn:hover {
+        background: #f3f4f6;
+      }
+
+      /* ===== 2-column: profile + recent homework */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: clamp(280px, 26vw, 360px) 1fr;
+        gap: var(--g);
+        align-items: start;
       }
       @media (max-width: 960px) {
-        .viz-2col {
+        .grid-2 {
           grid-template-columns: 1fr;
         }
       }
 
-      /* ===== Card ===== */
-      #latest-homework .card {
-        /*background: var(--surface, #121a38);*/
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: var(--card-radius, 16px);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-        padding: 14px 16px;
-        transition: transform 0.15s ease, border-color 0.15s ease,
-          box-shadow 0.15s ease;
+      /* ===== Cards */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
       }
-      #latest-homework .card:hover {
-        transform: translateY(-1px);
-        border-color: color-mix(
-          in srgb,
-          var(--accent, #4dd0ff) 35%,
-          transparent
-        );
-        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+      .card.pad {
+        padding: var(--pad);
+      }
+      .card + .card {
+        margin-top: var(--g);
       }
 
-      /* Header */
-      #latest-homework .card-head {
+      /* Profile */
+      #profile-container {
+        text-align: center;
+      }
+      #profile-container .avatar {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin: 8px auto 12px;
+        display: block;
+      }
+      .chips {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        margin-bottom: 8px;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
       }
-      #latest-homework .card-title {
-        font-size: 1.05rem;
-        font-weight: 700;
-        letter-spacing: 0.2px;
-        /*    color: var(--text, #e6ebf5);*/
-      }
-      #latest-homework .badge {
+      .chip {
         display: inline-flex;
         align-items: center;
         gap: 6px;
         padding: 4px 8px;
+        border: 1px solid var(--line);
         border-radius: 999px;
-        background: color-mix(in srgb, var(--accent, #4dd0ff) 16%, transparent);
-        color: var(--accent, #4dd0ff);
-        font-size: 0.75rem;
-        font-weight: 700;
-        border: 1px solid
-          color-mix(in srgb, var(--accent, #4dd0ff) 35%, transparent);
-        text-transform: uppercase;
+        font-size: 12px;
+        color: #374151;
+        background: #f3f4f6;
+      }
+      .chip.admin {
+        background: #eef2ff;
+        color: #1e3a8a;
+        border-color: #c7d2fe;
+      }
+      .chip.lang {
+        background: #e7f5ee;
+        color: #0b5e3b;
+        border-color: #bfe3d2;
       }
 
-      /* ===== Progress (트랙/필/텍스트) =====
-         마크업: <div class="progress"><div class="progress-fill" style="width:0%"></div><div class="progress-text">-</div></div>
-         트랙은 ::before로 그립니다(마크업 추가 불필요)
-      */
-      #latest-homework .progress {
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .stats .num {
+        font-size: 18px;
+        font-weight: 800;
+        color: #065f46;
+      }
+      .stats .label {
+        font-size: 12px;
+        color: #4b5563;
+      }
+
+      /* Latest homework */
+      #latest-homework .title {
+        font-weight: 700;
+        font-size: 16px;
+      }
+      #latest-homework .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        color: #6b7280;
+        font-size: 13px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #111;
+      }
+
+      .progress {
         position: relative;
         display: grid;
         grid-template-columns: 1fr auto;
         align-items: center;
         gap: 10px;
-        margin: 8px 0 10px;
+        margin: 8px 0 8px;
       }
-      #latest-homework .progress::before {
-        content: "";
-        grid-column: 1;
-        display: block;
-        height: 8px;
-        background: var(--track, #1b2344);
-        border-radius: 999px;
-        opacity: 0.9;
-      }
-      #latest-homework .progress-fill {
+      .progress .track {
         grid-column: 1;
         height: 8px;
+        background: #eceff1;
         border-radius: 999px;
-        background: var(--accent, #4dd0ff);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-        transition: width 0.28s ease;
       }
-      #latest-homework .progress-text {
+      .progress .fill {
+        position: relative;
+        margin-top: -8px;
+        grid-column: 1;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--accent);
+      }
+      .progress .text {
         grid-column: 2;
-        font-size: 0.85rem;
-        color: var(--muted, #9aa4b2);
-        white-space: nowrap;
+        font-size: 12px;
+        color: #6b7280;
       }
 
-      /* ===== Meta ===== */
-      #latest-homework .meta {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        font-size: 0.9rem;
-        color: var(--muted, #9aa4b2);
-      }
-      #latest-homework .meta a {
-        color: color-mix(in srgb, var(--accent, #4dd0ff) 90%, white 10%);
-        text-decoration: none;
-        border-bottom: 1px dashed
-          color-mix(in srgb, var(--accent, #4dd0ff) 40%, transparent);
-      }
-      #latest-homework .meta a:hover {
-        border-bottom-style: solid;
-      }
-
-      /* ===== Problems ===== */
-      #latest-homework .problems {
+      .problems {
         list-style: none;
-        margin: 8px 0 0;
+        margin: 10px 0 0;
         padding: 0;
         display: grid;
         gap: 6px;
       }
-      #latest-homework .problem-row {
+      .problem-row {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 8px;
         padding: 6px 8px;
         border-radius: 10px;
-        background: rgba(255, 255, 255, 0.02);
-        transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+        background: #f3f4f6;
+        font-size: 14px;
       }
-      #latest-homework .problem-row:hover {
-        background: rgba(255, 255, 255, 0.04);
+      .problem-row.passed {
+        background: #e6f4ea;
+        color: #0b6340;
       }
-      #latest-homework .problem-row .mark {
-        width: 1.25em;
-        text-align: center;
-        opacity: 0.95;
+      .problem-row.wrong {
+        background: #fde7e9;
+        color: #7f1d1d;
       }
-      #latest-homework .problem-row code {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas,
-          "Liberation Mono", monospace;
-        font-size: 0.85em;
+      .problem-row.pending {
         opacity: 0.9;
       }
-      #latest-homework .problem-row .title {
-        /*color: var(--text, #e6ebf5);*/
-      }
 
-      /* 상태 색감(아이콘 + 텍스트 보조) */
-      #latest-homework .problem-row.passed {
-        background: rgba(49, 196, 141, 0.12);
+      /* ===== Streak ===== */
+      .streak-section {
+        margin-top: 24px;
       }
-      #latest-homework .problem-row.passed .title {
-        color: #0b6340ff;
-      }
-      #latest-homework .problem-row.wrong {
-        background: rgba(240, 90, 108, 0.12);
-      }
-      #latest-homework .problem-row.wrong .title {
-        color: #58101bff;
-        text-decoration: underline dotted rgba(255, 255, 255, 0.35);
-        text-underline-offset: 3px;
-      }
-      #latest-homework .problem-row.pending {
-        opacity: 0.8;
-      }
-
-      /* ===== Buttons ===== */
-      #latest-homework .actions {
-        margin-top: 10px;
+      .streak-head {
         display: flex;
+        align-items: center;
+        justify-content: center;
         gap: 8px;
-        flex-wrap: wrap;
+        margin-bottom: 10px;
       }
-      #latest-homework .btn {
-        -webkit-tap-highlight-color: transparent;
-        appearance: none;
-        padding: 8px 12px;
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 1);
-
-        color: var(--text, #222);
-        font-weight: 600;
-        font-size: 0.9rem;
+      .streak-btn {
+        height: 32px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 999px;
         cursor: pointer;
-        transition: border-color 0.15s ease, background 0.15s ease,
-          transform 0.05s ease;
+        font-weight: 700;
+        color: #6b7280;
       }
-      #latest-homework .btn:hover {
-        background: rgba(255, 255, 255, 0.06);
-        border-color: rgba(255, 255, 255, 0.22);
-      }
-      #latest-homework .btn:active {
-        transform: translateY(1px);
+      .streak-btn.active {
+        color: #111;
+        border-color: #111;
       }
 
-      /* ===== Skeleton(로딩 상태) ===== */
-      #latest-homework .card.skeleton .card-title {
-        position: relative;
-        color: transparent;
+      .streak-container {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        padding: var(--pad);
       }
-      #latest-homework .card.skeleton .card-title::after {
-        content: "";
-        display: block;
-        height: 16px;
-        border-radius: 6px;
-        background: linear-gradient(
-          100deg,
-          rgba(255, 255, 255, 0.08) 40%,
-          rgba(255, 255, 255, 0.18) 50%,
-          rgba(255, 255, 255, 0.08) 60%
-        );
-        background-size: 200% 100%;
-        animation: shimmer 1.2s infinite linear;
+      .streak-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(28px, 1fr));
+        gap: 6px;
+        justify-items: center;
       }
-      #latest-homework .card.skeleton .progress::before {
-        background: rgba(255, 255, 255, 0.08);
-      }
-      #latest-homework .card.skeleton .progress-fill {
-        width: 35% !important;
-        background: rgba(255, 255, 255, 0.18);
-        animation: pulse 0.9s ease-in-out infinite alternate;
-      }
-      @keyframes shimmer {
-        to {
-          background-position: -200% 0;
-        }
-      }
-      @keyframes pulse {
-        to {
-          opacity: 0.55;
+      @media (max-width: 640px) {
+        .streak-grid {
+          grid-template-columns: repeat(4, minmax(28px, 1fr));
         }
       }
 
-      /* ===== Color-scheme 보정 ===== */
-      @media (prefers-color-scheme: light) {
-        #latest-homework .card {
-          /*background: #fff;*/
-          border-color: rgba(0, 0, 0, 0.08);
-        }
-        #latest-homework .problem-row {
-          background: rgba(0, 0, 0, 0.03);
-        }
-        #latest-homework .problem-row:hover {
-          background: rgba(0, 0, 0, 0.05);
-        }
-        #latest-homework .problem-row.passed {
-          background: rgba(16, 185, 129, 0.12);
-        }
-        #latest-homework .problem-row.wrong {
-          background: rgba(239, 68, 68, 0.12);
-        }
-        #latest-homework .meta {
-          color: #6b7280;
-        }
-        #latest-homework .progress::before {
-          background: #e5e7eb;
-        }
+      .streak-cell {
+        width: clamp(28px, 8vw, 64px);
+        aspect-ratio: 1/1; /* square, robust */
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        background: var(--tier-0);
+        transition: transform 0.12s ease, box-shadow 0.2s ease,
+          border-color 0.15s ease;
+      }
+      .streak-cell:hover {
+        transform: translateY(-1px);
+      }
+      .streak-cell .weekday {
+        font-size: 11px;
+        color: #6b7280;
+        font-weight: 600;
+      }
+      .streak-cell .date {
+        font-size: 12px;
+        color: #374151;
+      }
+      .streak-cell .count {
+        font-size: 14px;
+        font-weight: 800;
+        color: #111;
+      }
+      .streak-cell[data-today="1"] {
+        outline: 2px solid #94a3b8;
+        outline-offset: 2px;
+        background: #f8fafc;
+      }
+
+      /* tiers */
+      .streak-cell[data-tier="1"] {
+        background: var(--tier-1);
+      }
+      .streak-cell[data-tier="2"] {
+        background: var(--tier-2);
+      }
+      .streak-cell[data-tier="3"] {
+        background: var(--tier-3);
+      }
+      .streak-cell[data-tier="4"] {
+        background: var(--tier-4);
+      }
+      .streak-cell[data-tier="5"] {
+        background: var(--tier-5);
+      }
+
+      /* simple milestone */
+      .streak-cell[data-milestone="1"] {
+        border-color: #22c55e;
+        box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25) inset;
+      }
+
+      /* Popover */
+      #overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.2);
+        display: none;
+        z-index: 99;
+      }
+      .details {
+        display: none;
+        position: absolute;
+        z-index: 100;
+        background: #fff;
+        color: #111;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px 12px;
+        width: min(480px, calc(100vw - 32px));
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      }
+      .prob-item {
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: #eef6ee;
+        color: #14532d;
+        font-weight: 600;
+      }
+      .prob-item + .prob-item {
+        margin-top: 6px;
+        border-top: 1px dashed #d1d5db;
+        padding-top: 6px;
+      }
+
+      /* ===== Charts grid */
+      #result-title {
+        margin: 18px 0 8px;
+        font-size: 16px;
+        text-align: center;
+      }
+      #charts-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        padding: 6px;
+      }
+      .chart-card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+      }
+      .chart-card:hover {
+        border-color: #111;
+      }
+
+      footer.actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin: 26px 0;
+      }
+      .footer-btn {
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 12px;
+        cursor: pointer;
+      }
+      .footer-btn:hover {
+        background: #f3f4f6;
       }
     </style>
   </head>
 
   <body>
-    <div id="overlay" aria-hidden="true" style="display: none"></div>
-    <div
-      id="submission-popover"
-      class="details"
-      role="dialog"
-      style="display: none"
-    ></div>
-    <div
-      id="submission-popover"
-      style="display: none; position: absolute; z-index: 1001"
-      class="details"
-    ></div>
-    <header>
+    <!-- Sticky appbar -->
+    <header class="appbar">
       <a href="/" style="text-decoration: none; color: inherit">
-        <h1>풀이현황</h1>
+        <div class="brand">
+          <h1>풀이현황</h1>
+        </div>
       </a>
-      <form id="search-form" method="POST" action="/">
-        <div class="search-wrapper">
+      <div class="right">
+        <form id="search-form" method="POST" action="/" class="search-wrapper">
           <input
             type="text"
             id="username-input"
@@ -800,21 +519,18 @@
             required
           />
           <ul id="autocomplete-list" class="autocomplete-box"></ul>
-
-          <button type="submit" id="search-btn">
-            <img
-              src="/static/search-icon.png"
-              alt="검색"
-              width="30"
-              height="auto"
-            />
-          </button>
-        </div>
-      </form>
+          <button type="submit" id="search-btn">🔎</button>
+        </form>
+        <a
+          id="btn-homework-dashboard"
+          class="header-btn"
+          href="/students/{{ user_uuid }}/homework"
+          >📋 숙제 대시보드</a
+        >
+      </div>
     </header>
 
     <div class="fab-container">
-      <!-- 공통 FAB: 현황 새로고침 -->
       <div
         class="fab fab-refresh"
         title="풀이 현황 최신화"
@@ -822,7 +538,6 @@
       >
         🔄
       </div>
-      <!-- 이전 페이지로 이동 FAB -->
       <div
         class="fab fab-back"
         title="이전 페이지로 이동"
@@ -831,305 +546,141 @@
         🔙
       </div>
     </div>
-    <div class="viz-2col">
-      <aside id="profile-container" class="chart-card">
-        <img
-          src="{{ avatar_path }}"
-          alt="User Avatar"
-          width="100"
-          height="100"
-          style="border-radius: 50%; margin-bottom: 12px"
-        />
-        <h2 style="margin: 8px 0 4px">
-          {{ username }}
-          <br />
-          <span class="chip chip-role {{ 'admin' if is_admin else 'user' }}"
-            >{{ role_label }}</span
-          >
-          {% if primary_lang %}
-          <span
-            class="chip chip-lang"
-            title="최근 상위 언어:
-      {% for l,c in primary_lang_top3 %}{{l}} {{c}}회{% if not loop.last %}, {% endif %}{% endfor %}"
-          >
-            주 사용 언어: {{ primary_lang }}
-          </span>
-          {% endif %}
-        </h2>
 
-        <!-- 숙제 내역 버튼 -->
-        <div style="margin: 8px 0">
-          <a
-            href="{{ url_for('view_homework_logs', user_uuid=user_uuid) }}"
-            class="chip chip-action"
+    <main class="wrap">
+      <!-- Profile + Latest Homework -->
+      <section class="grid-2">
+        <aside id="profile-container" class="card pad">
+          <img
+            class="avatar"
+            src="{{ avatar_path }}"
+            alt="User Avatar"
+            width="100"
+            height="100"
+          />
+          <h2 style="margin: 6px 0 8px; font-size: 18px">{{ username }}</h2>
+          <div class="chips">
+            <span class="chip {{ 'admin' if is_admin else '' }}"
+              >{{ role_label }}</span
+            >
+            {% if primary_lang %}
+            <span
+              class="chip lang"
+              title="최근 상위 언어:{% for l,c in primary_lang_top3 %} {{l}} {{c}}회{% if not loop.last %}, {% endif %}{% endfor %}"
+              >주 사용 언어: {{ primary_lang }}</span
+            >
+            {% endif %}
+          </div>
+          <p
             style="
-              background-color: #1976d2;
-              color: white;
-              padding: 6px 12px;
-              border-radius: 16px;
-              text-decoration: none;
-              font-size: 14px;
+              margin: 8px 0 0;
+              font-weight: 600;
+              font-size: 13px;
+              color: #4b5563;
             "
           >
-            📝 숙제 내역 보기
-          </a>
-        </div>
+            마지막 로그인: {{ last_login }}
+          </p>
+          <div class="stats">
+            <div>
+              <div class="num">{{ accepted_number }}</div>
+              <div class="label">해결한 문제</div>
+            </div>
+            <div>
+              <div class="num">{{ submission_number }}</div>
+              <div class="label">제출 횟수</div>
+            </div>
+            <div>
+              <div class="num">{{ total_score }}</div>
+              <div class="label">점수</div>
+            </div>
+          </div>
+        </aside>
 
-        <p style="margin: 2px 0; font-weight: 600">
-          마지막 로그인: {{ last_login }}
-        </p>
-
-        <div
-          id="profile-stats"
-          style="
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: 16px;
-          "
-        >
-          <div>
-            <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
-              {{ accepted_number }}
-            </div>
-            <div style="font-size: 13px; color: #555">해결한 문제</div>
-          </div>
-          <div>
-            <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
-              {{ submission_number }}
-            </div>
-            <div style="font-size: 13px; color: #555">제출 횟수</div>
-          </div>
-          <div>
-            <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
-              {{ total_score }}
-            </div>
-            <div style="font-size: 13px; color: #555">점수</div>
-          </div>
-        </div>
-      </aside>
-      <section id="latest-homework">
-        <div class="card skeleton">
-          <div class="card-head">
-            <div class="card-title">최근 숙제 불러오는 중…</div>
-          </div>
+        <section id="latest-homework" class="card pad">
+          <div class="title">최근 숙제 불러오는 중…</div>
           <div class="progress">
-            <div class="progress-fill" style="width: 0%"></div>
-            <div class="progress-text">-</div>
+            <div class="track"></div>
+            <div class="fill" style="width: 0%"></div>
+            <div class="text">-</div>
           </div>
-        </div>
+        </section>
       </section>
-    </div>
 
-    <div class="streak-header">
-      <div class="streak-title"></div>
-      <div class="streak-controls">
-        <button class="streak-btn" data-days="7">7일</button>
-        <button class="streak-btn" data-days="30">30일</button>
-        <button class="streak-btn" data-days="90">90일</button>
-      </div>
-    </div>
+      <!-- Streak -->
+      <section class="streak-section">
+        <div class="streak-head">
+          <button class="streak-btn" data-days="7">7일</button>
+          <button class="streak-btn" data-days="30">30일</button>
+          <button class="streak-btn" data-days="90">90일</button>
+        </div>
 
-    <div class="streak-container">
-      <div id="streak-grid" class="streak-grid">
-        {% for day in streak_data %}
-        <div
-          class="streak-cell"
-          data-count="{{ day.count }}"
-          {%
-          if
-          day.details
-          %}
-          data-details="{{ day.details | tojson | forceescape }}"
-          {%
-          endif
-          %}
-        >
-          <div class="date-info">
-            <div class="weekday">{{ day.weekday }}</div>
-            <div class="date">{{ day.date }}</div>
-          </div>
-          <span class="count">{{ day.count }}</span>
-
-          {% if day.details %}
-          <div class="details">
-            {% for prob in day.details %}
-            <div class="prob-item">
-              <a
-                href="http://edu.doingcoding.com/status/{{ prob.server_sub_id }}"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {{ prob.title }} </a
-              ><br />
-              ({{ prob.language }}, {{ prob.score }}점, {{ prob.time }})
+        <div class="streak-container">
+          <div id="streak-grid" class="streak-grid">
+            {% for day in streak_data %}
+            <div
+              class="streak-cell"
+              data-count="{{ day.count }}"
+              {%
+              if
+              day.details
+              %}
+              data-details="{{ day.details | tojson | forceescape }}"
+              {%
+              endif
+              %}
+            >
+              <div class="weekday">{{ day.weekday }}</div>
+              <div class="date">{{ day.date }}</div>
+              <div class="count">{{ day.count }}</div>
             </div>
             {% endfor %}
           </div>
-          {% endif %}
         </div>
-        {% endfor %}
-      </div>
-    </div>
+      </section>
 
-    <h2 id="result-title" style="display: none"></h2>
+      <h2 id="result-title" style="display: none">&nbsp;</h2>
+      <section id="charts-container"></section>
 
-    <div id="charts-container"></div>
+      <footer class="actions">
+        <a
+          class="footer-btn"
+          href="/students/{{ user_uuid }}/homework"
+          target="_blank"
+          rel="noopener"
+          >📋 숙제 대시보드</a
+        >
+        <button id="update-btn" class="footer-btn" onclick="updateProblems()">
+          🔄 문제 목록 업데이트
+        </button>
+        <div id="update-time" style="font-size: 13px; color: #6b7280"></div>
+        <button
+          class="footer-btn"
+          onclick="fetch('/logout').then(() => alert('로그아웃 되었습니다.'))"
+        >
+          🚪 로그아웃
+        </button>
+        <button
+          class="footer-btn"
+          onclick="fetch('/clear_data').then(() => alert('데이터가 초기화되었습니다.'))"
+        >
+          🧹 캐시 지우기
+        </button>
+      </footer>
+    </main>
 
-    <footer style="padding: 20px; text-align: center">
-      <button id="update-btn" class="footer-btn" onclick="updateProblems()">
-        🔄 문제 목록 업데이트
-      </button>
-      <!-- ⏰ 마지막 업데이트 시각 표시 -->
-      <!-- ⏰ 마지막 업데이트 시각 표시 -->
-      <div
-        id="update-time"
-        style="margin-top: 10px; font-size: 14px; color: #ccc"
-      ></div>
+    <!-- singletons created on demand -->
+    <div id="overlay" aria-hidden="true" style="display: none"></div>
+    <div
+      id="submission-popover"
+      class="details"
+      role="dialog"
+      style="display: none"
+    ></div>
 
-      <button
-        class="footer-btn"
-        onclick="fetch('/logout').then(() => alert('로그아웃 되었습니다.'))"
-      >
-        🚪 로그아웃
-      </button>
-      <button
-        class="footer-btn"
-        onclick="fetch('/clear_data').then(() => alert('데이터가 초기화되었습니다.'))"
-      >
-        🧹 캐시 지우기
-      </button>
-    </footer>
-    <!-- 
- <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
-<script src="{{ url_for('static', filename='js/refreshUserProgress.js') }}"></script> -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-
     <script>
-      (async function mountLatestHomeworkCard() {
-        const userUuid = "{{ user_uuid }}";
-
-        // 선택: TTL 체크 후 최신화
-        try {
-          const ttlMs = 60_000;
-          const first = await fetch(
-            `/api/students/${userUuid}/homework_status`
-          ).then((r) => r.json());
-          const updatedAt = first.updated_at ? Date.parse(first.updated_at) : 0;
-          if (!updatedAt || Date.now() - updatedAt > ttlMs) {
-            await fetch(`/api/students/${userUuid}/refresh`, {
-              method: "POST",
-            });
-          }
-        } catch (e) {}
-
-        // 최신 숙제 로드
-        const data = await fetch(`/api/students/${userUuid}/homework_latest`)
-          .then((r) => r.json())
-          .catch(() => ({}));
-        const host = document.querySelector("#latest-homework");
-        if (!host) return;
-
-        if (!data || !data.ok || !data.log) {
-          host.innerHTML = `<div class="card"><div class="card-title">최근 숙제가 없습니다</div></div>`;
-          return;
-        }
-
-        const { log } = data;
-        const pct = log.counts.total
-          ? Math.round((log.counts.passed / log.counts.total) * 100)
-          : 0;
-
-        // 문제별 상태 매핑(legacy_code 또는 server_problem_id)
-        const statusByLegacy = Object.fromEntries(
-          (log.problem_status || []).map((p) => [p.legacy_code, p.status])
-        );
-        const statusById = Object.fromEntries(
-          (log.problem_status || []).map((p) => [
-            String(p.server_problem_id),
-            p.status,
-          ])
-        );
-
-        const problemLis = (log.problems || [])
-          .map((p) => {
-            const st = p.legacy_code
-              ? statusByLegacy[p.legacy_code]
-              : statusById[String(p.server_problem_id)];
-            const icon = st === "passed" ? "✅" : st === "wrong" ? "❌" : "…";
-            const cls = st || "pending";
-            const code = p.legacy_code
-              ? `<code>${p.legacy_code}</code>`
-              : p.server_problem_id
-              ? `<code>#${p.server_problem_id}</code>`
-              : "";
-            const title = p.title || p.title_at_issue || "";
-            return `<li class="problem-row ${cls}" data-legacy-code="${
-              p.legacy_code || ""
-            }" data-server-problem-id="${p.server_problem_id || ""}">
-      <span class="mark">${icon}</span> ${code} <span class="title"> – ${title}</span>
-    </li>`;
-          })
-          .join("");
-
-        host.innerHTML = `
-    <article class="card" data-log-id="${log.key || ""}" data-id="${
-          log.id || ""
-        }">
-      <div class="card-head" style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="card-title">${log.title || "제목 없음"}</div>
-        <span class="badge">${(log.channel || "kakao").toUpperCase()}</span>
-      </div>
-
-      <div class="progress">
-        <div><div class="progress-fill" style="width:${pct}%"></div></div>
-        <div class="progress-text">통과 ${log.counts.passed} · 오답 ${
-          log.counts.wrong
-        } · 미시도 ${log.counts.pending}</div>
-      </div>
-
-      <div class="meta" style="font-size:.9rem; color:var(--muted); display:flex; gap:12px; flex-wrap:wrap;">
-        <span>보낸 시각: <span class="ts" data-iso="${log.ts}">${
-          log.ts || "-"
-        }</span></span>
-        ${
-          log.due_at
-            ? `<span>마감: <span class="ts" data-iso="${log.due_at}">${log.due_at}</span></span>`
-            : ""
-        }
-        ${
-          log.url
-            ? `<span>링크: <a href="${log.url}" target="_blank" rel="noopener">${log.url}</a></span>`
-            : ""
-        }
-      </div>
-
-      ${
-        log.problems && log.problems.length
-          ? `<ol class="problems">${problemLis}</ol>`
-          : ""
-      }
-
-      <div class="actions" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-        ${
-          log.url
-            ? `<a class="btn" href="${log.url}" target="_blank" rel="noopener">문제 페이지 열기</a>`
-            : ""
-        }
-        <button class="btn" id="reopen-homework">전체 보기</button>
-      </div>
-    </article>
-  `;
-
-        // “전체 보기” → 기존 숙제 탭으로 이동
-        document
-          .getElementById("reopen-homework")
-          ?.addEventListener("click", () => {
-            window.open(`/students/${userUuid}/homework`, "_blank");
-          });
-      })();
-
-      // 싱글톤 생성 유틸
+      // Ensure singleton helpers
       function ensureEl(id, { className = "", style = "" } = {}) {
         let el = document.getElementById(id);
         if (!el) {
@@ -1142,16 +693,13 @@
         return el;
       }
 
-      // 전역 엘리먼트 확보 (없으면 만든다)
       const overlayEl = ensureEl("overlay", { style: "display:none" });
       const popover = ensureEl("submission-popover", {
-        className: "details", // ← 반드시 .details
+        className: "details",
         style: "display:none; position:absolute;",
       });
 
-      const streakGrid = document.getElementById("streak-grid");
-
-      // 오늘(mm-dd) 문자열은 매번 계산하지 말고 모듈 전역으로 1회 캐시
+      // KST today (mm-dd)
       const TODAY_MMDD = (() => {
         const kst = new Date().toLocaleString("en-US", {
           timeZone: "Asia/Seoul",
@@ -1162,36 +710,28 @@
         ).padStart(2, "0")}`;
       })();
 
-      // 초기 active 표시
-      document.addEventListener("DOMContentLoaded", () => {
-        const initialDays = Number("{{ streak_days|default(7) }}");
-        document.querySelectorAll(".streak-btn").forEach((b) => {
-          if (Number(b.dataset.days) === initialDays) b.classList.add("active");
+      // Prime streak grid: tiers, milestones, today
+      (function primeInitialGrid() {
+        const cells = document.querySelectorAll(".streak-cell");
+        cells.forEach((cell) => {
+          const c = Number(cell.dataset.count || 0);
+          const tier = calcTier(c);
+          if (tier) cell.dataset.tier = String(tier);
+          if (c >= 10) cell.dataset.milestone = "1";
+          const dateEl = cell.querySelector(".date");
+          if (dateEl && dateEl.textContent.trim() === TODAY_MMDD)
+            cell.dataset.today = "1";
         });
-      });
-
-      (function hydrateInitialDetails() {
-        document.querySelectorAll(".streak-cell").forEach((cell) => {
-          if (cell.dataset.details) return;
-          const box = cell.querySelector(".details");
-          if (!box) return;
-
-          // ...파싱 로직 동일...
-
-          cell.dataset.details = JSON.stringify(list);
-          box.remove();
-        });
-        // 팝오버가 없던 초기 로드에서도, 이제 전역 팝오버가 보장되어 있음
       })();
 
+      // Streak interactions
+      const streakGrid = document.getElementById("streak-grid");
       if (!streakGrid.__bound) {
         streakGrid.addEventListener("click", (e) => {
           const cell = e.target.closest(".streak-cell");
           if (!cell) return;
-
           const raw = cell.dataset.details;
           if (!raw) return;
-
           const list = JSON.parse(raw);
           const same =
             popover.__ownerCell === cell && popover.style.display === "block";
@@ -1207,140 +747,40 @@
             ? list
                 .map(
                   (p) => `
-      <div class="prob-item">
-        <a href="http://edu.doingcoding.com/status/${p.server_sub_id}" target="_blank" rel="noopener">
-          ${p.title}
-        </a><br/>(${p.language}, ${p.score}점, ${p.time})
-      </div>
-    `
+            <div class="prob-item">
+              <a href="http://edu.doingcoding.com/status/${p.server_sub_id}" target="_blank" rel="noopener">${p.title}</a>
+              <br/>(${p.language}, ${p.score}점, ${p.time})
+            </div>`
                 )
                 .join("")
             : `<div style="padding:8px">제출 내역 없음</div>`;
 
           const rect = cell.getBoundingClientRect();
           popover.style.top = `${
-            rect.top + window.scrollY + cell.offsetHeight + 8
+            rect.top + window.scrollY + rect.height + 8
           }px`;
           popover.style.left = `${rect.left + rect.width / 2}px`;
           popover.style.transform = "translateX(-50%)";
           popover.style.display = "block";
-          popover.style.zIndex = "10000"; // overlay(9998)보다 높게
-          popover.style.position = "absolute"; // 바디에 붙었으니 절대좌표
           overlayEl.style.display = "block";
           popover.__ownerCell = cell;
         });
-
         overlayEl.addEventListener("click", () => {
           popover.style.display = "none";
           overlayEl.style.display = "none";
           popover.__ownerCell = null;
         });
-
+        window.addEventListener("scroll", repositionPopover, { passive: true });
+        window.addEventListener("resize", repositionPopover);
         streakGrid.__bound = true;
       }
-
-      (function primeInitialGrid() {
-        const cells = document.querySelectorAll(".streak-cell");
-        if (!cells.length) return;
-
-        cells.forEach((cell) => {
-          const c = Number(cell.dataset.count || 0);
-          let tier = calcTier(c);
-
-          if (tier) cell.dataset.tier = String(tier);
-          if (c >= 10) cell.dataset.milestone = "1";
-        });
-
-        // 오늘 표시도 최초 1회
-        const kst = new Date().toLocaleString("en-US", {
-          timeZone: "Asia/Seoul",
-        });
-        const d = new Date(kst);
-
-        document.querySelectorAll(".streak-cell .date").forEach((el) => {
-          if (el.textContent.trim() === TODAY_MMDD) {
-            el.closest(".streak-cell")?.setAttribute("data-today", "1");
-          }
-        });
-      })();
-
-      // 렌더 함수 (빠름)
-      function renderStreakGrid(streakData) {
-        // 1) 프래그먼트에 누적
-        const frag = document.createDocumentFragment();
-
-        for (const day of streakData) {
-          const c = Number(day.count || 0);
-
-          // tier/milestone 미리 계산
-          let tier = calcTier(c);
-          const milestone = c >= 10 ? "1" : "";
-
-          const cell = document.createElement("div");
-          cell.className = "streak-cell";
-          cell.dataset.count = String(c);
-          if (tier) cell.dataset.tier = String(tier);
-          if (milestone) cell.dataset.milestone = "1";
-          if (day.date === TODAY_MMDD) cell.dataset.today = "1";
-
-          // 보이는 최소 내용만 넣기 (details는 data-*에 JSON 저장)
-          cell.innerHTML = `
-      <div class="date-info">
-        <div class="weekday">${day.weekday}</div>
-        <div class="date">${day.date}</div>
-      </div>
-      <span class="count">${c}</span>
-    `;
-          if (day.details && day.details.length) {
-            cell.dataset.details = JSON.stringify(day.details);
-          }
-
-          frag.appendChild(cell);
-        }
-
-        // 2) 단 한 번에 DOM 교체
-        streakGrid.replaceChildren(frag);
+      function repositionPopover() {
+        if (popover.style.display !== "block" || !popover.__ownerCell) return;
+        const cell = popover.__ownerCell;
+        const rect = cell.getBoundingClientRect();
+        popover.style.top = `${rect.top + window.scrollY + rect.height + 8}px`;
+        popover.style.left = `${rect.left + rect.width / 2}px`;
       }
-
-      // 문제 업데이트 버튼
-      function updateProblems() {
-        const btn = document.getElementById("update-btn");
-        const timeDisplay = document.getElementById("update-time");
-        const originalText = btn.innerHTML;
-
-        btn.disabled = true;
-        btn.innerHTML = "⏳ 업데이트 중...";
-
-        fetch("/update_problems", { method: "POST" })
-          .then((res) => {
-            if (res.ok) {
-              alert("문제 목록이 갱신되었습니다!");
-
-              // 타임스탬프 갱신
-              const now = new Date();
-              const formattedTime = now.toLocaleTimeString("ko-KR", {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              });
-            } else {
-              alert("실패했습니다");
-            }
-            timeDisplay.textContent = `🕒 마지막 업데이트: ${formattedTime}`;
-          })
-          .catch(() => alert("요청 중 오류가 발생했습니다."))
-          .finally(() => {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-          });
-      }
-
-      // 배경 클릭 시 닫기
-      overlayEl.addEventListener("click", () => {
-        popover.style.display = "none";
-        overlayEl.style.display = "none";
-        popover.__ownerCell = null;
-      });
 
       function calcTier(c) {
         if (c >= 1 && c <= 2) return 1;
@@ -1350,42 +790,37 @@
         if (c >= 13) return 5;
         return 0;
       }
-      /*스트릭 가져오기*/
-      // 서버 주입 값(없을 수도 있음)
+
+      // Initial active day-range button
+      document.addEventListener("DOMContentLoaded", () => {
+        const initialDays = Number("{{ streak_days|default(7) }}");
+        document.querySelectorAll(".streak-btn").forEach((b) => {
+          if (Number(b.dataset.days) === initialDays) b.classList.add("active");
+        });
+      });
+
+      // Streak range switching
       const SERVER_VIEW_MODE = "{{ view_mode|default('') }}";
       const SERVER_VIEW_USERNAME = "{{ view_username|default('') }}";
-
-      // 경로에서 /user/<username> 추출
       const m = location.pathname.match(/^\/user\/([^\/]+)/);
       const PATH_VIEW_MODE = m ? "user" : "me";
       const PATH_VIEW_USERNAME = m ? decodeURIComponent(m[1]) : "";
-
-      // 최종 값
       const viewMode = SERVER_VIEW_MODE || PATH_VIEW_MODE;
       const viewUsername = SERVER_VIEW_USERNAME || PATH_VIEW_USERNAME;
-
-      console.log("viewMode=", viewMode);
 
       document.addEventListener("click", async (e) => {
         const btn = e.target.closest(".streak-btn");
         if (!btn) return;
-
-        e.preventDefault(); // 혹시 모를 submit 방지
+        e.preventDefault();
         document
           .querySelectorAll(".streak-btn")
           .forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
-
         const days = btn.dataset.days;
-        console.log("viewUsername=", viewUsername, "days=", days);
-
         try {
           const url = `/api/streak?viewMode=${viewMode}&viewUsername=${encodeURIComponent(
             viewUsername
           )}&days=${days}`;
-          console.log("viewMode: ", viewMode);
-          console.log("[streak] fetching:", url);
-
           const res = await fetch(url, {
             headers: { Accept: "application/json" },
           });
@@ -1396,83 +831,154 @@
             return;
           }
           const data = await res.json();
-          if (data.streak_data) {
-            renderStreakGrid(data.streak_data);
-          } else {
-            console.error("payload:", data);
-            alert("스트릭 데이터를 불러오지 못했습니다.");
-          }
+          if (data.streak_data) renderStreakGrid(data.streak_data);
+          else alert("스트릭 데이터를 불러오지 못했습니다.");
         } catch (err) {
-          console.error("fetch failed:", err);
+          console.error(err);
           alert("네트워크 오류가 발생했습니다.");
         }
       });
-      window.addEventListener("scroll", repositionPopover, { passive: true });
-      window.addEventListener("resize", repositionPopover);
-      function repositionPopover() {
-        if (popover.style.display !== "block" || !popover.__ownerCell) return;
-        const cell = popover.__ownerCell;
-        const rect = cell.getBoundingClientRect();
-        popover.style.top = `${
-          rect.top + window.scrollY + cell.offsetHeight + 8
-        }px`;
-        popover.style.left = `${rect.left + rect.width / 2}px`;
+
+      function renderStreakGrid(streakData) {
+        const frag = document.createDocumentFragment();
+        for (const day of streakData) {
+          const c = Number(day.count || 0);
+          const tier = calcTier(c);
+          const milestone = c >= 10 ? "1" : "";
+          const cell = document.createElement("div");
+          cell.className = "streak-cell";
+          cell.dataset.count = String(c);
+          if (tier) cell.dataset.tier = String(tier);
+          if (milestone) cell.dataset.milestone = "1";
+          if (day.date === TODAY_MMDD) cell.dataset.today = "1";
+          cell.innerHTML = `<div class="weekday">${day.weekday}</div><div class="date">${day.date}</div><div class="count">${c}</div>`;
+          if (day.details && day.details.length)
+            cell.dataset.details = JSON.stringify(day.details);
+          frag.appendChild(cell);
+        }
+        streakGrid.replaceChildren(frag);
       }
 
-      // 중앙 텍스트용 Chart.js 커스텀 플러그인
-      function centerTextPlugin(text) {
-        return {
-          id: "centerText",
-          beforeDraw(chart) {
-            const { ctx, chartArea, width, height } = chart;
+      // Latest homework card mount (kept endpoints & semantics)
+      (async function mountLatestHomeworkCard() {
+        const userUuid = "{{ user_uuid }}";
+        try {
+          const ttlMs = 60_000;
+          const first = await fetch(
+            `/api/students/${userUuid}/homework_status`
+          ).then((r) => r.json());
+          const updatedAt = first.updated_at ? Date.parse(first.updated_at) : 0;
+          if (!updatedAt || Date.now() - updatedAt > ttlMs) {
+            await fetch(`/api/students/${userUuid}/refresh`, {
+              method: "POST",
+            });
+          }
+        } catch (e) {}
 
-            if (!chartArea) return; // 아직 렌더링 준비 전이면 그리지 않음
+        const data = await fetch(`/api/students/${userUuid}/homework_latest`)
+          .then((r) => r.json())
+          .catch(() => ({}));
+        const host = document.querySelector("#latest-homework");
+        if (!host) return;
+        if (!data || !data.ok || !data.log) {
+          host.innerHTML = `<div class="title" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <span>최근 숙제가 없습니다</span>
+            <a class="header-btn" href="/students/${userUuid}/homework" target="_blank" rel="noopener">📋 대시보드</a>
+          </div>`;
+          return;
+        }
 
-            ctx.save();
+        const { log } = data;
+        const pct = log.counts.total
+          ? Math.round((log.counts.passed / log.counts.total) * 100)
+          : 0;
+        const statusByLegacy = Object.fromEntries(
+          (log.problem_status || []).map((p) => [p.legacy_code, p.status])
+        );
+        const statusById = Object.fromEntries(
+          (log.problem_status || []).map((p) => [
+            String(p.server_problem_id),
+            p.status,
+          ])
+        );
+        const problemLis = (log.problems || [])
+          .map((p) => {
+            const st = p.legacy_code
+              ? statusByLegacy[p.legacy_code]
+              : statusById[String(p.server_problem_id)];
+            const icon = st === "passed" ? "✅" : st === "wrong" ? "❌" : "…";
+            const cls = st || "pending";
+            const code = p.legacy_code
+              ? `<code>${p.legacy_code}</code>`
+              : p.server_problem_id
+              ? `<code>#${p.server_problem_id}</code>`
+              : "";
+            const title = p.title || p.title_at_issue || "";
+            return `<li class="problem-row ${cls}" data-legacy-code="${
+              p.legacy_code || ""
+            }" data-server-problem-id="${
+              p.server_problem_id || ""
+            }"><span class="mark">${icon}</span> ${code} <span class="title">– ${title}</span></li>`;
+          })
+          .join("");
 
-            const fontSize = Math.min(width / 10, 20); // responsive size
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            ctx.textBaseline = "middle";
-            ctx.textAlign = "center";
-            ctx.fillStyle = "#444";
+        host.innerHTML = `
+          <div class="title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <span>${log.title || "제목 없음"}</span>
+            <span class="badge">${(log.channel || "kakao").toUpperCase()}</span>
+          </div>
+          <div class="progress"><div class="track"></div><div class="fill" style="width:${pct}%"></div><div class="text">통과 ${
+          log.counts.passed
+        } · 오답 ${log.counts.wrong} · 미시도 ${log.counts.pending}</div></div>
+          <div class="meta">
+            <span>보낸 시각: <span class="ts" data-iso="${log.ts}">${
+          log.ts || "-"
+        }</span></span>
+            ${
+              log.due_at
+                ? `<span>마감: <span class="ts" data-iso="${log.due_at}">${log.due_at}</span></span>`
+                : ""
+            }
+            ${
+              log.url
+                ? `<span>링크: <a href="${log.url}" target="_blank" rel="noopener">${log.url}</a></span>`
+                : ""
+            }
+          </div>
+          ${
+            log.problems && log.problems.length
+              ? `<ol class="problems">${problemLis}</ol>`
+              : ""
+          }
+          <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+            ${
+              log.url
+                ? `<a class="footer-btn" href="${log.url}" target="_blank" rel="noopener">문제 페이지 열기</a>`
+                : ""
+            }
+            <a class="footer-btn" id="open-homework-dashboard" href="/students/${userUuid}/homework" target="_blank" rel="noopener">📋 숙제 대시보드</a>
+          </div>
+        `;
+      })();
 
-            const centerX = (chartArea.left + chartArea.right) / 2;
-            const centerY = (chartArea.top + chartArea.bottom) / 2;
-
-            ctx.fillText(text, centerX, centerY);
-            ctx.restore();
-          },
-        };
-      }
-
-      const progressData = JSON.parse(`{{ progress_data | tojson  }}`);
+      // Charts (chapter progress)
+      const progressData = JSON.parse(`{{ progress_data | tojson }}`);
       const username = "{{ username }}";
-
-      // 사용자 조회
-      // const form = document.getElementById("search-form");
-      //const input = document.getElementById("username-input");
       const resultTitle = document.getElementById("result-title");
-      // const container = document.getElementById("charts-container");
-
-      // document.getElementById("result-title").textContent = `${username} 님의 챕터별 진도`;
-      document.getElementById("result-title").style.display = "block";
-
       const container = document.getElementById("charts-container");
+      resultTitle.textContent = `${username} 님의 챕터별 진도`;
+      resultTitle.style.display = "block";
       container.innerHTML = progressData
         .map(
           (item, idx) => `
-            <div class="chart-card" data-href="/user/${encodeURIComponent(
-              username
-            )}/chapter/${encodeURIComponent(item.chapter)}">
-              <canvas id="chart-${idx}" width="160" height="160"></canvas>
-              <p style="margin-top: 12px; font-weight: bold;">${
-                item.chapter
-              }</p>
-            </div>
-          `
+        <div class="chart-card" data-href="/user/${encodeURIComponent(
+          username
+        )}/chapter/${encodeURIComponent(item.chapter)}">
+          <canvas id="chart-${idx}" width="160" height="160"></canvas>
+          <p style="margin-top: 10px; font-weight: 700;">${item.chapter}</p>
+        </div>`
         )
         .join("");
-
       document.querySelectorAll(".chart-card").forEach((card) => {
         card.addEventListener("click", () => {
           const href = card.dataset.href;
@@ -1480,28 +986,29 @@
         });
       });
 
+      function centerTextPlugin(text) {
+        return {
+          id: "centerText",
+          beforeDraw(chart) {
+            const { ctx, chartArea, width, height } = chart;
+            if (!chartArea) return;
+            ctx.save();
+            const fontSize = Math.min(width / 10, 20);
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#111";
+            const centerX = (chartArea.left + chartArea.right) / 2;
+            const centerY = (chartArea.top + chartArea.bottom) / 2;
+            ctx.fillText(text, centerX, centerY);
+            ctx.restore();
+          },
+        };
+      }
+
       progressData.forEach((item, idx) => {
         const canvas = document.getElementById(`chart-${idx}`);
         const ctx = canvas.getContext("2d");
-
-        const gradient = ctx.createLinearGradient(0, 0, 200, 200);
-        if (item.percent === 100)
-          gradient.addColorStop(0, "rgb(142,234,220)"),
-            gradient.addColorStop(1, "rgb(46,147,248)");
-        else if (item.percent >= 80)
-          gradient.addColorStop(0, "rgb(128,240,131)"),
-            gradient.addColorStop(1, "rgb(44,206,190)");
-        else if (item.percent >= 51)
-          gradient.addColorStop(0, "rgb(219,234,134)"),
-            gradient.addColorStop(1, "rgb(50,214,58)");
-        else if (item.percent >= 21)
-          gradient.addColorStop(0, "rgb(236,219,135)"),
-            gradient.addColorStop(1, "rgb(245,151,35)");
-        else if (item.percent >= 1)
-          gradient.addColorStop(0, "rgb(236,167,184)"),
-            gradient.addColorStop(1, "rgb(241,53,35)");
-        else gradient.addColorStop(0, "#ddd"), gradient.addColorStop(1, "#ddd");
-
         new Chart(ctx, {
           type: "doughnut",
           data: {
@@ -1509,29 +1016,56 @@
             datasets: [
               {
                 data: [item.percent, 100 - item.percent],
-                backgroundColor: [gradient, "#f0f0f0"],
+                backgroundColor: ["#111", "#e5e7eb"],
                 borderWidth: 0,
-                borderRadius: 100,
+                hoverOffset: 0,
               },
             ],
           },
           options: {
-            cutout: "60%",
+            cutout: "72%",
+            rotation: -90,
+            circumference: 360,
             plugins: {
               legend: { display: false },
               tooltip: { enabled: false },
-              title: {
-                display: true,
-                text: `${item.percent}%`,
-                color: "#444",
-                font: { size: 20, weight: "bold" },
-                position: "center",
-              },
             },
+            animation: { duration: 0 },
           },
           plugins: [centerTextPlugin(`${item.percent}%`)],
         });
       });
+
+      // Update problems with timestamp fix
+      function updateProblems() {
+        const btn = document.getElementById("update-btn");
+        const timeDisplay = document.getElementById("update-time");
+        const originalText = btn.innerHTML;
+        let formattedTime = "";
+        btn.disabled = true;
+        btn.innerHTML = "⏳ 업데이트 중...";
+        fetch("/update_problems", { method: "POST" })
+          .then((res) => {
+            if (res.ok) {
+              alert("문제 목록이 갱신되었습니다!");
+              const now = new Date();
+              formattedTime = now.toLocaleTimeString("ko-KR", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              });
+            } else {
+              alert("실패했습니다");
+            }
+          })
+          .catch(() => alert("요청 중 오류가 발생했습니다."))
+          .finally(() => {
+            if (formattedTime)
+              timeDisplay.textContent = `🕒 마지막 업데이트: ${formattedTime}`;
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          });
+      }
     </script>
   </body>
 </html>
