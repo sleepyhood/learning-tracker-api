@@ -11,7 +11,7 @@
       href="{{ url_for('static', filename='css/fab.css') }}"
     />
 
-    <style>
+    <!-- <style>
       /* 0) 토큰: 일관된 폭/간격/컬러 */
       :root {
         --content-w: 1320px; /* 중앙 정렬될 최대 콘텐츠 폭 */
@@ -770,7 +770,787 @@
           background: #e5e7eb;
         }
       }
-    </style>
+    </style> -->
+
+    <style>
+  /* 리팩터링된 라이트 테마 스타일 (index.html 전용) */
+  :root {
+            /* 🔽 최대 크기를 100px → 68px 정도로 줄임 */
+        --cell: clamp(20px, 4vw, 68px);
+        /* 🔽 칸 사이 간격도 조금 줄이기 */
+        --gap: 6px;
+    --page-max-width: 1320px;
+    --g: 20px;
+    --bg: #f3f4f6;
+    --bg-gradient: radial-gradient(
+      circle at top left,
+      #e5f0ff 0,
+      #f3f4f6 40%,
+      #eef2ff 100%
+    );
+    --surface: #ffffff;
+    --surface-soft: #f9fafb;
+    --surface-subtle: #eef2ff;
+    --border: #e5e7eb;
+    --border-strong: #d1d5db;
+    --text: #111827;
+    --muted: #6b7280;
+    --accent: #60a5fa;
+      --radius: 16px;
+    --accent-strong: #2563eb;
+    --accent-soft: #eff6ff;
+    --danger: #ef4444;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+    --shadow-md: 0 4px 10px rgba(15, 23, 42, 0.12);
+    --shadow-lg: 0 12px 30px rgba(15, 23, 42, 0.16);
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    background: var(--bg-gradient);
+    color: var(--text);
+  }
+
+  /* 공통 컨테이너 폭 정렬 */
+  body > header,
+  .viz-2col,
+  .streak-header,
+  .streak-container,
+  #charts-container,
+  footer {
+    max-width: var(--page-max-width);
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+
+  a {
+    color: var(--accent-strong);
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+
+  /* ===== 헤더 & 검색 ===== */
+
+  header.page-header {
+    padding-top: 20px;
+    padding-bottom: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+      border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--border);  
+  }
+
+  .header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .brand-link {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .page-title {
+    margin: 0;
+    font-size: clamp(1.6rem, 2.3vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .page-subtitle {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--muted);
+  }
+
+  .header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  #search-form {
+    margin: 0;
+  }
+
+  .search-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  #username-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    padding: 8px 10px;
+    outline: none;
+    font-size: 0.9rem;
+  }
+
+  #username-input::placeholder {
+    color: var(--muted);
+  }
+
+  #search-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 8px 10px;
+    background: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  #search-btn img {
+    display: block;
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+  }
+
+  #search-btn:hover {
+    background: var(--accent-strong);
+  }
+
+  .autocomplete-box {
+    position: absolute;
+    margin-top: 36px;
+    list-style: none;
+    padding: 4px 0;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    max-height: 220px;
+    overflow-y: auto;
+    width: 220px;
+    z-index: 20;
+  }
+
+  .autocomplete-box li {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .autocomplete-box li:hover {
+    background: var(--accent-soft);
+  }
+
+  .btn-secondary {
+    appearance: none;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-soft);
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .btn-secondary:hover {
+    background: var(--surface-subtle);
+  }
+
+  /* FAB 기본 위치 (fab.css에 더해 약간만 정리) */
+  .fab-container {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 50;
+  }
+
+  /* ===== 상단 2단 레이아웃 (프로필 + 최근 숙제) ===== */
+
+  .viz-2col {
+    display: grid;
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+    gap: var(--g);
+    margin-top: 12px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 960px) {
+    .viz-2col {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* 공통 카드 스타일 */
+  .chart-card,
+  #latest-homework .card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* 프로필 카드 */
+  #profile-container {
+    padding: 18px 18px 20px;
+  }
+
+  #profile-container h2 {
+    margin: 8px 0 4px;
+    font-size: 1.1rem;
+  }
+
+  #profile-container p {
+    margin: 2px 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .chip-role {
+    background: var(--surface-soft);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .chip-lang {
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    border: 1px solid rgba(96, 165, 250, 0.5);
+  }
+
+/* 숙제 내역 버튼 */
+.chip-action {
+  background: var(--accent);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 16px;
+  text-decoration: none;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.chip-action:hover {
+  filter: brightness(1.05);
+}
+
+  #profile-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent); /* ✅ 위에서 정한 파란 accent 사용 */
+}
+.stat-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+  #profile-stats div > div:first-child {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent-strong) !important;
+  }
+
+  #profile-stats div > div:last-child {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  /* ===== 최근 숙제 카드 ===== */
+
+  #latest-homework {
+    align-self: stretch;
+  }
+
+  #latest-homework .card {
+    padding: 16px 18px 18px;
+  }
+
+  #latest-homework .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  #latest-homework .card-title {
+    font-weight: 600;
+    font-size: 0.98rem;
+  }
+
+  #latest-homework .badge {
+    font-size: 0.7rem;
+    border-radius: 999px;
+    padding: 2px 8px;
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+  }
+
+  #latest-homework .progress {
+    position: relative;
+    margin-top: 10px;
+    height: 8px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    overflow: hidden;
+  }
+
+  #latest-homework .progress-fill {
+    position: absolute;
+    inset: 0;
+    width: 0%;
+    background: linear-gradient(90deg, #60a5fa, #22c55e);
+    transition: width 0.3s ease;
+  }
+
+  #latest-homework .progress-text {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  #latest-homework ul {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+  }
+
+  #latest-homework .problem-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px dashed #e5e7eb;
+    font-size: 0.85rem;
+  }
+
+  #latest-homework .problem-row:last-child {
+    border-bottom: none;
+  }
+
+  #latest-homework .problem-row .mark {
+    width: 18px;
+    text-align: center;
+  }
+
+  #latest-homework .problem-row .title {
+    flex: 1;
+  }
+
+  #latest-homework .problem-row code {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  #latest-homework .problem-row.passed {
+    background: rgba(34, 197, 94, 0.06);
+  }
+
+  #latest-homework .problem-row.passed .title {
+    color: #166534;
+  }
+
+  #latest-homework .problem-row.wrong {
+    background: rgba(248, 113, 113, 0.06);
+  }
+
+  #latest-homework .problem-row.wrong .title {
+    color: #b91c1c;
+  }
+
+  #latest-homework .problem-row.pending {
+    opacity: 0.9;
+  }
+
+  #latest-homework .meta {
+    margin-top: 8px;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  #latest-homework .meta a {
+    color: var(--accent-strong);
+  }
+
+  #latest-homework .actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  #latest-homework .btn {
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-soft);
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  #latest-homework .btn.primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+  }
+
+  #latest-homework .btn:hover {
+    background: var(--accent-soft);
+  }
+
+  #latest-homework .card.skeleton .card-title {
+    position: relative;
+    color: transparent;
+  }
+
+  #latest-homework .card.skeleton .card-title::after {
+    content: "";
+    display: block;
+    height: 16px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #e5e7eb, #f9fafb, #e5e7eb);
+    animation: skeleton-pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-pulse {
+    0% {
+      transform: translateX(-20%);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(20%);
+      opacity: 0.6;
+    }
+  }
+
+  /* ===== 스트릭 영역 ===== */
+
+  .streak-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+    margin-bottom: 8px;
+  }
+
+  .streak-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--muted);
+  }
+
+  .streak-controls {
+    display: inline-flex;
+    gap: 4px;
+  }
+
+  .streak-btn {
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 4px 8px;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+
+  .streak-btn.active,
+  .streak-btn:focus {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+/* 스트릭 컨테이너 */
+.streak-container {
+  position: relative;
+  z-index: 2;
+
+   max-width: 800px;
+           margin: 12px auto;
+        padding: 10px;
+
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: none;
+  border-radius: 18px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* 전체 그리드 정렬: 폭 꽉 채우기 */
+.streak-grid {
+  display: grid;
+  gap: var(--gap);
+  grid-template-columns: repeat(7, minmax(0, 1fr)); /* ✅ 7등분 */
+  width: 100%;
+  justify-items: stretch;
+}
+
+@media (max-width: 960px) {
+  .streak-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .streak-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* 각 날짜 칸(세로 컬럼) */
+.streak-cell {
+  /* 기존 border/transition은 유지하되 width/height만 조절 */
+  min-height: 140px;
+  padding: 10px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-0);
+  position: relative;
+  outline: 0 solid transparent;
+  transition: transform 0.12s ease, box-shadow 0.2s ease,
+    outline-color 0.2s ease;
+
+  display: flex;
+  flex-direction: column;    /* 요일/날짜 위, count 아래 */
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* 호버 효과 유지 */
+.streak-cell:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* 나머지 tier/오늘/마일스톤 색 관련 규칙(.streak-cell[data-tier="..."] 등)은 기존 그대로 두면 됩니다. */
+
+  .date-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .weekday {
+    font-weight: 500;
+  }
+
+  .date {
+    font-weight: 600;
+  }
+
+  .count {
+    margin-top: 6px;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .streak-cell[data-tier="1"] {
+    background: #e5f3ff;
+    border-color: #dbeafe;
+  }
+  .streak-cell[data-tier="2"] {
+    background: #dbeafe;
+    border-color: #bfdbfe;
+  }
+  .streak-cell[data-tier="3"] {
+    background: #bfdbfe;
+    border-color: #a5b4fc;
+  }
+  .streak-cell[data-tier="4"] {
+    background: #a5b4fc;
+    border-color: #818cf8;
+    color: #111827;
+  }
+  .streak-cell[data-tier="5"] {
+    background: #818cf8;
+    border-color: #4f46e5;
+    color: #f9fafb;
+  }
+
+  .streak-cell[data-today="1"] {
+    box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.6);
+  }
+
+  /* overlay + popover */
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.35);
+    backdrop-filter: blur(2px);
+    z-index: 40;
+  }
+
+  .details {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    padding: 10px 12px;
+    max-width: 320px;
+    font-size: 0.8rem;
+  }
+
+  .prob-item {
+    padding: 4px 0;
+    border-bottom: 1px dashed #e5e7eb;
+  }
+
+  .prob-item:last-child {
+    border-bottom: none;
+  }
+
+/* ===== 차트 영역 ===== */
+
+#result-title {
+  max-width: var(--page-max-width);
+  margin: 0 auto 8px;
+  padding: 0 16px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* ✅ 그래프 카드들을 자동으로 여러 열에 배치하는 그리드 */
+#charts-container {
+  margin: 12px auto 24px;
+  /* 가운데 정렬 + 상하 여백 */
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(220px, 1fr)
+  ); /* 화면 폭에 맞춰 2~4열까지 자동 배치 */
+  gap: 16px;
+}
+
+/* 작은 화면에서는 2열까지만 */
+@media (max-width: 640px) {
+  #charts-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.chart-card {
+  padding: 14px 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+#charts-container .chart-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+}
+
+#charts-container .chart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+
+  #charts-container .chart-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .label {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  /* ===== 푸터 버튼 ===== */
+
+  footer {
+    padding: 20px 16px 32px;
+    text-align: center;
+  }
+
+  .footer-btn {
+    margin: 4px 6px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .footer-btn:hover {
+    background: var(--accent-soft);
+  }
+
+  @media (max-width: 640px) {
+    header.page-header {
+      align-items: flex-start;
+    }
+    .header-actions {
+      align-items: flex-start;
+    }
+    .fab-container {
+      right: 16px;
+      bottom: 16px;
+    }
+  }
+</style>
+
   </head>
 
   <body>
@@ -786,10 +1566,31 @@
       style="display: none; position: absolute; z-index: 1001"
       class="details"
     ></div>
-    <header>
+    <!-- <header>
       <a href="/" style="text-decoration: none; color: inherit">
         <h1>풀이현황</h1>
       </a>
+
+
+  <div style="margin: 4px 0 10px; text-align: right">
+    <a
+      href="/schedule"
+      style="
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        border: 1px solid rgba(148, 163, 184, 0.6);
+        background: rgba(15, 23, 42, 0.7);
+        color: #e5e7eb;
+        text-decoration: none;
+      "
+    >
+      📅 요일별 학생 메뉴
+    </a>
+  </div>
       <form id="search-form" method="POST" action="/">
         <div class="search-wrapper">
           <input
@@ -811,7 +1612,46 @@
           </button>
         </div>
       </form>
-    </header>
+    </header> -->
+
+    <header class="page-header">
+  <div class="header-left">
+    <a href="/" class="brand-link">
+      <h1 class="page-title">풀이현황</h1>
+    </a>
+    <p class="page-subtitle">
+      최근 숙제와 스트릭, 챕터별 진도를 한눈에 보는 학생 대시보드입니다.
+    </p>
+    <a href="/schedule" class="btn-secondary">
+      📅 요일별 학생 메뉴
+    </a>
+  </div>
+
+  <div class="header-actions">
+    <form id="search-form" method="POST" action="/">
+      <div class="search-wrapper">
+        <input
+          type="text"
+          id="username-input"
+          name="username"
+          placeholder="유저명"
+          required
+        />
+        <ul id="autocomplete-list" class="autocomplete-box"></ul>
+
+        <button type="submit" id="search-btn">
+          <img
+            src="/static/search-icon.png"
+            alt="검색"
+            width="30"
+            height="auto"
+          />
+        </button>
+      </div>
+    </form>
+  </div>
+</header>
+
 
     <div class="fab-container">
       <!-- 공통 FAB: 현황 새로고침 -->
@@ -862,51 +1702,37 @@
           <a
             href="{{ url_for('view_homework_logs', user_uuid=user_uuid) }}"
             class="chip chip-action"
-            style="
-              background-color: #1976d2;
-              color: white;
-              padding: 6px 12px;
-              border-radius: 16px;
-              text-decoration: none;
-              font-size: 14px;
-            "
           >
             📝 숙제 내역 보기
           </a>
         </div>
 
+
         <p style="margin: 2px 0; font-weight: 600">
           마지막 로그인: {{ last_login }}
         </p>
 
-        <div
-          id="profile-stats"
-          style="
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: 16px;
-          "
-        >
+        <div id="profile-stats">
           <div>
-            <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
+            <div class="stat-value">
               {{ accepted_number }}
             </div>
-            <div style="font-size: 13px; color: #555">해결한 문제</div>
+            <div class="stat-label">해결한 문제</div>
           </div>
           <div>
-            <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
+            <div class="stat-value">
               {{ submission_number }}
             </div>
-            <div style="font-size: 13px; color: #555">제출 횟수</div>
+            <div class="stat-label">제출 횟수</div>
           </div>
           <div>
-            <div style="font-size: 18px; font-weight: bold; color: #2e7d32">
+            <div class="stat-value">
               {{ total_score }}
             </div>
-            <div style="font-size: 13px; color: #555">점수</div>
+            <div class="stat-label">점수</div>
           </div>
         </div>
+
       </aside>
       <section id="latest-homework">
         <div class="card skeleton">
@@ -951,7 +1777,7 @@
           </div>
           <span class="count">{{ day.count }}</span>
 
-          {% if day.details %}
+          <!-- {% if day.details %}
           <div class="details">
             {% for prob in day.details %}
             <div class="prob-item">
@@ -966,7 +1792,7 @@
             </div>
             {% endfor %}
           </div>
-          {% endif %}
+          {% endif %} -->
         </div>
         {% endfor %}
       </div>
@@ -1516,7 +2342,9 @@
             ],
           },
           options: {
-            cutout: "60%",
+            cutout: "85%",
+            responsive: true,
+                  rotation: -Math.PI * 0.75,   // 시작 각도 (왼쪽 위)
             plugins: {
               legend: { display: false },
               tooltip: { enabled: false },

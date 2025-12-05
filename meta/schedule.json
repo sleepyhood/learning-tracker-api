@@ -1,0 +1,115 @@
+{
+  "slots": [
+    {
+      "id": "9dc9a999-40c1-420b-95af-0e8664e595cb",
+      "weekday": 5,
+      "label": "C언어",
+      "order": 0,
+      "students": [
+        "9d4c3232-6af8-487b-ba90-6bbfdbb6988c",
+        "2f47956a-3deb-4e28-bddc-1abb49dfd9d3",
+        "7a2b39fd-e081-4220-81e4-1a4d9c070021"
+      ]
+    },
+    {
+      "id": "d299eded-e4f0-4762-bdbd-74f0ce3f9b04",
+      "weekday": 5,
+      "label": "Python",
+      "order": 0,
+      "students": [
+        "0cf23b34-7cac-4e55-9456-529ef1a952c9",
+        "94e8b6de-5090-4b02-ab4e-4b9e112692f8",
+        "1260b892-a448-470d-abee-6c761dec1f7e",
+        "14864f79-806f-432d-902d-acab9359ec8d",
+        "5ade8cfd-d19a-4cfc-9583-afc7976aa3a5"
+      ]
+    },
+    {
+      "id": "caba6ab9-804a-452d-9bcf-cec1dc4e8d45",
+      "weekday": 5,
+      "label": "Java",
+      "order": 0,
+      "students": [
+        "4dcdf06e-7f3f-4369-a9f3-075f91094dcc",
+        "4f18192c-c9c3-436b-9517-2bad44e9d87a",
+        "8ff2833a-e3fc-4697-aa29-90e86d98f5e7"
+      ]
+    },
+    {
+      "id": "9e11d2c9-f35f-4e79-8bb6-936e63e88000",
+      "weekday": 3,
+      "label": "C언어",
+      "order": 0,
+      "students": [
+        "6ddb8734-dae5-42e8-8319-7073a489d955"
+      ]
+    },
+    {
+      "id": "1231136d-e148-479e-8a8d-10911e82e8be",
+      "weekday": 3,
+      "label": "Python",
+      "order": 0,
+      "students": [
+        "277e05d6-86ef-424d-927d-90bad1bded25"
+      ]
+    },
+    {
+      "id": "9d5f250e-fe70-433d-9b4a-814a73195cca",
+      "weekday": 1,
+      "label": "Python",
+      "order": 0,
+      "students": [
+        "277e05d6-86ef-424d-927d-90bad1bded25",
+        "14864f79-806f-432d-902d-acab9359ec8d"
+      ]
+    },
+    {
+      "id": "3965f9d5-1bdd-4fb4-aa17-9db759fe9b5a",
+      "weekday": 1,
+      "label": "C언어",
+      "order": 0,
+      "students": [
+        "6ddb8734-dae5-42e8-8319-7073a489d955"
+      ]
+    },
+    {
+      "id": "54b6a9f1-0412-4e7a-bb8b-fa53586f0f12",
+      "weekday": 1,
+      "label": "Java",
+      "order": 0,
+      "students": [
+        "4dcdf06e-7f3f-4369-a9f3-075f91094dcc"
+      ]
+    },
+    {
+      "id": "5ef9c082-fc6f-4857-a01a-317c2214680f",
+      "weekday": 2,
+      "label": "C언어",
+      "order": 0,
+      "students": [
+        "d50c11ee-c090-4040-b209-fdd53320ee39"
+      ]
+    },
+    {
+      "id": "899b2a43-ba23-45df-8b0d-3bbbf3d90e81",
+      "weekday": 2,
+      "label": "Python",
+      "order": 0,
+      "students": [
+        "94e8b6de-5090-4b02-ab4e-4b9e112692f8",
+        "5ade8cfd-d19a-4cfc-9583-afc7976aa3a5",
+        "bf869678-398f-46d4-a04f-26ac9df00bf3"
+      ]
+    },
+    {
+      "id": "fe9ef2a0-9baa-4554-a13e-3182220026f2",
+      "weekday": 4,
+      "label": "Python",
+      "order": 0,
+      "students": [
+        "bf869678-398f-46d4-a04f-26ac9df00bf3",
+        "82236c58-ddfe-43ed-8c60-eb3a8eda2950"
+      ]
+    }
+  ]
+}

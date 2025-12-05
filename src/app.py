@@ -76,6 +76,76 @@ if not UUIDS_PATH.exists():
 
 KST = timezone(timedelta(hours=9))
 
+
+
+
+# ===== 요일별 스케줄 저장용 =====
+SCHEDULE_PATH = Path("meta/schedule.json")
+SCHEDULE_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"]
+
+
+def load_schedule() -> dict:
+    """요일별 수업 스케줄 JSON 로드."""
+    try:
+        if SCHEDULE_PATH.exists():
+            return json.loads(SCHEDULE_PATH.read_text(encoding="utf-8"))
+    except Exception as e:
+        print("[schedule] load error:", e)
+    return {"slots": []}
+
+
+def save_schedule(data: dict) -> dict:
+    """스케줄 JSON 저장."""
+    try:
+        SCHEDULE_PATH.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except Exception as e:
+        print("[schedule] save error:", e)
+    return data
+
+
+def hydrate_slot_students(slots):
+    """
+    슬롯에 들어있는 students 리스트( uuid 또는 student_id )를
+    화면에서 쓰기 좋은 dict 리스트로 변환.
+    """
+    hydrated = []
+    for slot in slots:
+        students_detail = []
+        for token in slot.get("students", []):
+            # token: user_uuid 또는 student_id
+            try:
+                doc = load_doc_by_any(token)
+            except Exception:
+                doc = {}
+
+            profile = doc.get("profile") or {}
+            student_id = (
+                profile.get("student_id")
+                or reverse_lookup(token)
+                or str(token)
+            )
+            name = profile.get("name") or student_id
+            user_uuid = doc.get("user_uuid") or resolve_uuid(student_id)
+
+            students_detail.append(
+                {
+                    "user_uuid": user_uuid,
+                    "student_id": student_id,
+                    "name": name,
+                }
+            )
+
+        merged = dict(slot)
+        merged["students_detail"] = students_detail
+        hydrated.append(merged)
+
+    return hydrated
+
 # app.py 어딘가(라우트 위) 유틸 함수로 추가
 
 
@@ -536,6 +606,49 @@ def homework_latest(user_uuid):
     status = compute_homework_status(doc)
     item = next((it for it in status["items"] if it["key"] == key), None)
 
+    
+    # 🔻 새로 추가: 오늘 숙제 여부 / 완료 여부 플래그 계산
+    today = datetime.now(tz=KST).date()
+
+    ts_raw = latest_log.get("ts")
+    given_date = None
+    if ts_raw:
+        try:
+            ts_dt = datetime.fromisoformat(ts_raw)
+            given_date = ts_dt.astimezone(KST).date()
+        except ValueError:
+            given_date = None
+
+    counts = (
+        item["counts"]
+        if item
+        else {
+            "total": 0,
+            "passed": 0,
+            "wrong": 0,
+            "partial": 0,
+            "pending": 0,
+        }
+    )
+
+    total = (counts.get("total") or 0)
+    passed = (counts.get("passed") or 0)
+    wrong = (counts.get("wrong") or 0)
+    pending = (counts.get("pending") or 0)
+
+    flags = {
+        # 오늘 새로 숙제 로그를 남겼는지 (숙제 '줬는지')
+        "is_given_today": bool(given_date and given_date == today),
+        # 최신 숙제의 모든 문제가 통과했는지
+        "all_passed": total > 0 and passed == total,
+        # 숙제 자체는 있는지
+        "has_any": total > 0,
+        # 아직 오답/미시도 문제가 있는지
+        "has_unresolved": (wrong + pending) > 0,
+    }
+
+
+
     # 결합 응답 (뷰에서 쓰는 필드만)
     return jsonify(
         {
@@ -556,6 +669,8 @@ def homework_latest(user_uuid):
                     else {"total": 0, "passed": 0, "wrong": 0, "pending": 0}
                 ),
                 "problem_status": item["problems"] if item else [],
+                                # 🔻 새로 추가
+                "flags": flags,
             },
         }
     )
@@ -789,6 +904,178 @@ def group_detail(username, chapter, group_id):
         chapter_url_html=chapter_url,
         user_uuid=user_uuid,  # ✅ 추가
         **role_ctx,  # role_label, is_admin
+    )
+
+@app.get("/api/schedule")
+def api_schedule_get():
+    role_ctx = role_ctx_from_session()
+    if not role_ctx.get("is_admin"):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    raw = load_schedule()
+    slots = hydrate_slot_students(raw.get("slots", []))
+    return jsonify({"ok": True, "slots": slots})
+
+@app.post("/api/schedule/slots")
+def api_schedule_create_slot():
+    role_ctx = role_ctx_from_session()
+    if not role_ctx.get("is_admin"):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    payload = request.get_json(force=True) or {}
+    weekday = payload.get("weekday")
+    label = (payload.get("label") or "").strip()
+
+    if weekday is None or not label:
+        return jsonify({"ok": False, "error": "weekday and label required"}), 400
+
+    try:
+        weekday = int(weekday)
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "invalid weekday"}), 400
+
+    if not 0 <= weekday <= 6:
+        return jsonify({"ok": False, "error": "weekday must be 0-6"}), 400
+
+    data = load_schedule()
+    slots = data.setdefault("slots", [])
+
+    new_slot = {
+        "id": str(uuid4()),
+        "weekday": weekday,
+        "label": label,    # 예: "16:00 C언어반"
+        "order": payload.get("order") or 0,
+        "students": [],    # user_uuid 리스트
+    }
+    slots.append(new_slot)
+    save_schedule(data)
+
+    hydrated = hydrate_slot_students([new_slot])[0]
+    return jsonify({"ok": True, "slot": hydrated})
+
+
+@app.post("/api/schedule/slots/<slot_id>/students")
+def api_schedule_add_student(slot_id):
+    role_ctx = role_ctx_from_session()
+    if not role_ctx.get("is_admin"):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    payload = request.get_json(force=True) or {}
+    student_id = (payload.get("student_id") or "").strip()
+    if not student_id:
+        return jsonify({"ok": False, "error": "student_id required"}), 400
+
+    data = load_schedule()
+    slots = data.setdefault("slots", [])
+    slot = next((s for s in slots if s.get("id") == slot_id), None)
+    if not slot:
+        return jsonify({"ok": False, "error": "slot not found"}), 404
+
+    # 프로필 동기화(있으면) - doingcoding API에서 끌어오는 기존 함수 활용
+    try:
+        doc = pull_and_store_user(student_id)
+        user_uuid = doc.get("user_uuid") or resolve_uuid(student_id)
+    except Exception as e:
+        print("[schedule] pull_and_store_user failed:", e)
+        user_uuid = resolve_uuid(student_id)
+
+    slot.setdefault("students", [])
+    if user_uuid not in slot["students"]:
+        slot["students"].append(user_uuid)
+        save_schedule(data)
+
+    hydrated = hydrate_slot_students([slot])[0]
+    return jsonify({"ok": True, "slot": hydrated})
+
+@app.delete("/api/schedule/slots/<slot_id>/students/<user_token>")
+def api_schedule_remove_student(slot_id, user_token):
+    role_ctx = role_ctx_from_session()
+    if not role_ctx.get("is_admin"):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    data = load_schedule()
+    slots = data.setdefault("slots", [])
+    slot = next((s for s in slots if s.get("id") == slot_id), None)
+    if not slot:
+        return jsonify({"ok": False, "error": "slot not found"}), 404
+
+    students = slot.setdefault("students", [])
+
+    # user_token은 uuid 또는 student_id 둘 다 허용
+    target_uuid = user_token
+    if "-" not in user_token:  # 단순 student_id 추정
+        target_uuid = resolve_uuid(user_token)
+
+    before = len(students)
+    students[:] = [u for u in students if u != target_uuid]
+    if len(students) == before:
+        return jsonify({"ok": False, "error": "student not in slot"}), 404
+
+    save_schedule(data)
+    hydrated = hydrate_slot_students([slot])[0]
+    return jsonify({"ok": True, "slot": hydrated})
+
+@app.delete("/api/schedule/slots/<slot_id>")
+def api_schedule_delete_slot(slot_id):
+    role_ctx = role_ctx_from_session()
+    if not role_ctx.get("is_admin"):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    data = load_schedule()
+    slots = data.setdefault("slots", [])
+    new_slots = [s for s in slots if s.get("id") != slot_id]
+    if len(new_slots) == len(slots):
+        return jsonify({"ok": False, "error": "slot not found"}), 404
+
+    data["slots"] = new_slots
+    save_schedule(data)
+    return jsonify({"ok": True})
+
+
+@app.route("/schedule")
+def schedule_page():
+    """
+    요일별 학생 배치를 한눈에 보는 관리자 전용 페이지.
+    """
+    # 로그인 필수
+    s, redir = ensure_login_or_redirect()
+    if redir:
+        return redir
+
+    role_ctx = role_ctx_from_session()
+    if not role_ctx.get("is_admin"):
+        return "관리자만 접근 가능합니다.", 403
+
+    raw = load_schedule()
+    slots_by_wday = {i: [] for i in range(7)}
+
+    for slot in raw.get("slots", []):
+        try:
+            w = int(slot.get("weekday", 0))
+        except (TypeError, ValueError):
+            w = 0
+        if w not in slots_by_wday:
+            w = 0
+        slots_by_wday[w].append(slot)
+
+    # order → label 순으로 정렬
+    for w in slots_by_wday:
+        slots_by_wday[w].sort(
+            key=lambda s: (int(s.get("order", 0) or 0), str(s.get("label", "")))
+        )
+
+    hydrated_by_wday = {
+        w: hydrate_slot_students(slots) for w, slots in slots_by_wday.items()
+    }
+
+    today_w = datetime.now(tz=KST).weekday()  # 월=0
+
+    return render_template(
+        "schedule.html",
+        weekday_labels=WEEKDAY_LABELS,
+        slots_by_wday=hydrated_by_wday,
+        today_w=today_w,
+        **role_ctx,
     )
 
 
