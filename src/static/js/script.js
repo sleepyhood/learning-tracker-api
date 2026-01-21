@@ -179,18 +179,62 @@ function updateAssignUI() {
 }
 
 function selectUnsolved() {
-  const checkboxes = document.querySelectorAll(".assign-checkbox");
+  selectUnsolvedByParity(null); // 기존과 동일: 안 푼 것만 전체 선택
+
+  // const checkboxes = document.querySelectorAll(".assign-checkbox");
+  // checkboxes.forEach((cb) => {
+  //   const problemDiv = cb.closest(".problem");
+  //   if (
+  //     problemDiv.classList.contains("unsolved") ||
+  //     problemDiv.classList.contains("wrong")
+  //   ) {
+  //     cb.checked = true;
+  //   } else {
+  //     cb.checked = false;
+  //   }
+  // });
+}
+
+/*
+  ✅ 안 푼 문제(unsolved + wrong) 중에서 홀/짝 선택
+  - 기본: data-pid가 숫자면 그 pid의 홀/짝 사용
+  - fallback: pid가 숫자가 아니면 '안 푼 문제' 목록에서의 표시 순서(1부터)를 번호로 사용
+*/
+function selectUnsolvedByParity(parity /* 'odd' | 'even' | null */) {
+  const checkboxes = Array.from(document.querySelectorAll(".assign-checkbox"));
+  let unsolvedOrder = 0;
+
   checkboxes.forEach((cb) => {
     const problemDiv = cb.closest(".problem");
-    if (
-      problemDiv.classList.contains("unsolved") ||
-      problemDiv.classList.contains("wrong")
-    ) {
-      cb.checked = true;
-    } else {
+    const isUnsolved =
+      problemDiv?.classList.contains("unsolved") ||
+      problemDiv?.classList.contains("wrong");
+
+    if (!isUnsolved) {
       cb.checked = false;
+      return;
     }
+
+    unsolvedOrder += 1;
+
+    let num = parseInt(cb.dataset.pid, 10);
+    if (Number.isNaN(num)) num = unsolvedOrder;
+
+    if (parity === "odd") cb.checked = num % 2 === 1;
+    else if (parity === "even") cb.checked = num % 2 === 0;
+    else cb.checked = true; // null => 전부 선택
   });
+
+  // 쉬프트 범위선택 기준 초기화(예상치 못한 range 체크 방지)
+  lastChecked = null;
+}
+
+function selectUnsolvedOdd() {
+  selectUnsolvedByParity("odd");
+}
+
+function selectUnsolvedEven() {
+  selectUnsolvedByParity("even");
 }
 
 document.addEventListener("DOMContentLoaded", () => {

@@ -181,17 +181,21 @@
           📋
         </div>
 
-        <div id="assignModeControls" class="hidden fab-options">
-          <button class="assign-btn" onclick="selectUnsolved()">
-            안 푼 것만
-          </button>
-          <button class="assign-btn" onclick="toggleAll(true)">
-            전체 선택
-          </button>
-          <button class="assign-btn" onclick="toggleAll(false)">
-            전체 해제
-          </button>
-        </div>
+<!-- templates/group_detail.html -->
+<!-- 기존 assignModeControls 블록을 아래로 교체 -->
+<div id="assignModeControls" class="hidden fab-options">
+  <button class="assign-btn" onclick="selectUnsolved()">안 푼 것만</button>
+
+  <!-- ✅ UX: 5개가 1열로 서지 않게 '홀수/짝수'를 한 줄로 묶음 -->
+  <div class="assign-btn-row" aria-label="안 푼 문제 홀짝 선택">
+    <button class="assign-btn" onclick="selectUnsolvedOdd()">홀수만</button>
+    <button class="assign-btn" onclick="selectUnsolvedEven()">짝수만</button>
+  </div>
+
+  <button class="assign-btn" onclick="toggleAll(true)">전체 선택</button>
+  <button class="assign-btn" onclick="toggleAll(false)">전체 해제</button>
+</div>
+
 
         <div
           id="fab-toggle"
