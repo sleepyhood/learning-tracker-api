@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>수업 스케줄 관리 Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    <style>
+      :root {
+        /* 2026 Premium Dark Palette */
+        --bg-main: #050505;
+        --bg-glass: rgba(20, 20, 23, 0.6);
+        --bg-glass-hover: rgba(30, 30, 35, 0.7);
+        --bg-slot: rgba(255, 255, 255, 0.03);
+        
+        --border-glass: rgba(255, 255, 255, 0.08);
+        --border-active: rgba(99, 102, 241, 0.5);
+
+        --text-primary: #ffffff;
+        --text-secondary: #a1a1aa;
+        --text-muted: #52525b;
+
+        --accent-primary: #6366f1; /* Indigo */
+        --accent-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+        
+        /* Status Colors */
+        --status-green: #10b981;
+        --status-red: #ef4444;
+        --status-amber: #f59e0b;
+
+        --radius-xl: 24px;
+        --radius-lg: 16px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
+      }
+
+      * { box-sizing: border-box; outline: none; }
+
+      body {
+        margin: 0;
+        font-family: "Pretendard", -apple-system, sans-serif;
+        background-color: var(--bg-main);
+        color: var(--text-primary);
+        min-height: 100vh;
+        /* 배경에 깊이감을 주는 그라디언트 + 노이즈 효과 */
+        background-image: 
+          radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08), transparent 25%), 
+          radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.05), transparent 25%);
+        background-attachment: fixed;
+      }
+
+      /* Layout */
+      .page {
+        max-width: 1800px;
+        margin: 0 auto;
+        padding: 40px 24px;
+      }
+
+      /* Header */
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 40px;
+        padding: 0 10px;
+      }
+
+      .header-title h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        margin: 0 0 8px 0;
+        background: linear-gradient(to right, #fff, #94a3b8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.02em;
+      }
+
+      .header-title p {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        margin: 0;
+      }
+
+      .btn-back {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border-glass);
+        color: var(--text-secondary);
+        padding: 10px 20px;
+        border-radius: 99px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+      .btn-back:hover {
+        background: rgba(255,255,255,0.1);
+        color: #fff;
+        transform: translateY(-2px);
+      }
+
+      /* Grid System */
+      .week-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      @media (max-width: 1400px) { .week-grid { grid-template-columns: repeat(4, 1fr); } }
+      @media (max-width: 900px) { 
+        .week-grid { 
+          display: flex; 
+          overflow-x: auto; 
+          scroll-snap-type: x mandatory; 
+          padding-bottom: 30px;
+          gap: 16px;
+        }
+        .day-column { min-width: 280px; scroll-snap-align: center; }
+      }
+
+      /* Column Card Styling (Glassmorphism) */
+      .day-column {
+        background: var(--bg-glass);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--border-glass);
+        border-radius: var(--radius-xl);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        transition: all 0.3s ease;
+        min-height: 200px;
+      }
+
+      /* Today Highlight (Neon Glow) */
+      .day-column.is-today {
+        border-color: rgba(99, 102, 241, 0.4);
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.15), inset 0 0 20px rgba(99, 102, 241, 0.05);
+        background: linear-gradient(145deg, rgba(30, 30, 35, 0.8), rgba(20, 20, 23, 0.9));
+      }
+
+      .day-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .day-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.01em;
+      }
+
+      .day-badge {
+        font-size: 0.75rem;
+        font-weight: 800;
+        background: var(--accent-primary);
+        color: #fff;
+        padding: 4px 10px;
+        border-radius: 99px;
+        box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4);
+      }
+
+      /* Slot Styling */
+      .slots { display: flex; flex-direction: column; gap: 12px; }
+
+      .slot {
+        background: var(--bg-slot);
+        border: 1px solid transparent;
+        border-radius: var(--radius-lg);
+        padding: 16px;
+        transition: all 0.2s;
+        position: relative;
+      }
+
+      .slot:hover {
+        background: rgba(255,255,255,0.05);
+        border-color: var(--border-glass);
+      }
+
+      .slot-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .slot-label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #e4e4e7;
+      }
+
+      .icon-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 6px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .icon-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.1); }
+      .slot-delete:hover { color: var(--status-red); background: rgba(239, 68, 68, 0.1); }
+
+      /* Student List */
+      .slot-students { display: flex; flex-direction: column; gap: 8px; }
+
+      .slot-student {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: rgba(0,0,0,0.2);
+        border-radius: var(--radius-md);
+        border: 1px solid transparent;
+        transition: all 0.2s;
+      }
+
+      .slot-student:hover {
+        background: rgba(0,0,0,0.4);
+        border-color: var(--border-glass);
+        transform: translateX(2px);
+      }
+
+      .student-info {
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+      }
+
+      .student-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+      }
+
+      .student-id {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-family: monospace; /* Tech feel for ID */
+      }
+
+      .student-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      /* Status Dot (The "LED" Look) */
+      .hw-link {
+        display: flex;
+        align-items: center;
+        padding: 6px;
+        border-radius: 8px;
+        transition: background 0.2s;
+      }
+      .hw-link:hover { background: rgba(255,255,255,0.05); }
+
+      .hw-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #3f3f46;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); /* Inner shadow for depth */
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Active States */
+      .hw-done {
+        background-color: var(--status-green);
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); /* Glow */
+      }
+      .hw-today {
+        background-color: var(--status-amber);
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        animation: pulse 2s infinite;
+      }
+      .hw-pending {
+        background-color: var(--status-red);
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+      }
+
+      @keyframes pulse {
+        0% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(0.9); }
+        100% { opacity: 1; transform: scale(1); }
+      }
+
+      /* Add Form Styling */
+      .add-student-form {
+        margin-top: 12px;
+        display: flex;
+        gap: 8px;
+      }
+
+      .input-modern {
+        width: 100%;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid var(--border-glass);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+        font-size: 0.85rem;
+        transition: all 0.2s;
+      }
+      .input-modern:focus {
+        border-color: var(--accent-primary);
+        background: rgba(0,0,0,0.5);
+      }
+
+      .btn-add {
+        background: var(--bg-slot);
+        border: 1px solid var(--border-glass);
+        color: var(--text-secondary);
+        border-radius: var(--radius-sm);
+        padding: 0 12px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+      .btn-add:hover {
+        background: var(--accent-primary);
+        color: white;
+        border-color: var(--accent-primary);
+      }
+
+      /* Empty & Ghost Buttons */
+      .empty-slot {
+        text-align: center;
+        padding: 30px 0;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        border: 1px dashed var(--border-glass);
+        border-radius: var(--radius-lg);
+        margin-bottom: 12px;
+      }
+
+      .btn-ghost-slot {
+        width: 100%;
+        padding: 12px;
+        background: transparent;
+        border: 1px dashed var(--border-glass);
+        color: var(--text-muted);
+        border-radius: var(--radius-lg);
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+      }
+      .btn-ghost-slot:hover {
+        border-color: var(--text-secondary);
+        color: var(--text-primary);
+        background: rgba(255,255,255,0.02);
+      }
+
+      /* Toast */
+      #toast {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        color: #000;
+        padding: 12px 24px;
+        border-radius: 99px;
+        font-weight: 600;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        z-index: 1000;
+      }
+      #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="page-header">
+        <div class="header-title">
+          <h1>Class Schedule</h1>
+          <p>학생별 실시간 숙제 현황 및 수업 관리</p>
+        </div>
+        <div class="header-actions">
+          <a href="/" class="btn-back">← Dashboard</a>
+        </div>
+      </header>
+
+      <main class="week-grid">
+        {% for w in range(7) %}
+        <section class="day-column {% if w == today_w %}is-today{% endif %}">
+          <header class="day-header">
+            <span class="day-name">{{ weekday_labels[w] }}</span>
+            {% if w == today_w %}
+            <span class="day-badge">TODAY</span>
+            {% endif %}
+          </header>
+
+          <div class="slots">
+            {% set slots = slots_by_wday.get(w) or [] %} 
+            {% if slots %} 
+              {% for slot in slots %}
+              <article class="slot" data-slot-id="{{ slot.id }}">
+                <div class="slot-header">
+                  <span class="slot-label">{{ slot.label }}</span>
+                  <button class="icon-btn slot-delete" type="button" title="슬롯 삭제">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </button>
+                </div>
+
+                <div class="slot-students">
+                  {% for s in slot.students_detail %}
+                  <div class="slot-student" data-user-uuid="{{ s.user_uuid }}" data-student-id="{{ s.student_id }}">
+                    <a class="student-info" href="/user/{{ s.student_id }}">
+                      <span class="student-name">{{ s.name }}</span>
+                      <span class="student-id">@{{ s.student_id }}</span>
+                    </a>
+                    
+                    <div class="student-actions">
+                      <a class="hw-link" href="/students/{{ s.user_uuid }}/homework" title="숙제 확인">
+                        <div class="hw-dot"></div>
+                      </a>
+                      <button class="icon-btn remove-student" type="button" title="제거">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                      </button>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+
+                <form class="add-student-form">
+                  <input class="input-modern" type="text" name="student_id" placeholder="ID 입력..." list="student-suggestions" autocomplete="off" />
+                  <button type="submit" class="btn-add">Add</button>
+                </form>
+              </article>
+              {% endfor %} 
+            {% else %}
+              <div class="empty-slot">일정 없음</div>
+            {% endif %}
+
+            <button class="btn-ghost-slot add-slot" type="button" data-weekday="{{ w }}">
+              + 일정 추가
+            </button>
+          </div>
+        </section>
+        {% endfor %}
+      </main>
+
+      <datalist id="student-suggestions"></datalist>
+      <div id="toast"></div>
+    </div>
+
+    <script>
+      (function () {
+        const toastEl = document.getElementById("toast");
+
+        function toast(msg, ms = 2000) {
+          if (!toastEl) { alert(msg); return; }
+          toastEl.textContent = msg;
+          toastEl.classList.add("show");
+          setTimeout(() => { toastEl.classList.remove("show"); }, ms);
+        }
+
+        async function loadUsernames() {
+          try {
+            const res = await fetch("/proxy/user_rank");
+            if (!res.ok) return;
+            const data = await res.json();
+            const dl = document.getElementById("student-suggestions");
+            if (!dl) return;
+            dl.innerHTML = "";
+            (data.usernames || []).forEach((name) => {
+              const opt = document.createElement("option");
+              opt.value = name;
+              dl.appendChild(opt);
+            });
+          } catch (e) { console.error(e); }
+        }
+
+        async function fetchJson(url, options) {
+          const res = await fetch(url, options || {});
+          let data = {};
+          try { data = await res.json(); } catch {}
+          if (!res.ok || data.ok === false) throw new Error(data.error || "HTTP " + res.status);
+          return data;
+        }
+
+        function renderSlotStudents(slotEl, slotData) {
+          const list = slotEl.querySelector(".slot-students");
+          if (!list) return;
+          list.innerHTML = "";
+          (slotData.students_detail || []).forEach((s) => {
+            const wrap = document.createElement("div");
+            wrap.className = "slot-student";
+            wrap.dataset.userUuid = s.user_uuid;
+            wrap.dataset.studentId = s.student_id;
+            wrap.innerHTML = `
+              <a class="student-info" href="/user/${encodeURIComponent(s.student_id)}">
+                <span class="student-name">${s.name}</span>
+                <span class="student-id">@${s.student_id}</span>
+              </a>
+              <div class="student-actions">
+                <a class="hw-link" href="/students/${s.user_uuid}/homework" title="숙제 확인">
+                  <div class="hw-dot"></div>
+                </a>
+                <button class="icon-btn remove-student" type="button" title="제거">
+                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+              </div>
+            `;
+            list.appendChild(wrap);
+          });
+        }
+
+        async function attachHomeworkBadges() {
+          const nodes = Array.from(document.querySelectorAll(".slot-student"));
+          const cache = {};
+          for (const node of nodes) {
+            const uuid = node.dataset.userUuid;
+            if (!uuid || cache[uuid]) continue;
+            cache[uuid] = true;
+
+            try {
+              const res = await fetch(`/api/students/${uuid}/homework_latest`);
+              const data = await res.json();
+              const log = data && data.ok && data.log;
+
+              document.querySelectorAll(`.slot-student[data-user-uuid="${uuid}"]`).forEach((el) => {
+                const dot = el.querySelector(".hw-dot");
+                const link = el.querySelector(".hw-link");
+                if (!dot) return;
+
+                dot.className = "hw-dot"; // reset
+                let tooltip = "숙제 기록 없음";
+
+                if (log) {
+                  const flags = log.flags || {};
+                  if (flags.is_given_today) {
+                    if (flags.all_passed) {
+                      dot.classList.add("hw-done", "hw-today");
+                      tooltip = "오늘 숙제 완료!";
+                    } else {
+                      dot.classList.add("hw-today");
+                      tooltip = "오늘 숙제 미완료";
+                    }
+                  } else {
+                    if (flags.all_passed) {
+                      dot.classList.add("hw-done");
+                      tooltip = "이전 숙제 완료";
+                    } else if (log.counts.total > 0) {
+                      dot.classList.add("hw-pending");
+                      tooltip = "미해결 숙제 있음";
+                    }
+                  }
+                }
+                if(link) link.title = tooltip;
+              });
+            } catch (e) { console.warn(e); }
+          }
+        }
+
+        document.addEventListener("click", async (e) => {
+          // Add Slot
+          const addSlotBtn = e.target.closest(".add-slot");
+          if (addSlotBtn) {
+            const w = addSlotBtn.dataset.weekday;
+            const label = prompt("슬롯 이름 (예: 16:00 C언어반)");
+            if (!label) return;
+            try {
+              await fetchJson("/api/schedule/slots", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ weekday: Number(w), label }),
+              });
+              location.reload();
+            } catch (err) { toast("생성 실패"); }
+            return;
+          }
+
+          // Delete Slot
+          const deleteSlotBtn = e.target.closest(".slot-delete");
+          if (deleteSlotBtn) {
+            if (!confirm("정말 삭제하시겠습니까?")) return;
+            const slotEl = deleteSlotBtn.closest(".slot");
+            try {
+              await fetchJson(`/api/schedule/slots/${slotEl.dataset.slotId}`, { method: "DELETE" });
+              slotEl.remove();
+              toast("삭제 완료");
+            } catch (err) { toast("삭제 실패"); }
+            return;
+          }
+
+          // Remove Student
+          const removeBtn = e.target.closest(".remove-student");
+          if (removeBtn) {
+            const studentEl = removeBtn.closest(".slot-student");
+            const slotEl = removeBtn.closest(".slot");
+            try {
+              await fetchJson(`/api/schedule/slots/${slotEl.dataset.slotId}/students/${studentEl.dataset.userUuid}`, { method: "DELETE" });
+              studentEl.remove();
+              toast("학생 제거 완료");
+            } catch (err) { toast("제거 실패"); }
+          }
+        });
+
+        document.addEventListener("submit", async (e) => {
+          const form = e.target.closest(".add-student-form");
+          if (!form) return;
+          e.preventDefault();
+          const input = form.querySelector("input");
+          const id = input.value.trim();
+          if (!id) return;
+          const slotEl = form.closest(".slot");
+
+          try {
+            const data = await fetchJson(`/api/schedule/slots/${slotEl.dataset.slotId}/students`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ student_id: id }),
+            });
+            renderSlotStudents(slotEl, data.slot);
+            attachHomeworkBadges();
+            toast("추가 완료");
+            input.value = "";
+          } catch (err) { toast("추가 실패: ID를 확인하세요"); }
+        });
+
+        loadUsernames();
+        attachHomeworkBadges();
+      })();
+    </script>
+  </body>
+</html>

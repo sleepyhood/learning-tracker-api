@@ -21,6 +21,15 @@ UNMATCHED_FILE = os.path.join(PROBLEM_DIR, "legacy_unmatched.json")
 
 BASE_URL = os.environ.get("API_BASE_URL")
 
+ADMIN_DOMAIN = os.environ.get("ADMIN_DOMAIN")
+STUDENT_DOMAIN = os.environ.get("STUDENT_DOMAIN")
+
+SESSION_COOKIE_DOMAIN = os.environ.get("SESSION_COOKIE_DOMAIN")
+SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "Lax")
+SESSION_COOKIE_SECURE = (
+    os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true"
+)
+
 
 if not BASE_URL:
     raise RuntimeError("환경 변수 API_BASE_URL이 설정되지 않았습니다.")

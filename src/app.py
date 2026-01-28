@@ -559,7 +559,7 @@ def api_delete_homework_log(id_or_uuid, log_key):
 
     if removed is None:
         return jsonify({"ok": False, "error": "log not found"}), 404
-    print(f"doc: {doc["homework_logs"]}")
+    # print(f"doc: {doc["homework_logs"]}")
     save_doc_by_any(u, doc)
     # print(f"logs: {logs}")
     return jsonify({"ok": True, "count": len(logs)})
