@@ -76,21 +76,26 @@ function toggleAssignMode() {
   const checkboxes = document.querySelectorAll(".assign-checkbox-wrapper");
   const copyFab = document.getElementById("copyFab");
   const assignControls = document.getElementById("assignModeControls");
+  const problemLinks = document.querySelectorAll(".problem-link");
+
+  assignMode = !assignMode;
 
   checkboxes.forEach((checkbox) => {
-    checkbox.style.display =
-      checkbox.style.display === "inline-flex" ? "none" : "inline-flex";
+    checkbox.style.display = assignMode ? "inline-flex" : "none";
   });
 
   // 복사 버튼도 같이 보여줌
-  copyFab.style.display = copyFab.style.display === "flex" ? "none" : "flex";
-
-  // 여기 추가: assignModeControls 토글
-  if (assignControls.style.display === "flex") {
-    assignControls.style.display = "none";
-  } else {
-    assignControls.style.display = "flex";
+  if (copyFab) {
+    copyFab.style.display = assignMode ? "flex" : "none";
   }
+
+  if (assignControls) {
+    assignControls.classList.toggle("hidden", !assignMode);
+  }
+
+  problemLinks.forEach((link) => {
+    link.classList.toggle("disabled", assignMode);
+  });
 }
 
 let __copying = false;
@@ -118,7 +123,12 @@ async function copySelectedProblems() {
     days[now.getDay()]
   })`;
 
+  const includeGreeting =
+    document.getElementById("includeGreeting")?.checked ?? true;
+  const greetingLine = includeGreeting ? "안녕하세요 두잉창의코딩학원입니다. 😊\n수업에 해당되는 숙제 부분 안내드립니다.\n" : null;
+
   const text = [
+    ...(greetingLine ? [greetingLine] : []),
     `📘 ${groupTitle}`,
     `🔗 ${groupUrl}`,
     `🗓 출제일: ${assignedDateStr}`,
@@ -255,6 +265,59 @@ document.addEventListener("DOMContentLoaded", () => {
       if (checkbox) {
         checkbox.checked = !checkbox.checked;
         toggleProblemSelection(checkbox.dataset.pid);
+      }
+    });
+  });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".assign-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("click", function (e) {
+      if (!lastChecked) {
+        lastChecked = this;
+        return;
+      }
+
+      if (e.shiftKey) {
+        const checkboxes = Array.from(
+          document.querySelectorAll(".assign-checkbox")
+        );
+        const start = checkboxes.indexOf(this);
+        const end = checkboxes.indexOf(lastChecked);
+        const [min, max] = [Math.min(start, end), Math.max(start, end)];
+
+        for (let i = min; i <= max; i++) {
+          checkboxes[i].checked = true;
+        }
+      }
+
+      lastChecked = this;
+    });
+  });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".copy-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const title = btn.dataset.title;
+      const url = btn.dataset.url;
+      const text = `${title}\n${url}`;
+
+      try {
+        await navigator.clipboard.writeText(text);
+
+        await postHomeworkLog({
+          title,
+          url,
+          problems: [],
+          message: text,
+        });
+
+        btn.disabled = true;
+        showToast(`${text}\n\n복사되었습니다.`);
+        setTimeout(() => (btn.disabled = false), 1000);
+      } catch (err) {
+        showToast("복사에 실패했습니다.");
       }
     });
   });

@@ -1,746 +1,746 @@
-<!DOCTYPE html>
-<html lang="ko">
-  <head>
-    <meta charset="utf-8" />
-    <title>요일별 수업 스케줄</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      :root {
-        --bg: radial-gradient(circle at top left, #1d2435 0, #050814 55%);
-        --panel: rgba(16, 23, 43, 0.96);
-        --panel-soft: rgba(17, 24, 39, 0.8);
-        --border: rgba(148, 163, 184, 0.3);
-        --muted: #9ca3af;
-        --text: #e5e7eb;
-        --accent: #60a5fa;
-        --accent-soft: rgba(96, 165, 250, 0.12);
-        --danger: #f97373;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-        background: var(--bg);
-        color: var(--text);
-      }
-
-      .page {
-        max-width: 1280px;
-        margin: 0 auto;
-        padding: 20px 16px 32px;
-      }
-
-      .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 16px;
-        margin-bottom: 20px;
-      }
-
-      .page-title {
-        font-size: clamp(1.5rem, 2vw, 1.9rem);
-        font-weight: 800;
-        letter-spacing: -0.02em;
-      }
-
-      .subtitle {
-        margin-top: 4px;
-        font-size: 0.95rem;
-        color: var(--muted);
-      }
-
-      .header-actions {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-
-      .btn-primary,
-      .btn-secondary,
-      .btn-ghost {
-        appearance: none;
-        border-radius: 999px;
-        padding: 8px 14px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        cursor: pointer;
-        border: 1px solid transparent;
-        background: transparent;
-        color: inherit;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        white-space: nowrap;
-      }
-
-      .btn-primary {
-        background: var(--accent);
-        color: #0b1020;
-        border-color: var(--accent);
-      }
-      .btn-primary:hover {
-        filter: brightness(1.05);
-      }
-
-      .btn-secondary {
-        border-color: var(--border);
-        background: rgba(15, 23, 42, 0.9);
-      }
-      .btn-secondary:hover {
-        background: rgba(15, 23, 42, 1);
-      }
-
-      .btn-ghost {
-        border-color: rgba(148, 163, 184, 0.3);
-        background: rgba(15, 23, 42, 0.7);
-        width: 100%;
-        justify-content: center;
-      }
-      .btn-ghost:hover {
-        background: rgba(30, 64, 175, 0.3);
-      }
-
-      .week-grid {
-        display: grid;
-        grid-template-columns: repeat(7, minmax(0, 1fr));
-        gap: 10px;
-        align-items: flex-start;
-        overflow-x: auto;
-        padding-bottom: 8px;
-      }
-
-      @media (max-width: 1024px) {
-        .week-grid {
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
-      }
-
-      @media (max-width: 768px) {
-        .week-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-      }
-
-      .day-column {
-        background: var(--panel-soft);
-        border-radius: 18px;
-        border: 1px solid rgba(148, 163, 184, 0.25);
-        box-shadow: 0 14px 35px rgba(15, 23, 42, 0.5);
-        padding: 10px 10px 12px;
-        min-width: 160px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .day-column.is-today {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.4),
-          0 18px 40px rgba(37, 99, 235, 0.5);
-      }
-
-      .day-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 6px;
-      }
-
-      .day-name {
-        font-weight: 700;
-        font-size: 0.95rem;
-      }
-
-      .day-badge {
-        font-size: 0.75rem;
-        padding: 3px 8px;
-        border-radius: 999px;
-        border: 1px solid rgba(251, 191, 36, 0.9);
-        color: #fed7aa;
-        background: rgba(180, 83, 9, 0.4);
-      }
-
-      .slots {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        flex: 1;
-      }
-
-      .slot {
-        background: rgba(15, 23, 42, 0.96);
-        border-radius: 14px;
-        border: 1px solid rgba(148, 163, 184, 0.3);
-        padding: 8px 8px 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-
-      .slot-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .slot-label {
-        font-size: 0.9rem;
-        font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .icon-btn {
-        border: none;
-        background: transparent;
-        color: var(--muted);
-        cursor: pointer;
-        padding: 0 4px;
-        border-radius: 999px;
-        font-size: 0.8rem;
-      }
-      .icon-btn:hover {
-        background: rgba(148, 163, 184, 0.18);
-        color: #e5e7eb;
-      }
-
-      .slot-students {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .slot-student {
-        border-radius: 10px;
-        padding: 6px 7px;
-        background: radial-gradient(circle at top left, #1f2937 0, #020617 70%);
-        border: 1px solid rgba(148, 163, 184, 0.35);
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .student-main {
-        display: inline-flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        align-items: baseline;
-        text-decoration: none;
-        color: inherit;
-      }
-
-      .student-main:hover .student-name {
-        text-decoration: underline;
-      }
-
-      .student-name {
-        font-weight: 600;
-        font-size: 0.9rem;
-      }
-
-      .student-id {
-        font-size: 0.78rem;
-        color: var(--muted);
-      }
-
-      .student-meta {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 4px;
-      }
-
-      .hw-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.78rem;
-        color: var(--muted);
-        text-decoration: none;
-      }
-
-      .hw-link:hover {
-        color: var(--accent);
-      }
-
-      .hw-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, 0.7);
-        background: transparent;
-      }
-
-      .hw-dot.on {
-        border-color: rgba(52, 211, 153, 0.8);
-        background: rgba(52, 211, 153, 0.9);
-        box-shadow: 0 0 6px rgba(52, 211, 153, 0.8);
-      }
-
-      .hw-text {
-        white-space: nowrap;
-      }
-
-      .add-student-form {
-        display: flex;
-        gap: 4px;
-        margin-top: 4px;
-      }
-
-      .add-student-form input[type="text"] {
-        flex: 1;
-        min-width: 0;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, 0.4);
-        padding: 5px 9px;
-        font-size: 0.8rem;
-        background: #020617;
-        color: var(--text);
-      }
-
-      .add-student-form input[type="text"]::placeholder {
-        color: rgba(148, 163, 184, 0.8);
-      }
-
-      .add-student-form button {
-        font-size: 0.8rem;
-        padding-inline: 8px;
-      }
-
-      .empty {
-        font-size: 0.8rem;
-        color: var(--muted);
-        padding: 8px;
-        border-radius: 10px;
-        background: rgba(15, 23, 42, 0.6);
-        border: 1px dashed rgba(148, 163, 184, 0.35);
-        text-align: center;
-      }
-
-      #toast {
-        position: fixed;
-        left: 50%;
-        bottom: 18px;
-        transform: translateX(-50%);
-        background: rgba(15, 23, 42, 0.96);
-        color: var(--text);
-        padding: 8px 14px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, 0.5);
-        font-size: 0.85rem;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.15s ease-out, transform 0.15s ease-out;
-        z-index: 9999;
-      }
-
-      #toast.show {
-        opacity: 1;
-        transform: translate(-50%, -2px);
-      }
-
-
-      .hw-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.7);
-  background: transparent;
-}
-
-/* 기존 .on은 유지해도 되지만, 새 상태로 대체해서 사용 */
-.hw-dot.hw-done {
-  border-color: rgba(52, 211, 153, 0.8);
-  background: rgba(52, 211, 153, 0.9);
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.8);
-}
-
-.hw-dot.hw-today {
-  border-color: rgba(251, 191, 36, 0.9);
-  background: rgba(251, 191, 36, 0.9);
-  box-shadow: 0 0 6px rgba(251, 191, 36, 0.7);
-}
-
-.hw-dot.hw-pending {
-  border-color: rgba(248, 113, 113, 0.9);
-  background: rgba(248, 113, 113, 0.9);
-  box-shadow: 0 0 6px rgba(248, 113, 113, 0.7);
-}
-
-    </style>
-  </head>
-  <body>
-    <div class="page">
-      <header class="page-header">
-        <div>
-          <div class="page-title">요일별 수업 스케줄</div>
-          <p class="subtitle">
-            요일·시간별로 학생을 한 번 등록해 두고,<br />
-            클릭 한 번으로 대시보드 / 숙제 기록으로 이동할 수 있는 메뉴
-            페이지입니다.
-          </p>
-        </div>
-        <div class="header-actions">
-          <a href="/" class="btn-secondary">← 내 대시보드</a>
-        </div>
-      </header>
-
-      <main class="week-grid">
-        {% for w in range(7) %}
-        <section
-          class="day-column {% if w == today_w %}is-today{% endif %}"
-        >
-          <header class="day-header">
-            <span class="day-name">{{ weekday_labels[w] }}요일</span>
-            {% if w == today_w %}
-            <span class="day-badge">오늘</span>
-            {% endif %}
-          </header>
-
-          <div class="slots">
-            {% set slots = slots_by_wday.get(w) or [] %} {% if slots %} {% for
-            slot in slots %}
-            <article class="slot" data-slot-id="{{ slot.id }}">
-              <div class="slot-header">
-                <div class="slot-label">{{ slot.label }}</div>
-                <button
-                  class="icon-btn slot-delete"
-                  type="button"
-                  title="슬롯 삭제"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div class="slot-students">
-                {% for s in slot.students_detail %}
-                <div
-                  class="slot-student"
-                  data-user-uuid="{{ s.user_uuid }}"
-                  data-student-id="{{ s.student_id }}"
-                >
-                  <a
-                    class="student-main"
-                    href="/user/{{ s.student_id }}"
-                    title="학생 대시보드 열기"
-                  >
-                    <span class="student-name">{{ s.name }}</span>
-                    <span class="student-id">@{{ s.student_id }}</span>
-                  </a>
-                  <div class="student-meta">
-                    <a
-                      class="hw-link"
-                      href="/students/{{ s.user_uuid }}/homework"
-                      title="숙제 기록 보기"
-                    >
-                      <span class="hw-dot" aria-hidden="true"></span>
-                      <span class="hw-text">숙제 확인</span>
-                    </a>
-                    <button
-                      class="icon-btn remove-student"
-                      type="button"
-                      title="이 슬롯에서 제거"
-                    >
-                      −
-                    </button>
-                  </div>
-                </div>
-                {% endfor %}
-              </div>
-
-              <form class="add-student-form">
-                <input
-                  type="text"
-                  name="student_id"
-                  placeholder="학생 ID 추가"
-                  list="student-suggestions"
-                  autocomplete="off"
-                />
-                <button type="submit" class="btn-primary">+ 추가</button>
-              </form>
-            </article>
-            {% endfor %} {% else %}
-            <p class="empty">아직 등록된 수업이 없습니다.</p>
-            {% endif %}
-
-            <button
-              class="btn-ghost add-slot"
-              type="button"
-              data-weekday="{{ w }}"
-            >
-              + 슬롯 추가
-            </button>
-          </div>
-        </section>
-        {% endfor %}
-      </main>
-
-      <datalist id="student-suggestions"></datalist>
-
-      <div id="toast"></div>
-    </div>
-
-    <script>
-      (function () {
-        const toastEl = document.getElementById("toast");
-
-        function toast(msg, ms = 1800) {
-          if (!toastEl) {
-            alert(msg);
-            return;
-          }
-          toastEl.textContent = msg;
-          toastEl.classList.add("show");
-          setTimeout(() => {
-            toastEl.classList.remove("show");
-          }, ms);
-        }
-
-        async function loadUsernames() {
-          // 기존 /proxy/user_rank 엔드포인트 재사용 :contentReference[oaicite:5]{index=5}
-          try {
-            const res = await fetch("/proxy/user_rank");
-            if (!res.ok) return;
-            const data = await res.json();
-            const dl = document.getElementById("student-suggestions");
-            if (!dl) return;
-            dl.innerHTML = "";
-            (data.usernames || []).forEach((name) => {
-              const opt = document.createElement("option");
-              opt.value = name;
-              dl.appendChild(opt);
-            });
-          } catch (e) {
-            console.error("user_rank error", e);
-          }
-        }
-
-        async function fetchJson(url, options) {
-          const res = await fetch(url, options || {});
-          let data = {};
-          try {
-            data = await res.json();
-          } catch {}
-          if (!res.ok || data.ok === false) {
-            throw new Error(data.error || "HTTP " + res.status);
-          }
-          return data;
-        }
-
-        function renderSlotStudents(slotEl, slotData) {
-          const list = slotEl.querySelector(".slot-students");
-          if (!list) return;
-          list.innerHTML = "";
-          (slotData.students_detail || []).forEach((s) => {
-            const wrap = document.createElement("div");
-            wrap.className = "slot-student";
-            wrap.dataset.userUuid = s.user_uuid;
-            wrap.dataset.studentId = s.student_id;
-            wrap.innerHTML = `
-              <a class="student-main" href="/user/${encodeURIComponent(
-                s.student_id
-              )}" title="학생 대시보드 열기">
-                <span class="student-name">${s.name}</span>
-                <span class="student-id">@${s.student_id}</span>
-              </a>
-              <div class="student-meta">
-                <a class="hw-link" href="/students/${s.user_uuid}/homework" title="숙제 기록 보기">
-                  <span class="hw-dot" aria-hidden="true"></span>
-                  <span class="hw-text">숙제 확인</span>
-                </a>
-                <button class="icon-btn remove-student" type="button" title="이 슬롯에서 제거">−</button>
-              </div>
-            `;
-            list.appendChild(wrap);
-          });
-        }
-
-        // 각 학생에 대해 최신 숙제 기록이 있는지 표시
-        // 각 학생에 대해 최신 숙제 기록이 있는지 + 상태 표시
-async function attachHomeworkBadges() {
-  const nodes = Array.from(document.querySelectorAll(".slot-student"));
-  const cache = {};
-  for (const node of nodes) {
-    const uuid = node.dataset.userUuid;
-    if (!uuid || cache[uuid]) continue;
-    cache[uuid] = true;
-
-    try {
-      const res = await fetch(`/api/students/${uuid}/homework_latest`);
-      const data = await res.json();
-      const log = data && data.ok && data.log;
-
-      document
-        .querySelectorAll(`.slot-student[data-user-uuid="${uuid}"]`)
-        .forEach((el) => {
-          const dot = el.querySelector(".hw-dot");
-          const text = el.querySelector(".hw-text");
-          if (!dot || !text) return;
-
-          // 기본 상태 초기화
-          dot.className = "hw-dot";
-
-          if (!log) {
-            text.textContent = "숙제 X";
-            return;
-          }
-
-          const flags = log.flags || {};
-          const counts = log.counts || {};
-          const total = counts.total || 0;
-
-          if (flags.is_given_today) {
-            if (flags.all_passed) {
-              dot.classList.add("hw-today", "hw-done");
-              text.textContent = "오늘 숙제 완료";
-            } else {
-              dot.classList.add("hw-today");
-              text.textContent = "오늘 숙제 있음";
-            }
-          } else {
-            if (flags.all_passed) {
-              dot.classList.add("hw-done");
-              text.textContent = "최근 숙제 완료";
-            } else if (flags.has_any && flags.has_unresolved) {
-              dot.classList.add("hw-pending");
-              text.textContent = "최근 숙제 미완";
-            } else if (total > 0) {
-              // 혹시라도 카운트만 있고 플래그가 비어 있는 경우 대비
-              dot.classList.add("hw-pending");
-              text.textContent = "최근 숙제 미완";
-            } else {
-              text.textContent = "숙제 X";
-            }
-          }
-        });
-    } catch (e) {
-      console.warn("homework_latest failed for", uuid, e);
-    }
-  }
-}
-
-
-        // 슬롯 생성 버튼
-        document.addEventListener("click", async (e) => {
-          const addSlotBtn = e.target.closest(".add-slot");
-          if (addSlotBtn) {
-            const w = addSlotBtn.dataset.weekday;
-            const label = prompt(
-              "이 슬롯의 이름을 입력하세요 (예: 16:00 C언어반)"
-            );
-            if (!label) return;
-            try {
-              await fetchJson("/api/schedule/slots", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ weekday: Number(w), label }),
-              });
-              // 간단하게 전체 새로고침으로 동기화
-              location.reload();
-            } catch (err) {
-              console.error(err);
-              toast("슬롯 생성에 실패했습니다.");
-            }
-            return;
-          }
-
-          // 슬롯 삭제
-          const deleteSlotBtn = e.target.closest(".slot-delete");
-          if (deleteSlotBtn) {
-            const slotEl = deleteSlotBtn.closest(".slot");
-            if (!slotEl) return;
-            const slotId = slotEl.dataset.slotId;
-            if (!slotId) return;
-            if (!confirm("이 슬롯과 안의 학생들을 모두 제거할까요?")) return;
-            try {
-              await fetchJson(`/api/schedule/slots/${encodeURIComponent(
-                slotId
-              )}`, {
-                method: "DELETE",
-              });
-              slotEl.remove();
-              toast("슬롯이 삭제되었습니다.");
-            } catch (err) {
-              console.error(err);
-              toast("슬롯 삭제에 실패했습니다.");
-            }
-            return;
-          }
-
-          // 학생 제거
-          const removeBtn = e.target.closest(".remove-student");
-          if (removeBtn) {
-            const studentEl = removeBtn.closest(".slot-student");
-            const slotEl = removeBtn.closest(".slot");
-            if (!studentEl || !slotEl) return;
-
-            const uuid = studentEl.dataset.userUuid;
-            const slotId = slotEl.dataset.slotId;
-            if (!uuid || !slotId) return;
-
-            try {
-              await fetchJson(
-                `/api/schedule/slots/${encodeURIComponent(
-                  slotId
-                )}/students/${encodeURIComponent(uuid)}`,
-                { method: "DELETE" }
-              );
-              studentEl.remove();
-              toast("슬롯에서 제거했습니다.");
-            } catch (err) {
-              console.error(err);
-              toast("제거에 실패했습니다.");
-            }
-          }
-        });
-
-        // 학생 추가
-        document.addEventListener("submit", async (e) => {
-          const form = e.target.closest(".add-student-form");
-          if (!form) return;
-          e.preventDefault();
-
-          const input = form.querySelector("input[name='student_id']");
-          const slotEl = form.closest(".slot");
-          if (!input || !slotEl) return;
-
-          const id = (input.value || "").trim();
-          if (!id) return;
-
-          try {
-            const slotId = slotEl.dataset.slotId;
-            const data = await fetchJson(
-              `/api/schedule/slots/${encodeURIComponent(
-                slotId
-              )}/students`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ student_id: id }),
-              }
-            );
-            renderSlotStudents(slotEl, data.slot);
-            attachHomeworkBadges();
-            toast(id + " 추가 완료");
-            input.value = "";
-          } catch (err) {
-            console.error(err);
-            toast("학생을 추가하지 못했습니다.");
-          }
-        });
-
-        loadUsernames();
-        attachHomeworkBadges();
-      })();
-    </script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>요일별 수업 스케줄</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        --bg: radial-gradient(circle at top left, #1d2435 0, #050814 55%);
+        --panel: rgba(16, 23, 43, 0.96);
+        --panel-soft: rgba(17, 24, 39, 0.8);
+        --border: rgba(148, 163, 184, 0.3);
+        --muted: #9ca3af;
+        --text: #e5e7eb;
+        --accent: #60a5fa;
+        --accent-soft: rgba(96, 165, 250, 0.12);
+        --danger: #f97373;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .page {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 20px 16px 32px;
+      }
+
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .page-title {
+        font-size: clamp(1.5rem, 2vw, 1.9rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      .subtitle {
+        margin-top: 4px;
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .btn-primary,
+      .btn-secondary,
+      .btn-ghost {
+        appearance: none;
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        background: transparent;
+        color: inherit;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        color: #0b1020;
+        border-color: var(--accent);
+      }
+      .btn-primary:hover {
+        filter: brightness(1.05);
+      }
+
+      .btn-secondary {
+        border-color: var(--border);
+        background: rgba(15, 23, 42, 0.9);
+      }
+      .btn-secondary:hover {
+        background: rgba(15, 23, 42, 1);
+      }
+
+      .btn-ghost {
+        border-color: rgba(148, 163, 184, 0.3);
+        background: rgba(15, 23, 42, 0.7);
+        width: 100%;
+        justify-content: center;
+      }
+      .btn-ghost:hover {
+        background: rgba(30, 64, 175, 0.3);
+      }
+
+      .week-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 10px;
+        align-items: flex-start;
+        overflow-x: auto;
+        padding-bottom: 8px;
+      }
+
+      @media (max-width: 1024px) {
+        .week-grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 768px) {
+        .week-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      .day-column {
+        background: var(--panel-soft);
+        border-radius: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        box-shadow: 0 14px 35px rgba(15, 23, 42, 0.5);
+        padding: 10px 10px 12px;
+        min-width: 160px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .day-column.is-today {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.4),
+          0 18px 40px rgba(37, 99, 235, 0.5);
+      }
+
+      .day-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+
+      .day-name {
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+
+      .day-badge {
+        font-size: 0.75rem;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(251, 191, 36, 0.9);
+        color: #fed7aa;
+        background: rgba(180, 83, 9, 0.4);
+      }
+
+      .slots {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+      }
+
+      .slot {
+        background: rgba(15, 23, 42, 0.96);
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        padding: 8px 8px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .slot-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .slot-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .icon-btn {
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 0 4px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+      }
+      .icon-btn:hover {
+        background: rgba(148, 163, 184, 0.18);
+        color: #e5e7eb;
+      }
+
+      .slot-students {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .slot-student {
+        border-radius: 10px;
+        padding: 6px 7px;
+        background: radial-gradient(circle at top left, #1f2937 0, #020617 70%);
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .student-main {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: baseline;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .student-main:hover .student-name {
+        text-decoration: underline;
+      }
+
+      .student-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .student-id {
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+
+      .student-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .hw-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.78rem;
+        color: var(--muted);
+        text-decoration: none;
+      }
+
+      .hw-link:hover {
+        color: var(--accent);
+      }
+
+      .hw-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.7);
+        background: transparent;
+      }
+
+      .hw-dot.on {
+        border-color: rgba(52, 211, 153, 0.8);
+        background: rgba(52, 211, 153, 0.9);
+        box-shadow: 0 0 6px rgba(52, 211, 153, 0.8);
+      }
+
+      .hw-text {
+        white-space: nowrap;
+      }
+
+      .add-student-form {
+        display: flex;
+        gap: 4px;
+        margin-top: 4px;
+      }
+
+      .add-student-form input[type="text"] {
+        flex: 1;
+        min-width: 0;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        padding: 5px 9px;
+        font-size: 0.8rem;
+        background: #020617;
+        color: var(--text);
+      }
+
+      .add-student-form input[type="text"]::placeholder {
+        color: rgba(148, 163, 184, 0.8);
+      }
+
+      .add-student-form button {
+        font-size: 0.8rem;
+        padding-inline: 8px;
+      }
+
+      .empty {
+        font-size: 0.8rem;
+        color: var(--muted);
+        padding: 8px;
+        border-radius: 10px;
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px dashed rgba(148, 163, 184, 0.35);
+        text-align: center;
+      }
+
+      #toast {
+        position: fixed;
+        left: 50%;
+        bottom: 18px;
+        transform: translateX(-50%);
+        background: rgba(15, 23, 42, 0.96);
+        color: var(--text);
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.5);
+        font-size: 0.85rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+        z-index: 9999;
+      }
+
+      #toast.show {
+        opacity: 1;
+        transform: translate(-50%, -2px);
+      }
+
+
+      .hw-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: transparent;
+}
+
+/* 기존 .on은 유지해도 되지만, 새 상태로 대체해서 사용 */
+.hw-dot.hw-done {
+  border-color: rgba(52, 211, 153, 0.8);
+  background: rgba(52, 211, 153, 0.9);
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.8);
+}
+
+.hw-dot.hw-today {
+  border-color: rgba(251, 191, 36, 0.9);
+  background: rgba(251, 191, 36, 0.9);
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.7);
+}
+
+.hw-dot.hw-pending {
+  border-color: rgba(248, 113, 113, 0.9);
+  background: rgba(248, 113, 113, 0.9);
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.7);
+}
+
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="page-header">
+        <div>
+          <div class="page-title">요일별 수업 스케줄</div>
+          <p class="subtitle">
+            요일·시간별로 학생을 한 번 등록해 두고,<br />
+            클릭 한 번으로 대시보드 / 숙제 기록으로 이동할 수 있는 메뉴
+            페이지입니다.
+          </p>
+        </div>
+        <div class="header-actions">
+          <a href="/" class="btn-secondary">← 내 대시보드</a>
+        </div>
+      </header>
+
+      <main class="week-grid">
+        {% for w in range(7) %}
+        <section
+          class="day-column {% if w == today_w %}is-today{% endif %}"
+        >
+          <header class="day-header">
+            <span class="day-name">{{ weekday_labels[w] }}요일</span>
+            {% if w == today_w %}
+            <span class="day-badge">오늘</span>
+            {% endif %}
+          </header>
+
+          <div class="slots">
+            {% set slots = slots_by_wday.get(w) or [] %} {% if slots %} {% for
+            slot in slots %}
+            <article class="slot" data-slot-id="{{ slot.id }}">
+              <div class="slot-header">
+                <div class="slot-label">{{ slot.label }}</div>
+                <button
+                  class="icon-btn slot-delete"
+                  type="button"
+                  title="슬롯 삭제"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div class="slot-students">
+                {% for s in slot.students_detail %}
+                <div
+                  class="slot-student"
+                  data-user-uuid="{{ s.user_uuid }}"
+                  data-student-id="{{ s.student_id }}"
+                >
+                  <a
+                    class="student-main"
+                    href="/user/{{ s.student_id }}"
+                    title="학생 대시보드 열기"
+                  >
+                    <span class="student-name">{{ s.name }}</span>
+                    <span class="student-id">@{{ s.student_id }}</span>
+                  </a>
+                  <div class="student-meta">
+                    <a
+                      class="hw-link"
+                      href="/students/{{ s.user_uuid }}/homework"
+                      title="숙제 기록 보기"
+                    >
+                      <span class="hw-dot" aria-hidden="true"></span>
+                      <span class="hw-text">숙제 확인</span>
+                    </a>
+                    <button
+                      class="icon-btn remove-student"
+                      type="button"
+                      title="이 슬롯에서 제거"
+                    >
+                      −
+                    </button>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+
+              <form class="add-student-form">
+                <input
+                  type="text"
+                  name="student_id"
+                  placeholder="학생 ID 추가"
+                  list="student-suggestions"
+                  autocomplete="off"
+                />
+                <button type="submit" class="btn-primary">+ 추가</button>
+              </form>
+            </article>
+            {% endfor %} {% else %}
+            <p class="empty">아직 등록된 수업이 없습니다.</p>
+            {% endif %}
+
+            <button
+              class="btn-ghost add-slot"
+              type="button"
+              data-weekday="{{ w }}"
+            >
+              + 슬롯 추가
+            </button>
+          </div>
+        </section>
+        {% endfor %}
+      </main>
+
+      <datalist id="student-suggestions"></datalist>
+
+      <div id="toast"></div>
+    </div>
+
+    <script>
+      (function () {
+        const toastEl = document.getElementById("toast");
+
+        function toast(msg, ms = 1800) {
+          if (!toastEl) {
+            alert(msg);
+            return;
+          }
+          toastEl.textContent = msg;
+          toastEl.classList.add("show");
+          setTimeout(() => {
+            toastEl.classList.remove("show");
+          }, ms);
+        }
+
+        async function loadUsernames() {
+          // 기존 /proxy/user_rank 엔드포인트 재사용 :contentReference[oaicite:5]{index=5}
+          try {
+            const res = await fetch("/proxy/user_rank");
+            if (!res.ok) return;
+            const data = await res.json();
+            const dl = document.getElementById("student-suggestions");
+            if (!dl) return;
+            dl.innerHTML = "";
+            (data.usernames || []).forEach((name) => {
+              const opt = document.createElement("option");
+              opt.value = name;
+              dl.appendChild(opt);
+            });
+          } catch (e) {
+            console.error("user_rank error", e);
+          }
+        }
+
+        async function fetchJson(url, options) {
+          const res = await fetch(url, options || {});
+          let data = {};
+          try {
+            data = await res.json();
+          } catch {}
+          if (!res.ok || data.ok === false) {
+            throw new Error(data.error || "HTTP " + res.status);
+          }
+          return data;
+        }
+
+        function renderSlotStudents(slotEl, slotData) {
+          const list = slotEl.querySelector(".slot-students");
+          if (!list) return;
+          list.innerHTML = "";
+          (slotData.students_detail || []).forEach((s) => {
+            const wrap = document.createElement("div");
+            wrap.className = "slot-student";
+            wrap.dataset.userUuid = s.user_uuid;
+            wrap.dataset.studentId = s.student_id;
+            wrap.innerHTML = `
+              <a class="student-main" href="/user/${encodeURIComponent(
+                s.student_id
+              )}" title="학생 대시보드 열기">
+                <span class="student-name">${s.name}</span>
+                <span class="student-id">@${s.student_id}</span>
+              </a>
+              <div class="student-meta">
+                <a class="hw-link" href="/students/${s.user_uuid}/homework" title="숙제 기록 보기">
+                  <span class="hw-dot" aria-hidden="true"></span>
+                  <span class="hw-text">숙제 확인</span>
+                </a>
+                <button class="icon-btn remove-student" type="button" title="이 슬롯에서 제거">−</button>
+              </div>
+            `;
+            list.appendChild(wrap);
+          });
+        }
+
+        // 각 학생에 대해 최신 숙제 기록이 있는지 표시
+        // 각 학생에 대해 최신 숙제 기록이 있는지 + 상태 표시
+async function attachHomeworkBadges() {
+  const nodes = Array.from(document.querySelectorAll(".slot-student"));
+  const cache = {};
+  for (const node of nodes) {
+    const uuid = node.dataset.userUuid;
+    if (!uuid || cache[uuid]) continue;
+    cache[uuid] = true;
+
+    try {
+      const res = await fetch(`/api/students/${uuid}/homework_latest`);
+      const data = await res.json();
+      const log = data && data.ok && data.log;
+
+      document
+        .querySelectorAll(`.slot-student[data-user-uuid="${uuid}"]`)
+        .forEach((el) => {
+          const dot = el.querySelector(".hw-dot");
+          const text = el.querySelector(".hw-text");
+          if (!dot || !text) return;
+
+          // 기본 상태 초기화
+          dot.className = "hw-dot";
+
+          if (!log) {
+            text.textContent = "숙제 X";
+            return;
+          }
+
+          const flags = log.flags || {};
+          const counts = log.counts || {};
+          const total = counts.total || 0;
+
+          if (flags.is_given_today) {
+            if (flags.all_passed) {
+              dot.classList.add("hw-today", "hw-done");
+              text.textContent = "오늘 숙제 완료";
+            } else {
+              dot.classList.add("hw-today");
+              text.textContent = "오늘 숙제 있음";
+            }
+          } else {
+            if (flags.all_passed) {
+              dot.classList.add("hw-done");
+              text.textContent = "최근 숙제 완료";
+            } else if (flags.has_any && flags.has_unresolved) {
+              dot.classList.add("hw-pending");
+              text.textContent = "최근 숙제 미완";
+            } else if (total > 0) {
+              // 혹시라도 카운트만 있고 플래그가 비어 있는 경우 대비
+              dot.classList.add("hw-pending");
+              text.textContent = "최근 숙제 미완";
+            } else {
+              text.textContent = "숙제 X";
+            }
+          }
+        });
+    } catch (e) {
+      console.warn("homework_latest failed for", uuid, e);
+    }
+  }
+}
+
+
+        // 슬롯 생성 버튼
+        document.addEventListener("click", async (e) => {
+          const addSlotBtn = e.target.closest(".add-slot");
+          if (addSlotBtn) {
+            const w = addSlotBtn.dataset.weekday;
+            const label = prompt(
+              "이 슬롯의 이름을 입력하세요 (예: 16:00 C언어반)"
+            );
+            if (!label) return;
+            try {
+              await fetchJson("/api/schedule/slots", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ weekday: Number(w), label }),
+              });
+              // 간단하게 전체 새로고침으로 동기화
+              location.reload();
+            } catch (err) {
+              console.error(err);
+              toast("슬롯 생성에 실패했습니다.");
+            }
+            return;
+          }
+
+          // 슬롯 삭제
+          const deleteSlotBtn = e.target.closest(".slot-delete");
+          if (deleteSlotBtn) {
+            const slotEl = deleteSlotBtn.closest(".slot");
+            if (!slotEl) return;
+            const slotId = slotEl.dataset.slotId;
+            if (!slotId) return;
+            if (!confirm("이 슬롯과 안의 학생들을 모두 제거할까요?")) return;
+            try {
+              await fetchJson(`/api/schedule/slots/${encodeURIComponent(
+                slotId
+              )}`, {
+                method: "DELETE",
+              });
+              slotEl.remove();
+              toast("슬롯이 삭제되었습니다.");
+            } catch (err) {
+              console.error(err);
+              toast("슬롯 삭제에 실패했습니다.");
+            }
+            return;
+          }
+
+          // 학생 제거
+          const removeBtn = e.target.closest(".remove-student");
+          if (removeBtn) {
+            const studentEl = removeBtn.closest(".slot-student");
+            const slotEl = removeBtn.closest(".slot");
+            if (!studentEl || !slotEl) return;
+
+            const uuid = studentEl.dataset.userUuid;
+            const slotId = slotEl.dataset.slotId;
+            if (!uuid || !slotId) return;
+
+            try {
+              await fetchJson(
+                `/api/schedule/slots/${encodeURIComponent(
+                  slotId
+                )}/students/${encodeURIComponent(uuid)}`,
+                { method: "DELETE" }
+              );
+              studentEl.remove();
+              toast("슬롯에서 제거했습니다.");
+            } catch (err) {
+              console.error(err);
+              toast("제거에 실패했습니다.");
+            }
+          }
+        });
+
+        // 학생 추가
+        document.addEventListener("submit", async (e) => {
+          const form = e.target.closest(".add-student-form");
+          if (!form) return;
+          e.preventDefault();
+
+          const input = form.querySelector("input[name='student_id']");
+          const slotEl = form.closest(".slot");
+          if (!input || !slotEl) return;
+
+          const id = (input.value || "").trim();
+          if (!id) return;
+
+          try {
+            const slotId = slotEl.dataset.slotId;
+            const data = await fetchJson(
+              `/api/schedule/slots/${encodeURIComponent(
+                slotId
+              )}/students`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ student_id: id }),
+              }
+            );
+            renderSlotStudents(slotEl, data.slot);
+            attachHomeworkBadges();
+            toast(id + " 추가 완료");
+            input.value = "";
+          } catch (err) {
+            console.error(err);
+            toast("학생을 추가하지 못했습니다.");
+          }
+        });
+
+        loadUsernames();
+        attachHomeworkBadges();
+      })();
+    </script>
+  </body>
+</html>

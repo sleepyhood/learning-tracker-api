@@ -46,6 +46,24 @@ import uuid
 UUIDS_PATH = Path("meta/uuids.json")
 UUIDS_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+ADMIN_WHITELIST_PATH = Path("meta/admin_whitelist.json")
+ADMIN_WHITELIST_PATH.parent.mkdir(parents=True, exist_ok=True)
+if not ADMIN_WHITELIST_PATH.exists():
+    ADMIN_WHITELIST_PATH.write_text(
+        json.dumps({"usernames": []}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def load_admin_whitelist() -> set[str]:
+    try:
+        data = json.loads(ADMIN_WHITELIST_PATH.read_text(encoding="utf-8"))
+        names = data.get("usernames", [])
+        return {str(x).strip() for x in names if str(x).strip()}
+    except Exception:
+        return set()
+
+
 # --- 유틸들 ---
 
 
@@ -74,7 +92,7 @@ def ensure_login_or_redirect():
 
 
 def fetch_profile(s, username=None, timeout=10):
-    """username=None이면 내 프로필, 아니면 해당 유저 프로필"""
+    """username=None?? ? ???, ??? ?? ??? ???."""
     if username:
         res = s.get(
             f"{BASE_URL}/api/profile?username={quote(username)}", timeout=timeout
@@ -83,6 +101,44 @@ def fetch_profile(s, username=None, timeout=10):
         res = s.get(f"{BASE_URL}/api/profile", timeout=timeout)
     data = res.json()
     return data
+
+
+def is_admin_profile(profile_json: dict) -> bool:
+    payload = profile_json.get("data", {}) if profile_json else {}
+    user_data = payload.get("user", {}) if payload else {}
+    username = (user_data.get("username") or "").strip()
+    admin_type = user_data.get("admin_type")
+    _label, is_admin, _role_norm = normalize_role(admin_type)
+    if is_admin:
+        return True
+    whitelist = load_admin_whitelist()
+    return bool(username and username in whitelist)
+
+
+def ensure_admin_or_redirect():
+    s, redir = ensure_login_or_redirect()
+    if redir:
+        return None, redir
+    try:
+        prof = fetch_profile(s, username=None)
+    except Exception:
+        return None, ("forbidden", 403)
+    if not is_admin_profile(prof):
+        return None, ("forbidden", 403)
+    return s, None
+
+
+def ensure_admin_or_403():
+    s = get_api_session()
+    if not s:
+        return None, (jsonify({"ok": False, "error": "unauthorized"}), 401)
+    try:
+        prof = fetch_profile(s, username=None)
+    except Exception:
+        return None, (jsonify({"ok": False, "error": "forbidden"}), 403)
+    if not is_admin_profile(prof):
+        return None, (jsonify({"ok": False, "error": "forbidden"}), 403)
+    return s, None
 
 
 def normalize_role(admin_type: str | None):

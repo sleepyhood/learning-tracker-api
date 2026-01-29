@@ -3,7 +3,7 @@ import json
 
 from flask import jsonify
 import requests
-from login import load_cookies, get_authenticated_session, is_cookie_valid
+from login import load_cookies, get_authenticated_session, is_cookie_valid, clear_active_session
 from datetime import datetime, timezone, timedelta
 from pprint import pprint
 from utils.streak_utils import generate_streak_data
@@ -30,6 +30,8 @@ from utils.questions_api import save_server_problems_json
 from utils.legacy_map import build_legacy_map
 from utils.utils_common import (
     ensure_login_or_redirect,
+    ensure_admin_or_403,
+    ensure_admin_or_redirect,
     fetch_profile,
     fetch_submissions_window,
     filter_main_account_submissions,
@@ -56,6 +58,8 @@ from config import (
     UNMATCHED_FILE,
     USER_DATA_DIR,
     COOKIE_PATH,
+    ADMIN_DOMAIN,
+    STUDENT_DOMAIN,
 )  # 필요 시 조정
 
 
@@ -257,10 +261,76 @@ from datetime import datetime, timedelta, timezone
 import os, json
 from collections import defaultdict
 
+ADMIN_ONLY_PREFIXES = (
+    "/schedule",
+    "/api/schedule",
+    "/update_problems",
+    "/api/students",
+    "/students",
+    "/refresh_user",
+    "/proxy/user_rank",
+)
+
+STUDENT_ONLY_PREFIXES = (
+    "/user",
+    "/api/streak",
+)
+
+
+def _is_localhost(host: str) -> bool:
+    return host in ("localhost", "127.0.0.1")
+
+
+def _is_admin_route(path: str) -> bool:
+    return path in ADMIN_ONLY_PREFIXES or any(
+        path.startswith(p + "/") for p in ADMIN_ONLY_PREFIXES
+    )
+
+
+def _is_student_route(path: str) -> bool:
+    return path in STUDENT_ONLY_PREFIXES or any(
+        path.startswith(p + "/") for p in STUDENT_ONLY_PREFIXES
+    )
+
+
+@app.before_request
+def enforce_subdomain_access():
+    if not ADMIN_DOMAIN and not STUDENT_DOMAIN:
+        return None
+
+    host = (request.host or "").split(":")[0].lower()
+    if _is_localhost(host):
+        return None
+
+    path = request.path or "/"
+    is_admin_route = _is_admin_route(path)
+    is_student_route = _is_student_route(path)
+
+    allowed_hosts = {h for h in (ADMIN_DOMAIN, STUDENT_DOMAIN) if h}
+    if allowed_hosts and host not in allowed_hosts:
+        return ("forbidden", 403)
+
+    if STUDENT_DOMAIN and host == STUDENT_DOMAIN and is_admin_route:
+        return ("forbidden", 403)
+
+    if ADMIN_DOMAIN and host == ADMIN_DOMAIN and is_student_route:
+        return ("forbidden", 403)
+
+    if ADMIN_DOMAIN and host == ADMIN_DOMAIN:
+        return None
+
+    if STUDENT_DOMAIN and host == STUDENT_DOMAIN:
+        return None
+
+    return None
+
 
 # 문제 목록 강제 업데이트 기능
 @app.route("/update_problems", methods=["POST"])
 def update_problems():
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
     os.makedirs(PROBLEM_DIR, exist_ok=True)
 
     problem_file_path = do_crawling(
@@ -335,6 +405,9 @@ def api_streak():
 # 유저 목록
 @app.route("/proxy/user_rank")
 def proxy_user_rank():
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
     url = f"{BASE_URL}/api/user_rank?offset=0&limit=100&rule=ACM"
     all_users = []
     offset = 0
@@ -390,6 +463,9 @@ def pull_and_store_user(username: str):
 
 @app.route("/api/students/<user_uuid>/refresh", methods=["POST"])
 def refresh_by_uuid(user_uuid):
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
     try:
         cookies = load_cookies(COOKIE_PATH)
         session = get_authenticated_session(cookies)
@@ -441,6 +517,9 @@ def refresh_by_uuid(user_uuid):
 # 기존 라우트는 공통 함수를 호출하도록
 @app.route("/refresh_user/<username>")
 def refresh_user(username):
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
     try:
         doc = pull_and_store_user(username)
         return jsonify(
@@ -525,6 +604,9 @@ def compute_homework_status(doc: dict):
 
 @app.route("/api/students/<user_uuid>/homework_status")
 def homework_status(user_uuid):
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
     doc = load_doc_by_any(user_uuid)
     return jsonify(compute_homework_status(doc))
 
@@ -533,6 +615,9 @@ def homework_status(user_uuid):
 # log_key: 로그의 uuid id 또는 index(0-based)
 @app.delete("/api/students/<id_or_uuid>/homework_logs/<log_key>")
 def api_delete_homework_log(id_or_uuid, log_key):
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
     u = id_or_uuid if "-" in id_or_uuid else resolve_uuid(id_or_uuid)
     if not u:
         return jsonify({"ok": False, "error": "unknown user"}), 404
@@ -567,6 +652,9 @@ def api_delete_homework_log(id_or_uuid, log_key):
 
 @app.route("/api/students/<id_or_uuid>/homework_logs", methods=["POST", "OPTIONS"])
 def api_save_homework_log(id_or_uuid):
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
     if request.method == "OPTIONS":
         return ("", 204)
 
@@ -590,6 +678,9 @@ def api_save_homework_log(id_or_uuid):
 
 @app.get("/api/students/<user_uuid>/homework_latest")
 def homework_latest(user_uuid):
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
     doc = load_doc_by_any(user_uuid)
     logs = doc.get("homework_logs", [])
     if not logs:
@@ -679,6 +770,9 @@ def homework_latest(user_uuid):
 # ✅ 뷰어: UUID로 학생 숙제로그 열람 (템플릿: templates/homework_view.html 필요)
 @app.get("/students/<user_uuid>/homework")
 def view_homework_logs(user_uuid):
+    s, err = ensure_admin_or_redirect()
+    if err:
+        return err
     sid = reverse_lookup(user_uuid)
     if not sid:
         return "학생을 찾을 수 없습니다.", 404
@@ -714,6 +808,22 @@ def login():
             return render_template("login.html", error="로그인에 실패했습니다.")
 
     return render_template("login.html")
+
+
+@app.route("/logout", methods=["GET", "POST"])
+def logout():
+    try:
+        fsession.clear()
+    except Exception:
+        pass
+
+    try:
+        removed = clear_active_session()
+        print(f"[logout] removed cookies: {removed}")
+    except Exception as e:
+        print("[logout] cookie removal failed:", e)
+
+    return redirect("/login")
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -821,8 +931,8 @@ def chapter_detail(username, chapter):
         return f"'{chapter}' 챕터를 찾을 수 없습니다.", 404
 
     # 세션 role→템플릿 컨텍스트
-    role_ctx = role_ctx_from_session()
 
+    role_ctx = role_ctx_from_session()
     return render_template(
         "chapter_detail.html",
         username=username,
@@ -892,8 +1002,8 @@ def group_detail(username, chapter, group_id):
     chapter_url = f"{BASE_URL}/{result['problem_chapter_id']}?tag={title_url}"
 
     # 세션 role→템플릿 컨텍스트
-    role_ctx = role_ctx_from_session()
     # print(f"result: {result}")
+    role_ctx = role_ctx_from_session()
     return render_template(
         "group_detail.html",
         username=username,
@@ -908,9 +1018,9 @@ def group_detail(username, chapter, group_id):
 
 @app.get("/api/schedule")
 def api_schedule_get():
-    role_ctx = role_ctx_from_session()
-    if not role_ctx.get("is_admin"):
-        return jsonify({"ok": False, "error": "forbidden"}), 403
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
 
     raw = load_schedule()
     slots = hydrate_slot_students(raw.get("slots", []))
@@ -918,9 +1028,9 @@ def api_schedule_get():
 
 @app.post("/api/schedule/slots")
 def api_schedule_create_slot():
-    role_ctx = role_ctx_from_session()
-    if not role_ctx.get("is_admin"):
-        return jsonify({"ok": False, "error": "forbidden"}), 403
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
 
     payload = request.get_json(force=True) or {}
     weekday = payload.get("weekday")
@@ -956,9 +1066,9 @@ def api_schedule_create_slot():
 
 @app.post("/api/schedule/slots/<slot_id>/students")
 def api_schedule_add_student(slot_id):
-    role_ctx = role_ctx_from_session()
-    if not role_ctx.get("is_admin"):
-        return jsonify({"ok": False, "error": "forbidden"}), 403
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
 
     payload = request.get_json(force=True) or {}
     student_id = (payload.get("student_id") or "").strip()
@@ -989,9 +1099,9 @@ def api_schedule_add_student(slot_id):
 
 @app.delete("/api/schedule/slots/<slot_id>/students/<user_token>")
 def api_schedule_remove_student(slot_id, user_token):
-    role_ctx = role_ctx_from_session()
-    if not role_ctx.get("is_admin"):
-        return jsonify({"ok": False, "error": "forbidden"}), 403
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
 
     data = load_schedule()
     slots = data.setdefault("slots", [])
@@ -1017,9 +1127,9 @@ def api_schedule_remove_student(slot_id, user_token):
 
 @app.delete("/api/schedule/slots/<slot_id>")
 def api_schedule_delete_slot(slot_id):
-    role_ctx = role_ctx_from_session()
-    if not role_ctx.get("is_admin"):
-        return jsonify({"ok": False, "error": "forbidden"}), 403
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
 
     data = load_schedule()
     slots = data.setdefault("slots", [])
@@ -1034,18 +1144,13 @@ def api_schedule_delete_slot(slot_id):
 
 @app.route("/schedule")
 def schedule_page():
+    s, err = ensure_admin_or_redirect()
+    if err:
+        return err
     """
     요일별 학생 배치를 한눈에 보는 관리자 전용 페이지.
     """
     # 로그인 필수
-    s, redir = ensure_login_or_redirect()
-    if redir:
-        return redir
-
-    role_ctx = role_ctx_from_session()
-    if not role_ctx.get("is_admin"):
-        return "관리자만 접근 가능합니다.", 403
-
     raw = load_schedule()
     slots_by_wday = {i: [] for i in range(7)}
 
@@ -1070,6 +1175,7 @@ def schedule_page():
 
     today_w = datetime.now(tz=KST).weekday()  # 월=0
 
+    role_ctx = {"role_label": "Admin", "is_admin": True}
     return render_template(
         "schedule.html",
         weekday_labels=WEEKDAY_LABELS,
