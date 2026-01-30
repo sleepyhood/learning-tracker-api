@@ -1,2360 +1,4034 @@
-<!DOCTYPE html>
-<html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <title>진도율 시각화</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}"> -->
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/fab.css') }}"
-    />
-
-    <!-- <style>
-      /* 0) 토큰: 일관된 폭/간격/컬러 */
-      :root {
-        --content-w: 1320px; /* 중앙 정렬될 최대 콘텐츠 폭 */
-        --g: clamp(12px, 1.6vw, 20px); /* 전역 gap 스케일 */
-        --pad: clamp(10px, 1.2vw, 16px); /* 카드 내부 패딩 스케일 */
-
-        --bg: #f9fafb;
-        --surface: #ffffff;
-        --text: #111827;
-        --muted: #6b7280;
-        --line: #e5e7eb;
-        --line-strong: #d1d5db;
-        --shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-        --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.08);
-
-        --radius-lg: 16px;
-        --radius-xl: 20px;
-
-        --accent: #0f172a; /* 메인 액션(검정 계열) */
-        --green: #16a34a; /* 통과 */
-        --orange: #f59e0b; /* 일부 진행 */
-        --red: #ef4444; /* 실패/경고 */
-      }
-
-      body {
-        font-family: sans-serif;
-        background: linear-gradient(135deg, #e0e0e0, #ffffff);
-        /* 부드러운 색 배경 */
-        text-align: center;
-        min-height: 100vh;
-        margin: 0;
-        padding: 0;
-      }
-
-      #profile-container {
-        max-width: 320px;
-        margin: 40px auto 40px;
-        padding: 24px 16px 32px;
-        text-align: center;
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(12px);
-        border-radius: 16px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-      }
-
-      #profile-container:hover {
-        cursor: default;
-        transform: none;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
-
-      /* Glass 효과는 카드에만 */
-      .chart-card {
-        max-width: 240px; /* ✅ 카드 너비 줄임 */
-        padding: 14px;
-        border-radius: 16px;
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-      }
-
-      .chart-card:hover {
-        cursor: pointer;
-        transform: translateY(-4px) scale(1.02);
-        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
-      }
-      #charts-container {
-        position: relative; /* 만약 없다면 추가 */
-        z-index: 1; /* 너무 높게 설정되어 있으면 낮춰주세요 */
-        overflow: visible !important; /* 가능하면 overflow 숨김 제거 */
-
-        display: grid;
-        grid-template-columns: repeat(
-          auto-fit,
-          minmax(220px, 1fr)
-        ); /* ✅ 더 촘촘하게 */
-        gap: 12px; /* ✅ 간격 축소 */
-        padding: 16px 12px;
-        max-width: 960px; /* ✅ 폭 조정 */
-        margin: 40px auto;
-      }
-
-      /* 다른 요소들은 Glass 효과 제거하고 깔끔하게 */
-      form {
-        margin: 30px auto;
-      }
-
-      input[type="text"] {
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid #aaa;
-        width: 240px;
-        margin-right: 8px;
-      }
-
-      button {
-        padding: 10px 16px;
-        border: none;
-        color: #222;
-        border-radius: 8px;
-        cursor: pointer;
-
-        background: rgba(255, 255, 255, 0.1);
-      }
-
-      h1,
-      h2 {
-        color: #222;
-        font-weight: 900;
-      }
-
-      /*스트릭 컨테이너 */
-      .streak-container {
-        position: relative;
-        z-index: 2; /* 차트보다 위로 나오게 */
-
-        max-width: 800px;
-        margin: 20px auto;
-        padding: 16px;
-        /*background-color: #f9f9ff;*/
-        background: rgba(255, 255, 255, 0.15); /* chart-card와 동일 */
-        backdrop-filter: blur(12px); /* 동일 blur 효과 */
-
-        border-radius: 16px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
-      /* 전체 그리드 정렬 */
-
-      :root {
-        --bg-0: rgba(2, 2, 2, 0.3); /* 0개 */
-        --cell: clamp(20px, 8vw, 100px);
-        --gap: 10px; /* 간격도 살짝 키움 */
-        --radius: 12px;
-        --green-0: rgba(2, 2, 2, 0.3);
-        --green-1: #c8f7c5; /* 약한 */
-        --green-2: #98e29a;
-        --green-3: #5cc477;
-        --green-4: #2aa164;
-        --green-5: #10724d; /* 강한 */
-        --glow: 0 0 0px rgba(0, 0, 0, 0); /* 기본은 없음 */
-        --popover-bg: #fff;
-        --popover-fg: #222;
-        --border: rgba(0, 0, 0, 0.08);
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg-0: rgba(255, 255, 255, 0.1);
-          --popover-bg: #15181c;
-          --popover-fg: #e9eef5;
-          --border: rgba(255, 255, 255, 0.12);
-        }
-      }
-      @media (max-width: 640px) {
-        .streak-grid {
-          grid-template-columns: repeat(4, var(--cell)); /* 작은 화면에선 4열 */
-        }
-      }
-
-      .streak-grid {
-        display: grid;
-        gap: var(--gap);
-        grid-template-columns: repeat(7, var(--cell)); /* 7열 유지 */
-        justify-content: center; /* ← 그리드 트랙을 가로 가운데 */
-        justify-items: center; /* ← 각 셀 내부도 가운데 정렬(선택) */
-        width: fit-content; /* ← 그리드 자체 폭을 내용에 맞춤 */
-        margin-inline: auto; /* ← 그리드 블록을 가운데 배치 */
-      }
-      .streak-cell {
-        /* 기존 속성 유지 */
-        width: var(--cell);
-        height: var(--cell);
-        border-radius: var(--radius);
-        border: 1px solid var(--border);
-        background: var(--bg-0);
-        position: relative;
-        transition: transform 0.12s ease, box-shadow 0.2s ease,
-          outline-color 0.2s ease;
-        outline: 0 solid transparent;
-
-        /* ⬇️ 추가 */
-        display: flex;
-        flex-direction: column; /* 요일/날짜 위, count 아래 */
-        align-items: center; /* 가로 가운데 */
-        justify-content: center; /* 세로 가운데 */
-        text-align: center; /* 텍스트 가운데 */
-        gap: 6px; /* 요소 사이 간격 */
-        box-sizing: border-box;
-        padding: 6px; /* 살짝 여백(선택) */
-      }
-
-      /* margin으로 가운데가 미세하게 틀어지는 걸 방지: gap으로만 띄우기 */
-      .date-info {
-        margin: 0;
-      }
-
-      /* 단계별 배경 톤 */
-
-      .streak-cell[data-tier="1"] {
-        background: color-mix(in oklab, var(--green-1) 35%, transparent);
-      }
-      .streak-cell[data-tier="2"] {
-        background: color-mix(in oklab, var(--green-2) 55%, transparent);
-      }
-      .streak-cell[data-tier="3"] {
-        background: color-mix(in oklab, var(--green-3) 70%, transparent);
-      }
-      .streak-cell[data-tier="4"] {
-        background: color-mix(in oklab, var(--green-4) 80%, transparent);
-      }
-      .streak-cell[data-tier="5"] {
-        background: color-mix(in oklab, var(--green-5) 90%, transparent);
-      }
-      .streak-cell[data-count="0"] {
-        background: color-mix(in oklab, var(--green-0) 35%, transparent);
-      }
-      /* 호버/포커스 상호작용 */
-      .streak-cell:hover {
-        transform: translateY(-1px) scale(1.04);
-      }
-      .streak-cell:focus-visible {
-        outline: 2px solid color-mix(in oklab, var(--green-3) 60%, transparent);
-      }
-
-      /* 마일스톤(10+개) → 테두리 글로우 + 안쪽 링 */
-      @keyframes glowPulse {
-        0% {
-          box-shadow: 0 0 0px rgba(46, 204, 113, 0);
-        }
-        50% {
-          box-shadow: 0 0 12px rgba(46, 204, 113, 0.35);
-        }
-        100% {
-          box-shadow: 0 0 0px rgba(46, 204, 113, 0);
-        }
-      }
-      .streak-cell[data-milestone="1"] {
-        outline: 2px solid rgba(46, 204, 113, 0.55);
-        box-shadow: 0 0 10px rgba(46, 204, 113, 0.25);
-        animation: glowPulse 2.2s ease-in-out infinite;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .streak-cell[data-milestone="1"] {
-          animation: none;
-        }
-      }
-
-      /* 안쪽 링(살짝 고급스러운 느낌) */
-      .streak-cell[data-milestone="1"]::after {
-        content: "";
-        position: absolute;
-        inset: 2px;
-        border-radius: calc(var(--radius) - 2px);
-        border: 1px solid rgba(46, 204, 113, 0.35);
-        pointer-events: none;
-      }
-
-      /* 날짜와 요일 강조 */
-      /* 날짜/요일 그룹 */
-      .date-info {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-bottom: 6px;
-        font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
-        color: #fff;
-      }
-
-      /* 요일 (위) */
-      .weekday {
-        font-weight: 600;
-        font-size: 13px;
-        opacity: 0.85;
-      }
-
-      /* 날짜 (아래) */
-      .date {
-        font-size: 14px;
-        font-weight: 500;
-        letter-spacing: 0.3px;
-      }
-
-      /* count 강조 */
-      .count {
-        font-size: 18px;
-        font-weight: bold;
-        color: #fff;
-      }
-      /* 포인터 커서 적용 */
-      .streak-cell[data-count]:not([data-count="0"]) {
-        cursor: pointer;
-      }
-      #overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(255, 255, 255, 0.3);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        z-index: 9998;
-        display: none; /* 기본 숨김 */
-      }
-      /* 디테일 토글 (원하는 경우에만 보여지도록) */
-      .details {
-        display: none;
-        position: absolute;
-        top: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 9999; /* overlay보다 더 높게 설정 */
-
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: none;
-
-        border-radius: 14px;
-        padding: 14px 20px;
-
-        width: min(500px, calc(100vw - 32px)); /* 화면에 맞게 줄이기 */
-        max-height: 280px;
-        overflow-y: auto;
-
-        color: #222;
-        font-size: 14px;
-        font-weight: 500;
-        line-height: 1.5;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-
-        /* 부드러운 스크롤바 스타일 */
-        scrollbar-width: thin;
-        scrollbar-color: #4caf50 #d4f0d4;
-      }
-
-      /* Webkit 기반 브라우저 스크롤바 커스텀 */
-      .details::-webkit-scrollbar {
-        width: 8px;
-      }
-      .details::-webkit-scrollbar-track {
-        background: #d4f0d4;
-        border-radius: 8px;
-      }
-      .details::-webkit-scrollbar-thumb {
-        background-color: #4caf50;
-        border-radius: 8px;
-        border: 2px solid transparent;
-        background-clip: content-box;
-      }
-
-      /* 문제별 아이템 */
-      .prob-item {
-        padding: 6px 10px;
-        margin-bottom: 6px;
-        border-radius: 8px;
-        background-color: rgba(76, 175, 80, 0.15); /* 연한 초록 배경 */
-        color: #2e7d32;
-        font-weight: 600;
-        box-shadow: inset 0 0 4px rgba(46, 125, 50, 0.3);
-        transition: background-color 0.2s ease;
-        cursor: default;
-      }
-
-      .prob-item:hover {
-        background-color: rgba(76, 175, 80, 0.3);
-      }
-
-      .prob-item a {
-        color: #2e7d32;
-        text-decoration: none;
-        font-weight: 600;
-      }
-
-      .prob-item a:hover {
-        text-decoration: underline;
-      }
-
-      footer {
-        padding: 20px;
-        text-align: center;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-        margin: 30px auto;
-        width: fit-content;
-      }
-
-      .footer-btn {
-        margin: 8px;
-        padding: 10px 16px;
-        font-size: 16px;
-        border: none;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.25);
-        color: #555;
-        font-weight: 700;
-        cursor: pointer;
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
-        transition: background 0.3s ease, transform 0.2s ease;
-      }
-
-      .footer-btn:hover {
-        background: rgba(255, 255, 255, 0.4);
-        transform: scale(1.05);
-      }
-
-      .chip {
-        display: inline-block;
-        padding: 2px 8px;
-        margin-left: 6px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 600;
-        border: 1px solid #e0e0e0;
-        background: #f8f8f8;
-        color: #444;
-      }
-      .chip-role.admin {
-        background: #eef6ff;
-        border-color: #bbd8ff;
-        color: #1f5fbf;
-      }
-      .chip-role.user {
-        background: #f3f3f3;
-      }
-      .chip-lang {
-        background: #f0fff4;
-        border-color: #bde5c8;
-        color: #1a7f37;
-      }
-
-      .streak-header {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 12px 0 8px;
-      }
-      .streak-controls {
-        display: flex;
-        gap: 8px;
-      }
-
-      .streak-btn {
-        color: #777;
-
-        border: none;
-        padding: 10px 12px;
-        margin-right: 6px;
-        border-radius: 20px;
-        cursor: pointer;
-        font-size: 1em;
-        font-weight: 700;
-
-        cursor: pointer;
-        transition: background-color 0.2s;
-        box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
-
-        white-space: nowrap; /* 줄바꿈 방지 */
-        display: inline-block; /* 필요시 */
-      }
-      .streak-btn.active {
-        color: #222;
-
-        border: 5px solid rgba(0, 128, 0, 0.4);
-        box-shadow: 0px 3px 6px rgba(0, 128, 0, 0.5);
-      }
-
-      #submission-popover.details {
-        background: var(--popover-bg);
-        color: var(--popover-fg);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        padding: 10px 12px;
-      }
-      #submission-popover .prob-item + .prob-item {
-        border-top: 1px dashed var(--border);
-        margin-top: 6px;
-        padding-top: 6px;
-      }
-
-      /* KST 기준 오늘 */
-      .streak-cell[data-today="1"] {
-        outline: 2px dashed rgba(125, 146, 255, 0.6);
-      }
-
-      /* ===== Layout (시각화 2단) ===== */
-      .viz-2col {
-        display: grid;
-        grid-template-columns: clamp(300px, 26vw, 360px) 1fr;
-
-        gap: var(--g);
-        align-items: center;
-        margin: 0px 50px;
-      }
-      @media (max-width: 960px) {
-        .viz-2col {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      /* ===== Card ===== */
-      #latest-homework .card {
-        /*background: var(--surface, #121a38);*/
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: var(--card-radius, 16px);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-        padding: 14px 16px;
-        transition: transform 0.15s ease, border-color 0.15s ease,
-          box-shadow 0.15s ease;
-      }
-      #latest-homework .card:hover {
-        transform: translateY(-1px);
-        border-color: color-mix(
-          in srgb,
-          var(--accent, #4dd0ff) 35%,
-          transparent
-        );
-        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
-      }
-
-      /* Header */
-      #latest-homework .card-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        margin-bottom: 8px;
-      }
-      #latest-homework .card-title {
-        font-size: 1.05rem;
-        font-weight: 700;
-        letter-spacing: 0.2px;
-        /*    color: var(--text, #e6ebf5);*/
-      }
-      #latest-homework .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 8px;
-        border-radius: 999px;
-        background: color-mix(in srgb, var(--accent, #4dd0ff) 16%, transparent);
-        color: var(--accent, #4dd0ff);
-        font-size: 0.75rem;
-        font-weight: 700;
-        border: 1px solid
-          color-mix(in srgb, var(--accent, #4dd0ff) 35%, transparent);
-        text-transform: uppercase;
-      }
-
-      /* ===== Progress (트랙/필/텍스트) =====
-         마크업: <div class="progress"><div class="progress-fill" style="width:0%"></div><div class="progress-text">-</div></div>
-         트랙은 ::before로 그립니다(마크업 추가 불필요)
-      */
-      #latest-homework .progress {
-        position: relative;
-        display: grid;
-        grid-template-columns: 1fr auto;
-        align-items: center;
-        gap: 10px;
-        margin: 8px 0 10px;
-      }
-      #latest-homework .progress::before {
-        content: "";
-        grid-column: 1;
-        display: block;
-        height: 8px;
-        background: var(--track, #1b2344);
-        border-radius: 999px;
-        opacity: 0.9;
-      }
-      #latest-homework .progress-fill {
-        grid-column: 1;
-        height: 8px;
-        border-radius: 999px;
-        background: var(--accent, #4dd0ff);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-        transition: width 0.28s ease;
-      }
-      #latest-homework .progress-text {
-        grid-column: 2;
-        font-size: 0.85rem;
-        color: var(--muted, #9aa4b2);
-        white-space: nowrap;
-      }
-
-      /* ===== Meta ===== */
-      #latest-homework .meta {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        font-size: 0.9rem;
-        color: var(--muted, #9aa4b2);
-      }
-      #latest-homework .meta a {
-        color: color-mix(in srgb, var(--accent, #4dd0ff) 90%, white 10%);
-        text-decoration: none;
-        border-bottom: 1px dashed
-          color-mix(in srgb, var(--accent, #4dd0ff) 40%, transparent);
-      }
-      #latest-homework .meta a:hover {
-        border-bottom-style: solid;
-      }
-
-      /* ===== Problems ===== */
-      #latest-homework .problems {
-        list-style: none;
-        margin: 8px 0 0;
-        padding: 0;
-        display: grid;
-        gap: 6px;
-      }
-      #latest-homework .problem-row {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 6px 8px;
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.02);
-        transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
-      }
-      #latest-homework .problem-row:hover {
-        background: rgba(255, 255, 255, 0.04);
-      }
-      #latest-homework .problem-row .mark {
-        width: 1.25em;
-        text-align: center;
-        opacity: 0.95;
-      }
-      #latest-homework .problem-row code {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas,
-          "Liberation Mono", monospace;
-        font-size: 0.85em;
-        opacity: 0.9;
-      }
-      #latest-homework .problem-row .title {
-        /*color: var(--text, #e6ebf5);*/
-      }
-
-      /* 상태 색감(아이콘 + 텍스트 보조) */
-      #latest-homework .problem-row.passed {
-        background: rgba(49, 196, 141, 0.12);
-      }
-      #latest-homework .problem-row.passed .title {
-        color: #0b6340ff;
-      }
-      #latest-homework .problem-row.wrong {
-        background: rgba(240, 90, 108, 0.12);
-      }
-      #latest-homework .problem-row.wrong .title {
-        color: #58101bff;
-        text-decoration: underline dotted rgba(255, 255, 255, 0.35);
-        text-underline-offset: 3px;
-      }
-      #latest-homework .problem-row.pending {
-        opacity: 0.8;
-      }
-
-      /* ===== Buttons ===== */
-      #latest-homework .actions {
-        margin-top: 10px;
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-      #latest-homework .btn {
-        -webkit-tap-highlight-color: transparent;
-        appearance: none;
-        padding: 8px 12px;
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 1);
-
-        color: var(--text, #222);
-        font-weight: 600;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: border-color 0.15s ease, background 0.15s ease,
-          transform 0.05s ease;
-      }
-      #latest-homework .btn:hover {
-        background: rgba(255, 255, 255, 0.06);
-        border-color: rgba(255, 255, 255, 0.22);
-      }
-      #latest-homework .btn:active {
-        transform: translateY(1px);
-      }
-
-      /* ===== Skeleton(로딩 상태) ===== */
-      #latest-homework .card.skeleton .card-title {
-        position: relative;
-        color: transparent;
-      }
-      #latest-homework .card.skeleton .card-title::after {
-        content: "";
-        display: block;
-        height: 16px;
-        border-radius: 6px;
-        background: linear-gradient(
-          100deg,
-          rgba(255, 255, 255, 0.08) 40%,
-          rgba(255, 255, 255, 0.18) 50%,
-          rgba(255, 255, 255, 0.08) 60%
-        );
-        background-size: 200% 100%;
-        animation: shimmer 1.2s infinite linear;
-      }
-      #latest-homework .card.skeleton .progress::before {
-        background: rgba(255, 255, 255, 0.08);
-      }
-      #latest-homework .card.skeleton .progress-fill {
-        width: 35% !important;
-        background: rgba(255, 255, 255, 0.18);
-        animation: pulse 0.9s ease-in-out infinite alternate;
-      }
-      @keyframes shimmer {
-        to {
-          background-position: -200% 0;
-        }
-      }
-      @keyframes pulse {
-        to {
-          opacity: 0.55;
-        }
-      }
-
-      /* ===== Color-scheme 보정 ===== */
-      @media (prefers-color-scheme: light) {
-        #latest-homework .card {
-          /*background: #fff;*/
-          border-color: rgba(0, 0, 0, 0.08);
-        }
-        #latest-homework .problem-row {
-          background: rgba(0, 0, 0, 0.03);
-        }
-        #latest-homework .problem-row:hover {
-          background: rgba(0, 0, 0, 0.05);
-        }
-        #latest-homework .problem-row.passed {
-          background: rgba(16, 185, 129, 0.12);
-        }
-        #latest-homework .problem-row.wrong {
-          background: rgba(239, 68, 68, 0.12);
-        }
-        #latest-homework .meta {
-          color: #6b7280;
-        }
-        #latest-homework .progress::before {
-          background: #e5e7eb;
-        }
-      }
-    </style> -->
-
-    <style>
-  /* 리팩터링된 라이트 테마 스타일 (index.html 전용) */
-  :root {
-            /* 🔽 최대 크기를 100px → 68px 정도로 줄임 */
-        --cell: clamp(20px, 4vw, 68px);
-        /* 🔽 칸 사이 간격도 조금 줄이기 */
-        --gap: 6px;
-    --page-max-width: 1320px;
-    --g: 20px;
-    --bg: #f3f4f6;
-    --bg-gradient: radial-gradient(
-      circle at top left,
-      #e5f0ff 0,
-      #f3f4f6 40%,
-      #eef2ff 100%
-    );
-    --surface: #ffffff;
-    --surface-soft: #f9fafb;
-    --surface-subtle: #eef2ff;
-    --border: #e5e7eb;
-    --border-strong: #d1d5db;
-    --text: #111827;
-    --muted: #6b7280;
-    --accent: #60a5fa;
-      --radius: 16px;
-    --accent-strong: #2563eb;
-    --accent-soft: #eff6ff;
-    --danger: #ef4444;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 20px;
-    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
-    --shadow-md: 0 4px 10px rgba(15, 23, 42, 0.12);
-    --shadow-lg: 0 12px 30px rgba(15, 23, 42, 0.16);
-  }
-
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-  }
-
-  body {
-    margin: 0;
-    min-height: 100vh;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-    background: var(--bg-gradient);
-    color: var(--text);
-  }
-
-  /* 공통 컨테이너 폭 정렬 */
-  body > header,
-  .viz-2col,
-  .streak-header,
-  .streak-container,
-  #charts-container,
-  footer {
-    max-width: var(--page-max-width);
-    margin: 0 auto;
-    padding: 0 16px;
-  }
-
-  a {
-    color: var(--accent-strong);
-    text-decoration: none;
-  }
-  a:hover {
-    text-decoration: underline;
-  }
-
-  /* ===== 헤더 & 검색 ===== */
-
-  header.page-header {
-    padding-top: 20px;
-    padding-bottom: 8px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-      border-radius: var(--radius);
-    background: var(--surface);
-    border: 1px solid var(--border);  
-  }
-
-  .header-left {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .brand-link {
-    text-decoration: none;
-    color: inherit;
-  }
-
-  .page-title {
-    margin: 0;
-    font-size: clamp(1.6rem, 2.3vw, 2rem);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
-
-  .page-subtitle {
-    margin: 0;
-    font-size: 0.95rem;
-    color: var(--muted);
-  }
-
-  .header-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
-  }
-
-  #search-form {
-    margin: 0;
-  }
-
-  .search-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px;
-    border-radius: 999px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-  }
-
-  #username-input {
-    flex: 1;
-    min-width: 0;
-    border: none;
-    background: transparent;
-    padding: 8px 10px;
-    outline: none;
-    font-size: 0.9rem;
-  }
-
-  #username-input::placeholder {
-    color: var(--muted);
-  }
-
-  #search-btn {
-    border: none;
-    border-radius: 999px;
-    padding: 8px 10px;
-    background: var(--accent);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-  }
-
-  #search-btn img {
-    display: block;
-    width: 20px;
-    height: 20px;
-    filter: brightness(0) invert(1);
-  }
-
-  #search-btn:hover {
-    background: var(--accent-strong);
-  }
-
-  .autocomplete-box {
-    position: absolute;
-    margin-top: 36px;
-    list-style: none;
-    padding: 4px 0;
-    border-radius: 12px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-md);
-    max-height: 220px;
-    overflow-y: auto;
-    width: 220px;
-    z-index: 20;
-  }
-
-  .autocomplete-box li {
-    padding: 6px 10px;
-    font-size: 0.85rem;
-    cursor: pointer;
-  }
-
-  .autocomplete-box li:hover {
-    background: var(--accent-soft);
-  }
-
-  .btn-secondary {
-    appearance: none;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: var(--surface-soft);
-    padding: 6px 12px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--text);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    text-decoration: none;
-  }
-
-  .btn-secondary:hover {
-    background: var(--surface-subtle);
-  }
-
-  /* FAB 기본 위치 (fab.css에 더해 약간만 정리) */
-  .fab-container {
-    position: fixed;
-    right: 24px;
-    bottom: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 50;
-  }
-
-  /* ===== 상단 2단 레이아웃 (프로필 + 최근 숙제) ===== */
-
-  .viz-2col {
-    display: grid;
-    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
-    gap: var(--g);
-    margin-top: 12px;
-    margin-bottom: 20px;
-  }
-
-  @media (max-width: 960px) {
-    .viz-2col {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* 공통 카드 스타일 */
-  .chart-card,
-  #latest-homework .card {
-    background: var(--surface);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-md);
-  }
-
-  /* 프로필 카드 */
-  #profile-container {
-    padding: 18px 18px 20px;
-  }
-
-  #profile-container h2 {
-    margin: 8px 0 4px;
-    font-size: 1.1rem;
-  }
-
-  #profile-container p {
-    margin: 2px 0;
-    font-size: 0.85rem;
-    color: var(--muted);
-  }
-
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 8px;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
-
-  .chip-role {
-    background: var(--surface-soft);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  .chip-lang {
-    background: var(--accent-soft);
-    color: var(--accent-strong);
-    border: 1px solid rgba(96, 165, 250, 0.5);
-  }
-
-/* 숙제 내역 버튼 */
-.chip-action {
-  background: var(--accent);
-  color: #fff;
-  padding: 6px 12px;
-  border-radius: 16px;
-  text-decoration: none;
-  font-size: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.chip-action:hover {
-  filter: brightness(1.05);
-}
-
-  #profile-stats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 16px;
-  }
-  .stat-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--accent); /* ✅ 위에서 정한 파란 accent 사용 */
-}
-.stat-label {
-  font-size: 13px;
-  color: var(--muted);
-}
-  #profile-stats div > div:first-child {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--accent-strong) !important;
-  }
-
-  #profile-stats div > div:last-child {
-    font-size: 0.8rem;
-    color: var(--muted);
-  }
-
-  /* ===== 최근 숙제 카드 ===== */
-
-  #latest-homework {
-    align-self: stretch;
-  }
-
-  #latest-homework .card {
-    padding: 16px 18px 18px;
-  }
-
-  #latest-homework .card-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 10px;
-  }
-
-  #latest-homework .card-title {
-    font-weight: 600;
-    font-size: 0.98rem;
-  }
-
-  #latest-homework .badge {
-    font-size: 0.7rem;
-    border-radius: 999px;
-    padding: 2px 8px;
-    background: var(--accent-soft);
-    color: var(--accent-strong);
-  }
-
-  #latest-homework .progress {
-    position: relative;
-    margin-top: 10px;
-    height: 8px;
-    border-radius: 999px;
-    background: #e5e7eb;
-    overflow: hidden;
-  }
-
-  #latest-homework .progress-fill {
-    position: absolute;
-    inset: 0;
-    width: 0%;
-    background: linear-gradient(90deg, #60a5fa, #22c55e);
-    transition: width 0.3s ease;
-  }
-
-  #latest-homework .progress-text {
-    margin-top: 4px;
-    font-size: 0.78rem;
-    color: var(--muted);
-  }
-
-  #latest-homework ul {
-    list-style: none;
-    margin: 10px 0 0;
-    padding: 0;
-  }
-
-  #latest-homework .problem-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 6px 0;
-    border-bottom: 1px dashed #e5e7eb;
-    font-size: 0.85rem;
-  }
-
-  #latest-homework .problem-row:last-child {
-    border-bottom: none;
-  }
-
-  #latest-homework .problem-row .mark {
-    width: 18px;
-    text-align: center;
-  }
-
-  #latest-homework .problem-row .title {
-    flex: 1;
-  }
-
-  #latest-homework .problem-row code {
-    font-size: 0.75rem;
-    color: var(--muted);
-  }
-
-  #latest-homework .problem-row.passed {
-    background: rgba(34, 197, 94, 0.06);
-  }
-
-  #latest-homework .problem-row.passed .title {
-    color: #166534;
-  }
-
-  #latest-homework .problem-row.wrong {
-    background: rgba(248, 113, 113, 0.06);
-  }
-
-  #latest-homework .problem-row.wrong .title {
-    color: #b91c1c;
-  }
-
-  #latest-homework .problem-row.pending {
-    opacity: 0.9;
-  }
-
-  #latest-homework .meta {
-    margin-top: 8px;
-    font-size: 0.78rem;
-    color: var(--muted);
-  }
-
-  #latest-homework .meta a {
-    color: var(--accent-strong);
-  }
-
-  #latest-homework .actions {
-    margin-top: 10px;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  #latest-homework .btn {
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: var(--surface-soft);
-    padding: 6px 10px;
-    font-size: 0.8rem;
-    cursor: pointer;
-  }
-
-  #latest-homework .btn.primary {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: #fff;
-  }
-
-  #latest-homework .btn:hover {
-    background: var(--accent-soft);
-  }
-
-  #latest-homework .card.skeleton .card-title {
-    position: relative;
-    color: transparent;
-  }
-
-  #latest-homework .card.skeleton .card-title::after {
-    content: "";
-    display: block;
-    height: 16px;
-    border-radius: 6px;
-    background: linear-gradient(90deg, #e5e7eb, #f9fafb, #e5e7eb);
-    animation: skeleton-pulse 1.2s ease-in-out infinite;
-  }
-
-  @keyframes skeleton-pulse {
-    0% {
-      transform: translateX(-20%);
-      opacity: 0.6;
-    }
-    50% {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    100% {
-      transform: translateX(20%);
-      opacity: 0.6;
-    }
-  }
-
-  /* ===== 스트릭 영역 ===== */
-
-  .streak-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 4px;
-    margin-bottom: 8px;
-  }
-
-  .streak-title {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: var(--muted);
-  }
-
-  .streak-controls {
-    display: inline-flex;
-    gap: 4px;
-  }
-
-  .streak-btn {
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    padding: 4px 8px;
-    font-size: 0.78rem;
-    cursor: pointer;
-  }
-
-  .streak-btn.active,
-  .streak-btn:focus {
-    border-color: var(--accent);
-    background: var(--accent-soft);
-  }
-/* 스트릭 컨테이너 */
-.streak-container {
-  position: relative;
-  z-index: 2;
-
-   max-width: 800px;
-           margin: 12px auto;
-        padding: 10px;
-
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: none;
-  border-radius: 18px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-}
-
-/* 전체 그리드 정렬: 폭 꽉 채우기 */
-.streak-grid {
-  display: grid;
-  gap: var(--gap);
-  grid-template-columns: repeat(7, minmax(0, 1fr)); /* ✅ 7등분 */
-  width: 100%;
-  justify-items: stretch;
-}
-
-@media (max-width: 960px) {
-  .streak-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .streak-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-/* 각 날짜 칸(세로 컬럼) */
-.streak-cell {
-  /* 기존 border/transition은 유지하되 width/height만 조절 */
-  min-height: 140px;
-  padding: 10px 8px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--bg-0);
-  position: relative;
-  outline: 0 solid transparent;
-  transition: transform 0.12s ease, box-shadow 0.2s ease,
-    outline-color 0.2s ease;
-
-  display: flex;
-  flex-direction: column;    /* 요일/날짜 위, count 아래 */
-  justify-content: space-between;
-  align-items: center;
-  text-align: center;
-  box-sizing: border-box;
-}
-
-/* 호버 효과 유지 */
-.streak-cell:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
-}
-
-/* 나머지 tier/오늘/마일스톤 색 관련 규칙(.streak-cell[data-tier="..."] 등)은 기존 그대로 두면 됩니다. */
-
-  .date-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-size: 0.75rem;
-    color: var(--muted);
-  }
-
-  .weekday {
-    font-weight: 500;
-  }
-
-  .date {
-    font-weight: 600;
-  }
-
-  .count {
-    margin-top: 6px;
-    font-weight: 700;
-    font-size: 0.9rem;
-  }
-
-  .streak-cell[data-tier="1"] {
-    background: #e5f3ff;
-    border-color: #dbeafe;
-  }
-  .streak-cell[data-tier="2"] {
-    background: #dbeafe;
-    border-color: #bfdbfe;
-  }
-  .streak-cell[data-tier="3"] {
-    background: #bfdbfe;
-    border-color: #a5b4fc;
-  }
-  .streak-cell[data-tier="4"] {
-    background: #a5b4fc;
-    border-color: #818cf8;
-    color: #111827;
-  }
-  .streak-cell[data-tier="5"] {
-    background: #818cf8;
-    border-color: #4f46e5;
-    color: #f9fafb;
-  }
-
-  .streak-cell[data-today="1"] {
-    box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.6);
-  }
-
-  /* overlay + popover */
-  #overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.35);
-    backdrop-filter: blur(2px);
-    z-index: 40;
-  }
-
-  .details {
-    background: var(--surface);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-lg);
-    padding: 10px 12px;
-    max-width: 320px;
-    font-size: 0.8rem;
-  }
-
-  .prob-item {
-    padding: 4px 0;
-    border-bottom: 1px dashed #e5e7eb;
-  }
-
-  .prob-item:last-child {
-    border-bottom: none;
-  }
-
-/* ===== 차트 영역 ===== */
-
-#result-title {
-  max-width: var(--page-max-width);
-  margin: 0 auto 8px;
-  padding: 0 16px;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-/* ✅ 그래프 카드들을 자동으로 여러 열에 배치하는 그리드 */
-#charts-container {
-  margin: 12px auto 24px;
-  /* 가운데 정렬 + 상하 여백 */
-  display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(220px, 1fr)
-  ); /* 화면 폭에 맞춰 2~4열까지 자동 배치 */
-  gap: 16px;
-}
-
-/* 작은 화면에서는 2열까지만 */
-@media (max-width: 640px) {
-  #charts-container {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.chart-card {
-  padding: 14px 14px 16px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  box-shadow: var(--shadow-md);
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-
-#charts-container .chart-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  cursor: pointer;
-}
-
-#charts-container .chart-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
-
-
-  #charts-container .chart-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-  }
-
-  .label {
-    font-size: 0.78rem;
-    color: var(--muted);
-  }
-
-  .meta {
-    font-size: 0.78rem;
-    color: var(--muted);
-  }
-
-  /* ===== 푸터 버튼 ===== */
-
-  footer {
-    padding: 20px 16px 32px;
-    text-align: center;
-  }
-
-  .footer-btn {
-    margin: 4px 6px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    padding: 8px 14px;
-    font-size: 0.85rem;
-    cursor: pointer;
-  }
-
-  .footer-btn:hover {
-    background: var(--accent-soft);
-  }
-
-  @media (max-width: 640px) {
-    header.page-header {
-      align-items: flex-start;
-    }
-    .header-actions {
-      align-items: flex-start;
-    }
-    .fab-container {
-      right: 16px;
-      bottom: 16px;
-    }
-  }
-</style>
-
-  </head>
-
-  <body>
-    <div id="overlay" aria-hidden="true" style="display: none"></div>
-    <div
-      id="submission-popover"
-      class="details"
-      role="dialog"
-      style="display: none"
-    ></div>
-    <div
-      id="submission-popover"
-      style="display: none; position: absolute; z-index: 1001"
-      class="details"
-    ></div>
-    <!-- <header>
-      <a href="/" style="text-decoration: none; color: inherit">
-        <h1>풀이현황</h1>
-      </a>
-
-
-  <div style="margin: 4px 0 10px; text-align: right">
-    <a
-      href="/schedule"
-      style="
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 10px;
-        border-radius: 999px;
-        font-size: 0.8rem;
-        border: 1px solid rgba(148, 163, 184, 0.6);
-        background: rgba(15, 23, 42, 0.7);
-        color: #e5e7eb;
-        text-decoration: none;
-      "
-    >
-      📅 요일별 학생 메뉴
-    </a>
-  </div>
-      <form id="search-form" method="POST" action="/">
-        <div class="search-wrapper">
-          <input
-            type="text"
-            id="username-input"
-            name="username"
-            placeholder="유저명"
-            required
-          />
-          <ul id="autocomplete-list" class="autocomplete-box"></ul>
-
-          <button type="submit" id="search-btn">
-            <img
-              src="/static/search-icon.png"
-              alt="검색"
-              width="30"
-              height="auto"
-            />
-          </button>
-        </div>
-      </form>
-    </header> -->
-
-    <header class="page-header">
-  <div class="header-left">
-    <a href="/" class="brand-link">
-      <h1 class="page-title">풀이현황</h1>
-    </a>
-    <p class="page-subtitle">
-      최근 숙제와 스트릭, 챕터별 진도를 한눈에 보는 학생 대시보드입니다.
-    </p>
-    <a href="/schedule" class="btn-secondary">
-      📅 요일별 학생 메뉴
-    </a>
-  </div>
-
-  <div class="header-actions">
-    <form id="search-form" method="POST" action="/">
-      <div class="search-wrapper">
-        <input
-          type="text"
-          id="username-input"
-          name="username"
-          placeholder="유저명"
-          required
-        />
-        <ul id="autocomplete-list" class="autocomplete-box"></ul>
-
-        <button type="submit" id="search-btn">
-          <img
-            src="/static/search-icon.png"
-            alt="검색"
-            width="30"
-            height="auto"
-          />
-        </button>
-      </div>
-    </form>
-  </div>
-</header>
-
-
-    <div class="fab-container">
-      <!-- 공통 FAB: 현황 새로고침 -->
-      <div
-        class="fab fab-refresh"
-        title="풀이 현황 최신화"
-        onclick="refreshUserProgress('{{ username }}')"
-      >
-        🔄
-      </div>
-      <!-- 이전 페이지로 이동 FAB -->
-      <div
-        class="fab fab-back"
-        title="이전 페이지로 이동"
-        onclick="goToParentPage()"
-      >
-        🔙
-      </div>
-    </div>
-    <div class="viz-2col">
-      <aside id="profile-container" class="chart-card">
-        <img
-          src="{{ avatar_path }}"
-          alt="User Avatar"
-          width="100"
-          height="100"
-          style="border-radius: 50%; margin-bottom: 12px"
-        />
-        <h2 style="margin: 8px 0 4px">
-          {{ username }}
-          <br />
-          <span class="chip chip-role {{ 'admin' if is_admin else 'user' }}"
-            >{{ role_label }}</span
-          >
-          {% if primary_lang %}
-          <span
-            class="chip chip-lang"
-            title="최근 상위 언어:
-      {% for l,c in primary_lang_top3 %}{{l}} {{c}}회{% if not loop.last %}, {% endif %}{% endfor %}"
-          >
-            주 사용 언어: {{ primary_lang }}
-          </span>
-          {% endif %}
-        </h2>
-
-        <!-- 숙제 내역 버튼 -->
-        <div style="margin: 8px 0">
-          <a
-            href="{{ url_for('view_homework_logs', user_uuid=user_uuid) }}"
-            class="chip chip-action"
-          >
-            📝 숙제 내역 보기
-          </a>
-        </div>
-
-
-        <p style="margin: 2px 0; font-weight: 600">
-          마지막 로그인: {{ last_login }}
-        </p>
-
-        <div id="profile-stats">
-          <div>
-            <div class="stat-value">
-              {{ accepted_number }}
-            </div>
-            <div class="stat-label">해결한 문제</div>
-          </div>
-          <div>
-            <div class="stat-value">
-              {{ submission_number }}
-            </div>
-            <div class="stat-label">제출 횟수</div>
-          </div>
-          <div>
-            <div class="stat-value">
-              {{ total_score }}
-            </div>
-            <div class="stat-label">점수</div>
-          </div>
-        </div>
-
-      </aside>
-      <section id="latest-homework">
-        <div class="card skeleton">
-          <div class="card-head">
-            <div class="card-title">최근 숙제 불러오는 중…</div>
-          </div>
-          <div class="progress">
-            <div class="progress-fill" style="width: 0%"></div>
-            <div class="progress-text">-</div>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <div class="streak-header">
-      <div class="streak-title"></div>
-      <div class="streak-controls">
-        <button class="streak-btn" data-days="7">7일</button>
-        <button class="streak-btn" data-days="30">30일</button>
-        <button class="streak-btn" data-days="90">90일</button>
-      </div>
-    </div>
-
-    <div class="streak-container">
-      <div id="streak-grid" class="streak-grid">
-        {% for day in streak_data %}
-        <div
-          class="streak-cell"
-          data-count="{{ day.count }}"
-          {%
-          if
-          day.details
-          %}
-          data-details="{{ day.details | tojson | forceescape }}"
-          {%
-          endif
-          %}
-        >
-          <div class="date-info">
-            <div class="weekday">{{ day.weekday }}</div>
-            <div class="date">{{ day.date }}</div>
-          </div>
-          <span class="count">{{ day.count }}</span>
-
-          <!-- {% if day.details %}
-          <div class="details">
-            {% for prob in day.details %}
-            <div class="prob-item">
-              <a
-                href="http://edu.doingcoding.com/status/{{ prob.server_sub_id }}"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {{ prob.title }} </a
-              ><br />
-              ({{ prob.language }}, {{ prob.score }}점, {{ prob.time }})
-            </div>
-            {% endfor %}
-          </div>
-          {% endif %} -->
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <h2 id="result-title" style="display: none"></h2>
-
-    <div id="charts-container"></div>
-
-    <footer style="padding: 20px; text-align: center">
-      <button id="update-btn" class="footer-btn" onclick="updateProblems()">
-        🔄 문제 목록 업데이트
-      </button>
-      <!-- ⏰ 마지막 업데이트 시각 표시 -->
-      <!-- ⏰ 마지막 업데이트 시각 표시 -->
-      <div
-        id="update-time"
-        style="margin-top: 10px; font-size: 14px; color: #ccc"
-      ></div>
-
-      <a class="footer-btn" href="/logout">🚪 로그아웃</a>
-      <button
-        class="footer-btn"
-        onclick="fetch('/clear_data').then(() => alert('데이터가 초기화되었습니다.'))"
-      >
-        🧹 캐시 지우기
-      </button>
-    </footer>
-    <!-- 
- <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
-<script src="{{ url_for('static', filename='js/refreshUserProgress.js') }}"></script> -->
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-
-    <script>
-      (async function mountLatestHomeworkCard() {
-        const userUuid = "{{ user_uuid }}";
-
-        // 선택: TTL 체크 후 최신화
-        try {
-          const ttlMs = 60_000;
-          const first = await fetch(
-            `/api/students/${userUuid}/homework_status`
-          ).then((r) => r.json());
-          const updatedAt = first.updated_at ? Date.parse(first.updated_at) : 0;
-          if (!updatedAt || Date.now() - updatedAt > ttlMs) {
-            await fetch(`/api/students/${userUuid}/refresh`, {
-              method: "POST",
-            });
-          }
-        } catch (e) {}
-
-        // 최신 숙제 로드
-        const data = await fetch(`/api/students/${userUuid}/homework_latest`)
-          .then((r) => r.json())
-          .catch(() => ({}));
-        const host = document.querySelector("#latest-homework");
-        if (!host) return;
-
-        if (!data || !data.ok || !data.log) {
-          host.innerHTML = `<div class="card"><div class="card-title">최근 숙제가 없습니다</div></div>`;
-          return;
-        }
-
-        const { log } = data;
-        const pct = log.counts.total
-          ? Math.round((log.counts.passed / log.counts.total) * 100)
-          : 0;
-
-        // 문제별 상태 매핑(legacy_code 또는 server_problem_id)
-        const statusByLegacy = Object.fromEntries(
-          (log.problem_status || []).map((p) => [p.legacy_code, p.status])
-        );
-        const statusById = Object.fromEntries(
-          (log.problem_status || []).map((p) => [
-            String(p.server_problem_id),
-            p.status,
-          ])
-        );
-
-        const problemLis = (log.problems || [])
-          .map((p) => {
-            const st = p.legacy_code
-              ? statusByLegacy[p.legacy_code]
-              : statusById[String(p.server_problem_id)];
-            const icon = st === "passed" ? "✅" : st === "wrong" ? "❌" : "…";
-            const cls = st || "pending";
-            const code = p.legacy_code
-              ? `<code>${p.legacy_code}</code>`
-              : p.server_problem_id
-              ? `<code>#${p.server_problem_id}</code>`
-              : "";
-            const title = p.title || p.title_at_issue || "";
-            return `<li class="problem-row ${cls}" data-legacy-code="${
-              p.legacy_code || ""
-            }" data-server-problem-id="${p.server_problem_id || ""}">
-      <span class="mark">${icon}</span> ${code} <span class="title"> – ${title}</span>
-    </li>`;
-          })
-          .join("");
-
-        host.innerHTML = `
-    <article class="card" data-log-id="${log.key || ""}" data-id="${
-          log.id || ""
-        }">
-      <div class="card-head" style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="card-title">${log.title || "제목 없음"}</div>
-        <span class="badge">${(log.channel || "kakao").toUpperCase()}</span>
-      </div>
-
-      <div class="progress">
-        <div><div class="progress-fill" style="width:${pct}%"></div></div>
-        <div class="progress-text">통과 ${log.counts.passed} · 오답 ${
-          log.counts.wrong
-        } · 미시도 ${log.counts.pending}</div>
-      </div>
-
-      <div class="meta" style="font-size:.9rem; color:var(--muted); display:flex; gap:12px; flex-wrap:wrap;">
-        <span>보낸 시각: <span class="ts" data-iso="${log.ts}">${
-          log.ts || "-"
-        }</span></span>
-        ${
-          log.due_at
-            ? `<span>마감: <span class="ts" data-iso="${log.due_at}">${log.due_at}</span></span>`
-            : ""
-        }
-        ${
-          log.url
-            ? `<span>링크: <a href="${log.url}" target="_blank" rel="noopener">${log.url}</a></span>`
-            : ""
-        }
-      </div>
-
-      ${
-        log.problems && log.problems.length
-          ? `<ol class="problems">${problemLis}</ol>`
-          : ""
-      }
-
-      <div class="actions" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-        ${
-          log.url
-            ? `<a class="btn" href="${log.url}" target="_blank" rel="noopener">문제 페이지 열기</a>`
-            : ""
-        }
-        <button class="btn" id="reopen-homework">전체 보기</button>
-      </div>
-    </article>
-  `;
-
-        // “전체 보기” → 기존 숙제 탭으로 이동
-        document
-          .getElementById("reopen-homework")
-          ?.addEventListener("click", () => {
-            window.open(`/students/${userUuid}/homework`, "_blank");
-          });
-      })();
-
-      // 싱글톤 생성 유틸
-      function ensureEl(id, { className = "", style = "" } = {}) {
-        let el = document.getElementById(id);
-        if (!el) {
-          el = document.createElement("div");
-          el.id = id;
-          if (className) el.className = className;
-          if (style) el.setAttribute("style", style);
-          document.body.appendChild(el);
-        }
-        return el;
-      }
-
-      // 전역 엘리먼트 확보 (없으면 만든다)
-      const overlayEl = ensureEl("overlay", { style: "display:none" });
-      const popover = ensureEl("submission-popover", {
-        className: "details", // ← 반드시 .details
-        style: "display:none; position:absolute;",
-      });
-
-      const streakGrid = document.getElementById("streak-grid");
-
-      // 오늘(mm-dd) 문자열은 매번 계산하지 말고 모듈 전역으로 1회 캐시
-      const TODAY_MMDD = (() => {
-        const kst = new Date().toLocaleString("en-US", {
-          timeZone: "Asia/Seoul",
-        });
-        const d = new Date(kst);
-        return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-          d.getDate()
-        ).padStart(2, "0")}`;
-      })();
-
-      // 초기 active 표시
-      document.addEventListener("DOMContentLoaded", () => {
-        const initialDays = Number("{{ streak_days|default(7) }}");
-        document.querySelectorAll(".streak-btn").forEach((b) => {
-          if (Number(b.dataset.days) === initialDays) b.classList.add("active");
-        });
-      });
-
-      (function hydrateInitialDetails() {
-        document.querySelectorAll(".streak-cell").forEach((cell) => {
-          if (cell.dataset.details) return;
-          const box = cell.querySelector(".details");
-          if (!box) return;
-
-          // ...파싱 로직 동일...
-
-          cell.dataset.details = JSON.stringify(list);
-          box.remove();
-        });
-        // 팝오버가 없던 초기 로드에서도, 이제 전역 팝오버가 보장되어 있음
-      })();
-
-      if (!streakGrid.__bound) {
-        streakGrid.addEventListener("click", (e) => {
-          const cell = e.target.closest(".streak-cell");
-          if (!cell) return;
-
-          const raw = cell.dataset.details;
-          if (!raw) return;
-
-          const list = JSON.parse(raw);
-          const same =
-            popover.__ownerCell === cell && popover.style.display === "block";
-          document.body.appendChild(popover);
-          if (same) {
-            popover.style.display = "none";
-            overlayEl.style.display = "none";
-            popover.__ownerCell = null;
-            return;
-          }
-
-          popover.innerHTML = list.length
-            ? list
-                .map(
-                  (p) => `
-      <div class="prob-item">
-        <a href="http://edu.doingcoding.com/status/${p.server_sub_id}" target="_blank" rel="noopener">
-          ${p.title}
-        </a><br/>(${p.language}, ${p.score}점, ${p.time})
-      </div>
-    `
-                )
-                .join("")
-            : `<div style="padding:8px">제출 내역 없음</div>`;
-
-          const rect = cell.getBoundingClientRect();
-          popover.style.top = `${
-            rect.top + window.scrollY + cell.offsetHeight + 8
-          }px`;
-          popover.style.left = `${rect.left + rect.width / 2}px`;
-          popover.style.transform = "translateX(-50%)";
-          popover.style.display = "block";
-          popover.style.zIndex = "10000"; // overlay(9998)보다 높게
-          popover.style.position = "absolute"; // 바디에 붙었으니 절대좌표
-          overlayEl.style.display = "block";
-          popover.__ownerCell = cell;
-        });
-
-        overlayEl.addEventListener("click", () => {
-          popover.style.display = "none";
-          overlayEl.style.display = "none";
-          popover.__ownerCell = null;
-        });
-
-        streakGrid.__bound = true;
-      }
-
-      (function primeInitialGrid() {
-        const cells = document.querySelectorAll(".streak-cell");
-        if (!cells.length) return;
-
-        cells.forEach((cell) => {
-          const c = Number(cell.dataset.count || 0);
-          let tier = calcTier(c);
-
-          if (tier) cell.dataset.tier = String(tier);
-          if (c >= 10) cell.dataset.milestone = "1";
-        });
-
-        // 오늘 표시도 최초 1회
-        const kst = new Date().toLocaleString("en-US", {
-          timeZone: "Asia/Seoul",
-        });
-        const d = new Date(kst);
-
-        document.querySelectorAll(".streak-cell .date").forEach((el) => {
-          if (el.textContent.trim() === TODAY_MMDD) {
-            el.closest(".streak-cell")?.setAttribute("data-today", "1");
-          }
-        });
-      })();
-
-      // 렌더 함수 (빠름)
-      function renderStreakGrid(streakData) {
-        // 1) 프래그먼트에 누적
-        const frag = document.createDocumentFragment();
-
-        for (const day of streakData) {
-          const c = Number(day.count || 0);
-
-          // tier/milestone 미리 계산
-          let tier = calcTier(c);
-          const milestone = c >= 10 ? "1" : "";
-
-          const cell = document.createElement("div");
-          cell.className = "streak-cell";
-          cell.dataset.count = String(c);
-          if (tier) cell.dataset.tier = String(tier);
-          if (milestone) cell.dataset.milestone = "1";
-          if (day.date === TODAY_MMDD) cell.dataset.today = "1";
-
-          // 보이는 최소 내용만 넣기 (details는 data-*에 JSON 저장)
-          cell.innerHTML = `
-      <div class="date-info">
-        <div class="weekday">${day.weekday}</div>
-        <div class="date">${day.date}</div>
-      </div>
-      <span class="count">${c}</span>
-    `;
-          if (day.details && day.details.length) {
-            cell.dataset.details = JSON.stringify(day.details);
-          }
-
-          frag.appendChild(cell);
-        }
-
-        // 2) 단 한 번에 DOM 교체
-        streakGrid.replaceChildren(frag);
-      }
-
-      // 문제 업데이트 버튼
-      function updateProblems() {
-        const btn = document.getElementById("update-btn");
-        const timeDisplay = document.getElementById("update-time");
-        const originalText = btn.innerHTML;
-
-        btn.disabled = true;
-        btn.innerHTML = "⏳ 업데이트 중...";
-
-        fetch("/update_problems", { method: "POST" })
-          .then((res) => {
-            if (res.ok) {
-              alert("문제 목록이 갱신되었습니다!");
-
-              // 타임스탬프 갱신
-              const now = new Date();
-              const formattedTime = now.toLocaleTimeString("ko-KR", {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              });
-            } else {
-              alert("실패했습니다");
-            }
-            timeDisplay.textContent = `🕒 마지막 업데이트: ${formattedTime}`;
-          })
-          .catch(() => alert("요청 중 오류가 발생했습니다."))
-          .finally(() => {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-          });
-      }
-
-      // 배경 클릭 시 닫기
-      overlayEl.addEventListener("click", () => {
-        popover.style.display = "none";
-        overlayEl.style.display = "none";
-        popover.__ownerCell = null;
-      });
-
-      function calcTier(c) {
-        if (c >= 1 && c <= 2) return 1;
-        if (c <= 4) return 2;
-        if (c <= 7) return 3;
-        if (c <= 12) return 4;
-        if (c >= 13) return 5;
-        return 0;
-      }
-      /*스트릭 가져오기*/
-      // 서버 주입 값(없을 수도 있음)
-      const SERVER_VIEW_MODE = "{{ view_mode|default('') }}";
-      const SERVER_VIEW_USERNAME = "{{ view_username|default('') }}";
-
-      // 경로에서 /user/<username> 추출
-      const m = location.pathname.match(/^\/user\/([^\/]+)/);
-      const PATH_VIEW_MODE = m ? "user" : "me";
-      const PATH_VIEW_USERNAME = m ? decodeURIComponent(m[1]) : "";
-
-      // 최종 값
-      const viewMode = SERVER_VIEW_MODE || PATH_VIEW_MODE;
-      const viewUsername = SERVER_VIEW_USERNAME || PATH_VIEW_USERNAME;
-
-      console.log("viewMode=", viewMode);
-
-      document.addEventListener("click", async (e) => {
-        const btn = e.target.closest(".streak-btn");
-        if (!btn) return;
-
-        e.preventDefault(); // 혹시 모를 submit 방지
-        document
-          .querySelectorAll(".streak-btn")
-          .forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-
-        const days = btn.dataset.days;
-        console.log("viewUsername=", viewUsername, "days=", days);
-
-        try {
-          const url = `/api/streak?viewMode=${viewMode}&viewUsername=${encodeURIComponent(
-            viewUsername
-          )}&days=${days}`;
-          console.log("viewMode: ", viewMode);
-          console.log("[streak] fetching:", url);
-
-          const res = await fetch(url, {
-            headers: { Accept: "application/json" },
-          });
-          if (!res.ok) {
-            const txt = await res.text();
-            console.error("streak api error:", res.status, txt);
-            alert(`API 호출 실패 (${res.status})`);
-            return;
-          }
-          const data = await res.json();
-          if (data.streak_data) {
-            renderStreakGrid(data.streak_data);
-          } else {
-            console.error("payload:", data);
-            alert("스트릭 데이터를 불러오지 못했습니다.");
-          }
-        } catch (err) {
-          console.error("fetch failed:", err);
-          alert("네트워크 오류가 발생했습니다.");
-        }
-      });
-      window.addEventListener("scroll", repositionPopover, { passive: true });
-      window.addEventListener("resize", repositionPopover);
-      function repositionPopover() {
-        if (popover.style.display !== "block" || !popover.__ownerCell) return;
-        const cell = popover.__ownerCell;
-        const rect = cell.getBoundingClientRect();
-        popover.style.top = `${
-          rect.top + window.scrollY + cell.offsetHeight + 8
-        }px`;
-        popover.style.left = `${rect.left + rect.width / 2}px`;
-      }
-
-      // 중앙 텍스트용 Chart.js 커스텀 플러그인
-      function centerTextPlugin(text) {
-        return {
-          id: "centerText",
-          beforeDraw(chart) {
-            const { ctx, chartArea, width, height } = chart;
-
-            if (!chartArea) return; // 아직 렌더링 준비 전이면 그리지 않음
-
-            ctx.save();
-
-            const fontSize = Math.min(width / 10, 20); // responsive size
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            ctx.textBaseline = "middle";
-            ctx.textAlign = "center";
-            ctx.fillStyle = "#444";
-
-            const centerX = (chartArea.left + chartArea.right) / 2;
-            const centerY = (chartArea.top + chartArea.bottom) / 2;
-
-            ctx.fillText(text, centerX, centerY);
-            ctx.restore();
-          },
-        };
-      }
-
-      const progressData = JSON.parse(`{{ progress_data | tojson  }}`);
-      const username = "{{ username }}";
-
-      // 사용자 조회
-      // const form = document.getElementById("search-form");
-      //const input = document.getElementById("username-input");
-      const resultTitle = document.getElementById("result-title");
-      // const container = document.getElementById("charts-container");
-
-      // document.getElementById("result-title").textContent = `${username} 님의 챕터별 진도`;
-      document.getElementById("result-title").style.display = "block";
-
-      const container = document.getElementById("charts-container");
-      container.innerHTML = progressData
-        .map(
-          (item, idx) => `
-            <div class="chart-card" data-href="/user/${encodeURIComponent(
-              username
-            )}/chapter/${encodeURIComponent(item.chapter)}">
-              <canvas id="chart-${idx}" width="160" height="160"></canvas>
-              <p style="margin-top: 12px; font-weight: bold;">${
-                item.chapter
-              }</p>
-            </div>
-          `
-        )
-        .join("");
-
-      document.querySelectorAll(".chart-card").forEach((card) => {
-        card.addEventListener("click", () => {
-          const href = card.dataset.href;
-          if (href) window.location.href = href;
-        });
-      });
-
-      progressData.forEach((item, idx) => {
-        const canvas = document.getElementById(`chart-${idx}`);
-        const ctx = canvas.getContext("2d");
-
-        const gradient = ctx.createLinearGradient(0, 0, 200, 200);
-        if (item.percent === 100)
-          gradient.addColorStop(0, "rgb(142,234,220)"),
-            gradient.addColorStop(1, "rgb(46,147,248)");
-        else if (item.percent >= 80)
-          gradient.addColorStop(0, "rgb(128,240,131)"),
-            gradient.addColorStop(1, "rgb(44,206,190)");
-        else if (item.percent >= 51)
-          gradient.addColorStop(0, "rgb(219,234,134)"),
-            gradient.addColorStop(1, "rgb(50,214,58)");
-        else if (item.percent >= 21)
-          gradient.addColorStop(0, "rgb(236,219,135)"),
-            gradient.addColorStop(1, "rgb(245,151,35)");
-        else if (item.percent >= 1)
-          gradient.addColorStop(0, "rgb(236,167,184)"),
-            gradient.addColorStop(1, "rgb(241,53,35)");
-        else gradient.addColorStop(0, "#ddd"), gradient.addColorStop(1, "#ddd");
-
-        new Chart(ctx, {
-          type: "doughnut",
-          data: {
-            labels: ["완료", "미완료"],
-            datasets: [
-              {
-                data: [item.percent, 100 - item.percent],
-                backgroundColor: [gradient, "#f0f0f0"],
-                borderWidth: 0,
-                borderRadius: 100,
-              },
-            ],
-          },
-          options: {
-            cutout: "85%",
-            responsive: true,
-                  rotation: -Math.PI * 0.75,   // 시작 각도 (왼쪽 위)
-            plugins: {
-              legend: { display: false },
-              tooltip: { enabled: false },
-              title: {
-                display: true,
-                text: `${item.percent}%`,
-                color: "#444",
-                font: { size: 20, weight: "bold" },
-                position: "center",
-              },
-            },
-          },
-          plugins: [centerTextPlugin(`${item.percent}%`)],
-        });
-      });
-    </script>
-  </body>
-</html>
+<!DOCTYPE html>
+
+
+<html lang="en">
+
+
+  <head>
+
+
+    <meta charset="UTF-8" />
+
+
+    <title>진도율 시각화</title>
+
+
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+    
+
+
+    <link
+
+
+      rel="stylesheet"
+
+
+      href="{{ url_for('static', filename='css/fab.css') }}"
+
+
+    />
+
+
+
+
+
+    
+
+
+
+
+
+    <style>
+
+
+  
+
+
+  :root {
+
+
+            
+
+
+        --cell: clamp(20px, 4vw, 68px);
+
+
+        
+
+
+        --gap: 6px;
+
+
+    --page-max-width: 1320px;
+
+
+    --g: 20px;
+
+
+    --bg: #f7f9fc;
+
+
+    --bg-gradient: radial-gradient(1200px 600px at 10% 10%, #e0edff 0%, transparent 60%),
+      radial-gradient(900px 600px at 90% 20%, #e6fff1 0%, transparent 55%),
+      linear-gradient(160deg, #f7f9fc 0%, #f2f6fb 55%, #edf2f8 100%);
+
+
+    --surface: #ffffff;
+
+
+    --surface-soft: #f8fafc;
+
+
+    --surface-subtle: #eef2ff;
+
+
+    --border: #e2e8f0;
+
+
+    --border-strong: #cbd5e1;
+
+
+    --text: #0f172a;
+
+
+    --muted: #64748b;
+
+
+    --accent: #2563eb;
+
+
+      --radius: 16px;
+
+
+    --accent-strong: #2563eb;
+
+
+    --accent-soft: #eff6ff;
+
+
+    --danger: #ef4444;
+
+
+    --radius-md: 12px;
+
+
+    --radius-lg: 16px;
+
+
+    --radius-xl: 20px;
+
+
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+
+
+    --shadow-md: 0 4px 10px rgba(15, 23, 42, 0.12);
+
+
+    --shadow-lg: 0 12px 30px rgba(15, 23, 42, 0.16);
+
+
+  }
+
+
+
+
+
+  *,
+
+
+  *::before,
+
+
+  *::after {
+
+
+    box-sizing: border-box;
+
+
+  }
+
+
+
+
+
+  body {
+
+
+    margin: 0;
+
+
+    min-height: 100vh;
+
+
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+
+
+      "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+
+
+    background: var(--bg-gradient);
+
+
+    color: var(--text);
+
+
+  }
+
+
+
+
+
+  
+
+
+  body > header,
+
+
+  .viz-2col,
+
+
+  .streak-header,
+
+
+  .streak-container,
+
+
+  #charts-container,
+
+
+  footer {
+
+
+    max-width: var(--page-max-width);
+
+
+    margin: 0 auto;
+
+
+    padding: 0 16px;
+
+
+  }
+
+
+
+
+
+  a {
+
+
+    color: var(--accent-strong);
+
+
+    text-decoration: none;
+
+
+  }
+
+
+  a:hover {
+
+
+    text-decoration: underline;
+
+
+  }
+
+
+
+
+
+  
+
+
+
+
+
+  header.page-header {
+
+
+    padding-top: 20px;
+
+
+    padding-bottom: 8px;
+
+
+    display: flex;
+
+
+    flex-wrap: wrap;
+
+
+    align-items: flex-end;
+
+
+    justify-content: space-between;
+
+
+    gap: 16px;
+
+
+      border-radius: var(--radius);
+
+
+    background: var(--surface);
+
+
+    border: 1px solid var(--border);  
+
+
+  }
+
+
+
+
+
+  .header-left {
+
+
+    display: flex;
+
+
+    flex-direction: column;
+
+
+    gap: 6px;
+
+
+  }
+
+
+
+
+
+  .brand-link {
+
+
+    text-decoration: none;
+
+
+    color: inherit;
+
+
+  }
+
+
+
+
+
+  .page-title {
+
+
+    margin: 0;
+
+
+    font-size: clamp(1.6rem, 2.3vw, 2rem);
+
+
+    font-weight: 800;
+
+
+    letter-spacing: -0.02em;
+
+
+  }
+
+
+
+
+
+  .page-subtitle {
+
+
+    margin: 0;
+
+
+    font-size: 0.95rem;
+
+
+    color: var(--muted);
+
+
+  }
+
+
+
+
+
+  .header-actions {
+
+
+    display: flex;
+
+
+    flex-direction: column;
+
+
+    align-items: flex-end;
+
+
+    gap: 8px;
+
+
+  }
+
+
+
+
+
+  #search-form {
+
+
+    margin: 0;
+
+
+  }
+
+
+
+
+
+  .search-wrapper {
+
+
+    display: flex;
+
+
+    align-items: center;
+
+
+    gap: 8px;
+
+
+    padding: 4px;
+
+
+    border-radius: 999px;
+
+
+    background: var(--surface);
+
+
+    border: 1px solid var(--border);
+
+
+    box-shadow: var(--shadow-sm);
+
+
+  }
+
+
+
+
+
+  #username-input {
+
+
+    flex: 1;
+
+
+    min-width: 0;
+
+
+    border: none;
+
+
+    background: transparent;
+
+
+    padding: 8px 10px;
+
+
+    outline: none;
+
+
+    font-size: 0.9rem;
+
+
+  }
+
+
+
+
+
+  #username-input::placeholder {
+
+
+    color: var(--muted);
+
+
+  }
+
+
+
+
+
+  #search-btn {
+
+
+    border: none;
+
+
+    border-radius: 999px;
+
+
+    padding: 8px 10px;
+
+
+    background: var(--accent);
+
+
+    display: inline-flex;
+
+
+    align-items: center;
+
+
+    justify-content: center;
+
+
+    cursor: pointer;
+
+
+  }
+
+
+
+
+
+  #search-btn img {
+
+
+    display: block;
+
+
+    width: 20px;
+
+
+    height: 20px;
+
+
+    filter: brightness(0) invert(1);
+
+
+  }
+
+
+
+
+
+  #search-btn:hover {
+
+
+    background: var(--accent-strong);
+
+
+  }
+
+
+
+
+
+  .autocomplete-box {
+
+
+    position: absolute;
+
+
+    margin-top: 36px;
+
+
+    list-style: none;
+
+
+    padding: 4px 0;
+
+
+    border-radius: 12px;
+
+
+    background: var(--surface);
+
+
+    border: 1px solid var(--border);
+
+
+    box-shadow: var(--shadow-md);
+
+
+    max-height: 220px;
+
+
+    overflow-y: auto;
+
+
+    width: 220px;
+
+
+    z-index: 20;
+
+
+  }
+
+
+
+
+
+  .autocomplete-box li {
+
+
+    padding: 6px 10px;
+
+
+    font-size: 0.85rem;
+
+
+    cursor: pointer;
+
+
+  }
+
+
+
+
+
+  .autocomplete-box li:hover {
+
+
+    background: var(--accent-soft);
+
+
+  }
+
+
+
+
+
+  .btn-secondary {
+
+
+    appearance: none;
+
+
+    border-radius: 999px;
+
+
+    border: 1px solid var(--border);
+
+
+    background: var(--surface-soft);
+
+
+    padding: 6px 12px;
+
+
+    font-size: 0.85rem;
+
+
+    font-weight: 500;
+
+
+    color: var(--text);
+
+
+    display: inline-flex;
+
+
+    align-items: center;
+
+
+    gap: 6px;
+
+
+    cursor: pointer;
+
+
+    text-decoration: none;
+
+
+  }
+
+
+
+
+
+  .btn-secondary:hover {
+
+
+    background: var(--surface-subtle);
+
+
+  }
+
+
+
+
+
+  
+
+
+  .fab-container {
+
+
+    position: fixed;
+
+
+    right: 24px;
+
+
+    bottom: 24px;
+
+
+    display: flex;
+
+
+    flex-direction: column;
+
+
+    gap: 10px;
+
+
+    z-index: 50;
+
+
+  }
+
+
+
+
+
+  
+
+
+
+
+
+  .viz-2col {
+
+
+    display: grid;
+
+
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+
+
+    gap: var(--g);
+
+
+    margin-top: 12px;
+
+
+    margin-bottom: 20px;
+
+
+  }
+
+
+
+
+
+  @media (max-width: 960px) {
+
+
+    .viz-2col {
+
+
+      grid-template-columns: 1fr;
+
+
+    }
+
+
+  }
+
+
+
+
+
+  
+
+
+  .chart-card,
+
+
+  #latest-homework .card {
+
+
+    background: var(--surface);
+
+
+    border-radius: var(--radius-lg);
+
+
+    border: 1px solid var(--border);
+
+
+    box-shadow: var(--shadow-md);
+
+
+  }
+
+
+
+
+
+  
+
+
+  #profile-container {
+
+
+    padding: 18px 18px 20px;
+
+
+  }
+
+
+
+
+
+  #profile-container h2 {
+
+
+    margin: 8px 0 4px;
+
+
+    font-size: 1.1rem;
+
+
+  }
+
+
+
+
+
+  #profile-container p {
+
+
+    margin: 2px 0;
+
+
+    font-size: 0.85rem;
+
+
+    color: var(--muted);
+
+
+  }
+
+
+
+
+
+  .chip {
+
+
+    display: inline-flex;
+
+
+    align-items: center;
+
+
+    padding: 3px 8px;
+
+
+    border-radius: 999px;
+
+
+    font-size: 0.75rem;
+
+
+    font-weight: 500;
+
+
+  }
+
+
+
+
+
+  .chip-role {
+
+
+    background: var(--surface-soft);
+
+
+    color: var(--text);
+
+
+    border: 1px solid var(--border);
+
+
+  }
+
+
+
+
+
+  .chip-lang {
+
+
+    background: var(--accent-soft);
+
+
+    color: var(--accent-strong);
+
+
+    border: 1px solid rgba(96, 165, 250, 0.5);
+
+
+  }
+
+
+
+
+
+
+
+
+.chip-action {
+
+
+  background: var(--accent);
+
+
+  color: #fff;
+
+
+  padding: 6px 12px;
+
+
+  border-radius: 16px;
+
+
+  text-decoration: none;
+
+
+  font-size: 12px;
+
+
+  display: inline-flex;
+
+
+  align-items: center;
+
+
+  gap: 4px;
+
+
+}
+
+
+.chip-action:hover {
+
+
+  filter: brightness(1.05);
+
+
+}
+
+
+
+
+
+  #profile-stats {
+
+
+    display: grid;
+
+
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+
+    gap: 12px;
+
+
+    margin-top: 16px;
+
+
+  }
+
+
+  .stat-value {
+
+
+  font-size: 18px;
+
+
+  font-weight: 700;
+
+
+  color: var(--accent); 
+
+
+}
+
+
+.stat-label {
+
+
+  font-size: 13px;
+
+
+  color: var(--muted);
+
+
+}
+
+
+  #profile-stats div > div:first-child {
+
+
+    font-size: 1.1rem;
+
+
+    font-weight: 700;
+
+
+    color: var(--accent-strong) !important;
+
+
+  }
+
+
+
+
+
+  #profile-stats div > div:last-child {
+
+
+    font-size: 0.8rem;
+
+
+    color: var(--muted);
+
+
+  }
+
+
+
+
+
+  
+
+
+
+
+
+  #latest-homework {
+
+
+    align-self: stretch;
+
+
+  }
+
+
+
+
+
+  #latest-homework .card {
+
+
+    padding: 16px 18px 18px;
+
+
+  }
+
+
+
+
+
+  #latest-homework .card-head {
+
+
+    display: flex;
+
+
+    justify-content: space-between;
+
+
+    align-items: flex-start;
+
+
+    gap: 8px;
+
+
+    margin-bottom: 10px;
+
+
+  }
+
+
+
+
+
+  #latest-homework .card-title {
+
+
+    font-weight: 600;
+
+
+    font-size: 0.98rem;
+
+
+  }
+
+
+
+
+
+  #latest-homework .badge {
+
+
+    font-size: 0.7rem;
+
+
+    border-radius: 999px;
+
+
+    padding: 2px 8px;
+
+
+    background: var(--accent-soft);
+
+
+    color: var(--accent-strong);
+
+
+  }
+
+
+
+
+
+  #latest-homework .progress {
+
+
+    position: relative;
+
+
+    margin-top: 10px;
+
+
+    height: 8px;
+
+
+    border-radius: 999px;
+
+
+    background: #e5e7eb;
+
+
+    overflow: hidden;
+
+
+  }
+
+
+
+
+
+  #latest-homework .progress-fill {
+
+
+    position: absolute;
+
+
+    inset: 0;
+
+
+    width: 0%;
+
+
+    background: linear-gradient(90deg, #60a5fa, #22c55e);
+
+
+    transition: width 0.3s ease;
+
+
+  }
+
+
+
+
+
+  #latest-homework .progress-text {
+
+
+    margin-top: 4px;
+
+
+    font-size: 0.78rem;
+
+
+    color: var(--muted);
+
+
+  }
+
+
+
+
+
+  #latest-homework ul {
+
+
+    list-style: none;
+
+
+    margin: 10px 0 0;
+
+
+    padding: 0;
+
+
+  }
+
+
+
+
+
+  #latest-homework .problem-row {
+
+
+    display: flex;
+
+
+    align-items: flex-start;
+
+
+    gap: 8px;
+
+
+    padding: 6px 0;
+
+
+    border-bottom: 1px dashed #e5e7eb;
+
+
+    font-size: 0.85rem;
+
+
+  }
+
+
+
+
+
+  #latest-homework .problem-row:last-child {
+
+
+    border-bottom: none;
+
+
+  }
+
+
+
+
+
+  #latest-homework .problem-row .mark {
+
+
+    width: 18px;
+
+
+    text-align: center;
+
+
+  }
+
+
+
+
+
+  #latest-homework .problem-row .title {
+
+
+    flex: 1;
+
+
+  }
+
+
+
+
+
+  #latest-homework .problem-row code {
+
+
+    font-size: 0.75rem;
+
+
+    color: var(--muted);
+
+
+  }
+
+
+
+
+
+  #latest-homework .problem-row.passed {
+
+
+    background: rgba(34, 197, 94, 0.06);
+
+
+  }
+
+
+
+
+
+  #latest-homework .problem-row.passed .title {
+
+
+    color: #166534;
+
+
+  }
+
+
+
+
+
+  #latest-homework .problem-row.wrong {
+
+
+    background: rgba(248, 113, 113, 0.06);
+
+
+  }
+
+
+
+
+
+  #latest-homework .problem-row.wrong .title {
+
+
+    color: #b91c1c;
+
+
+  }
+
+
+
+
+
+  #latest-homework .problem-row.pending {
+
+
+    opacity: 0.9;
+
+
+  }
+
+
+
+
+
+  #latest-homework .meta {
+
+
+    margin-top: 8px;
+
+
+    font-size: 0.78rem;
+
+
+    color: var(--muted);
+
+
+  }
+
+
+
+
+
+  #latest-homework .meta a {
+
+
+    color: var(--accent-strong);
+
+
+  }
+
+
+
+
+
+  #latest-homework .actions {
+
+
+    margin-top: 10px;
+
+
+    display: flex;
+
+
+    gap: 8px;
+
+
+    flex-wrap: wrap;
+
+
+  }
+
+
+
+
+
+  #latest-homework .btn {
+
+
+    border-radius: 999px;
+
+
+    border: 1px solid var(--border);
+
+
+    background: var(--surface-soft);
+
+
+    padding: 6px 10px;
+
+
+    font-size: 0.8rem;
+
+
+    cursor: pointer;
+
+
+  }
+
+
+
+
+
+  #latest-homework .btn.primary {
+
+
+    border-color: var(--accent);
+
+
+    background: var(--accent);
+
+
+    color: #fff;
+
+
+  }
+
+
+
+
+
+  #latest-homework .btn:hover {
+
+
+    background: var(--accent-soft);
+
+
+  }
+
+
+
+
+
+  #latest-homework .card.skeleton .card-title {
+
+
+    position: relative;
+
+
+    color: transparent;
+
+
+  }
+
+
+
+
+
+  #latest-homework .card.skeleton .card-title::after {
+
+
+    content: "";
+
+
+    display: block;
+
+
+    height: 16px;
+
+
+    border-radius: 6px;
+
+
+    background: linear-gradient(90deg, #e5e7eb, #f9fafb, #e5e7eb);
+
+
+    animation: skeleton-pulse 1.2s ease-in-out infinite;
+
+
+  }
+
+
+
+
+
+  @keyframes skeleton-pulse {
+
+
+    0% {
+
+
+      transform: translateX(-20%);
+
+
+      opacity: 0.6;
+
+
+    }
+
+
+    50% {
+
+
+      transform: translateX(0);
+
+
+      opacity: 1;
+
+
+    }
+
+
+    100% {
+
+
+      transform: translateX(20%);
+
+
+      opacity: 0.6;
+
+
+    }
+
+
+  }
+
+
+
+
+
+  
+
+
+
+
+
+  .streak-header {
+
+
+    display: flex;
+
+
+    align-items: center;
+
+
+    justify-content: space-between;
+
+
+    margin-top: 4px;
+
+
+    margin-bottom: 8px;
+
+
+  }
+
+
+
+
+
+  .streak-title {
+
+
+    font-weight: 600;
+
+
+    font-size: 0.95rem;
+
+
+    color: var(--muted);
+
+
+  }
+
+
+
+
+
+  .streak-controls {
+
+
+    display: inline-flex;
+
+
+    gap: 4px;
+
+
+  }
+
+
+
+
+
+  .streak-btn {
+
+
+    border-radius: 999px;
+
+
+    border: 1px solid var(--border);
+
+
+    background: var(--surface);
+
+
+    padding: 4px 8px;
+
+
+    font-size: 0.78rem;
+
+
+    cursor: pointer;
+
+
+  }
+
+
+
+
+
+  .streak-btn.active,
+
+
+  .streak-btn:focus {
+
+
+    border-color: var(--accent);
+
+
+    background: var(--accent-soft);
+
+
+  }
+
+
+
+
+
+.streak-container {
+
+
+  position: relative;
+
+
+  z-index: 2;
+
+
+
+
+
+   max-width: 800px;
+
+
+           margin: 12px auto;
+
+
+        padding: 10px;
+
+
+
+
+
+  background: rgba(255, 255, 255, 0.9);
+
+
+  backdrop-filter: none;
+
+
+  border-radius: 18px;
+
+
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+
+
+}
+
+
+
+
+
+
+
+
+.streak-grid {
+
+
+  display: grid;
+
+
+  gap: var(--gap);
+
+
+  grid-template-columns: repeat(7, minmax(0, 1fr)); 
+
+
+  width: 100%;
+
+
+  justify-items: stretch;
+
+
+}
+
+
+
+
+
+@media (max-width: 960px) {
+
+
+  .streak-grid {
+
+
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+
+  }
+
+
+}
+
+
+
+
+
+@media (max-width: 640px) {
+
+
+  .streak-grid {
+
+
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+
+  }
+
+
+}
+
+
+
+
+
+
+
+
+.streak-cell {
+
+
+  
+
+
+  min-height: 140px;
+
+
+  padding: 10px 8px;
+
+
+  border-radius: var(--radius);
+
+
+  border: 1px solid var(--border);
+
+
+  background: var(--bg-0);
+
+
+  position: relative;
+
+
+  outline: 0 solid transparent;
+
+
+  transition: transform 0.12s ease, box-shadow 0.2s ease,
+
+
+    outline-color 0.2s ease;
+
+
+
+
+
+  display: flex;
+
+
+  flex-direction: column;    
+
+
+  justify-content: space-between;
+
+
+  align-items: center;
+
+
+  text-align: center;
+
+
+  box-sizing: border-box;
+
+
+}
+
+
+
+
+
+
+
+
+.streak-cell:hover {
+
+
+  transform: translateY(-3px);
+
+
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+  .date-info {
+
+
+    display: flex;
+
+
+    justify-content: space-between;
+
+
+    align-items: baseline;
+
+
+    font-size: 0.75rem;
+
+
+    color: var(--muted);
+
+
+  }
+
+
+
+
+
+  .weekday {
+
+
+    font-weight: 500;
+
+
+  }
+
+
+
+
+
+  .date {
+
+
+    font-weight: 600;
+
+
+  }
+
+
+
+
+
+  .count {
+
+
+    margin-top: 6px;
+
+
+    font-weight: 700;
+
+
+    font-size: 0.9rem;
+
+
+  }
+
+
+
+
+
+  .streak-cell[data-tier="1"] {
+
+
+    background: #e5f3ff;
+
+
+    border-color: #dbeafe;
+
+
+  }
+
+
+  .streak-cell[data-tier="2"] {
+
+
+    background: #dbeafe;
+
+
+    border-color: #bfdbfe;
+
+
+  }
+
+
+  .streak-cell[data-tier="3"] {
+
+
+    background: #bfdbfe;
+
+
+    border-color: #a5b4fc;
+
+
+  }
+
+
+  .streak-cell[data-tier="4"] {
+
+
+    background: #a5b4fc;
+
+
+    border-color: #818cf8;
+
+
+    color: #111827;
+
+
+  }
+
+
+  .streak-cell[data-tier="5"] {
+
+
+    background: #818cf8;
+
+
+    border-color: #4f46e5;
+
+
+    color: #f9fafb;
+
+
+  }
+
+
+
+
+
+  .streak-cell[data-today="1"] {
+
+
+    box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.6);
+
+
+  }
+
+
+
+
+
+  
+
+
+  #overlay {
+
+
+    position: fixed;
+
+
+    inset: 0;
+
+
+    background: rgba(15, 23, 42, 0.35);
+
+
+    backdrop-filter: blur(2px);
+
+
+    z-index: 40;
+
+
+  }
+
+
+
+
+
+  .details {
+
+
+    background: var(--surface);
+
+
+    border-radius: var(--radius-md);
+
+
+    border: 1px solid var(--border);
+
+
+    box-shadow: var(--shadow-lg);
+
+
+    padding: 10px 12px;
+
+
+    max-width: 320px;
+
+
+    font-size: 0.8rem;
+
+
+  }
+
+
+
+
+
+  .prob-item {
+
+
+    padding: 4px 0;
+
+
+    border-bottom: 1px dashed #e5e7eb;
+
+
+  }
+
+
+
+
+
+  .prob-item:last-child {
+
+
+    border-bottom: none;
+
+
+  }
+
+
+
+
+
+
+
+
+
+
+
+#result-title {
+
+
+  max-width: var(--page-max-width);
+
+
+  margin: 0 auto 8px;
+
+
+  padding: 0 16px;
+
+
+  font-size: 1rem;
+
+
+  font-weight: 600;
+
+
+}
+
+
+
+
+
+
+
+
+#charts-container {
+
+
+  margin: 12px auto 24px;
+
+
+  
+
+
+  display: grid;
+
+
+  grid-template-columns: repeat(
+
+
+    auto-fit,
+
+
+    minmax(220px, 1fr)
+
+
+  ); 
+
+
+  gap: 16px;
+
+
+}
+
+
+
+
+
+
+
+
+@media (max-width: 640px) {
+
+
+  #charts-container {
+
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+
+  }
+
+
+}
+
+
+
+
+
+.chart-card {
+
+
+  padding: 14px 14px 16px;
+
+
+  border-radius: var(--radius-lg);
+
+
+  border: 1px solid var(--border);
+
+
+  background: var(--surface);
+
+
+  box-shadow: var(--shadow-md);
+
+
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+
+
+}
+
+
+
+
+
+#charts-container .chart-card {
+
+
+  display: flex;
+
+
+  flex-direction: column;
+
+
+  align-items: center;
+
+
+  text-align: center;
+
+
+  cursor: pointer;
+
+
+}
+
+
+
+
+
+#charts-container .chart-card:hover {
+
+
+  transform: translateY(-2px);
+
+
+  box-shadow: var(--shadow-lg);
+
+
+}
+
+
+
+
+
+
+
+
+  #charts-container .chart-card:hover {
+
+
+    transform: translateY(-2px);
+
+
+    box-shadow: var(--shadow-lg);
+
+
+  }
+
+
+
+
+
+  .label {
+
+
+    font-size: 0.78rem;
+
+
+    color: var(--muted);
+
+
+  }
+
+
+
+
+
+  .meta {
+
+
+    font-size: 0.78rem;
+
+
+    color: var(--muted);
+
+
+  }
+
+
+
+
+
+  
+
+
+
+
+
+  footer {
+
+
+    padding: 20px 16px 32px;
+
+
+    text-align: center;
+
+
+  }
+
+
+
+
+
+  .footer-btn {
+
+
+    margin: 4px 6px;
+
+
+    border-radius: 999px;
+
+
+    border: 1px solid var(--border);
+
+
+    background: var(--surface);
+
+
+    padding: 8px 14px;
+
+
+    font-size: 0.85rem;
+
+
+    cursor: pointer;
+
+
+  }
+
+
+
+
+
+  .footer-btn:hover {
+
+
+    background: var(--accent-soft);
+
+
+  }
+
+
+
+
+
+  @media (max-width: 640px) {
+
+
+    header.page-header {
+
+
+      align-items: flex-start;
+
+
+    }
+
+
+    .header-actions {
+
+
+      align-items: flex-start;
+
+
+    }
+
+
+    .fab-container {
+
+
+      right: 16px;
+
+
+      bottom: 16px;
+
+
+    }
+
+
+  }
+
+
+</style>
+
+
+
+
+
+  </head>
+
+
+
+
+
+  <body>
+
+
+    <div id="overlay" aria-hidden="true" style="display: none"></div>
+
+
+    <div
+
+
+      id="submission-popover"
+
+
+      class="details"
+
+
+      role="dialog"
+
+
+      style="display: none"
+
+
+    ></div>
+
+
+    <div
+
+
+      id="submission-popover"
+
+
+      style="display: none; position: absolute; z-index: 1001"
+
+
+      class="details"
+
+
+    ></div>
+
+
+    
+
+
+
+
+
+    <header class="page-header">
+      <div class="header-left">
+        <a href="/" class="brand-link">
+          <h1 class="page-title">진도율 시각화</h1>
+        </a>
+        <p class="page-subtitle">
+          Track student progress and manage homework in one unified dashboard.
+        </p>
+        <a href="/schedule" class="btn-secondary">View schedule</a>
+      </div>
+
+      <div class="header-actions">
+        <form id="search-form" method="POST" action="/">
+          <div class="search-wrapper">
+            <input
+              type="text"
+              id="username-input"
+              name="username"
+              placeholder="Search student by name"
+              required
+            />
+            <ul id="autocomplete-list" class="autocomplete-box"></ul>
+            <button type="submit" id="search-btn">
+              <img
+                src="/static/search-icon.png"
+                alt="Search"
+                width="30"
+                height="auto"
+              />
+            </button>
+          </div>
+        </form>
+      </div>
+    </header>
+
+
+
+
+
+
+
+
+    <div class="fab-container">
+      <div
+        class="fab fab-refresh"
+        title="Refresh progress"
+        onclick="refreshUserProgress('{{ username }}')"
+      >
+        🔃
+      </div>
+      <div
+        class="fab fab-back"
+        title="Back to list"
+        onclick="goToParentPage()"
+      >
+        🔙
+      </div>
+    </div>
+
+    <div class="viz-2col">
+
+
+      <aside id="profile-container" class="chart-card">
+
+
+        <img
+
+
+          src="{{ avatar_path }}"
+
+
+          alt="User Avatar"
+
+
+          width="100"
+
+
+          height="100"
+
+
+          style="border-radius: 50%; margin-bottom: 12px"
+
+
+        />
+
+
+        <h2 style="margin: 8px 0 4px">
+
+
+          {{ username }}
+
+
+          <br />
+
+
+          <span class="chip chip-role {{ 'admin' if is_admin else 'user' }}"
+
+
+            >{{ role_label }}</span
+
+
+          >
+
+
+          {% if primary_lang %}
+
+
+          <span
+
+
+            class="chip chip-lang"
+
+
+            title="Top languages: {% for l,c in primary_lang_top3 %}{{ l }} {{ c }}{% if not loop.last %}, {% endif %}{% endfor %}"
+          >주사용 언어: {{ primary_lang }}</span>
+
+
+          {% endif %}
+
+
+        </h2>
+
+
+
+
+
+        
+
+
+        <div style="margin: 8px 0">
+
+
+          <a
+
+
+            href="{{ url_for('view_homework_logs', user_uuid=user_uuid) }}"
+
+
+            class="chip chip-action"
+
+
+          >View homework logs</a>
+
+
+        </div>
+
+
+
+
+
+
+
+
+        <p style="margin: 2px 0; font-weight: 600">Last login: {{ last_login }}</p>
+
+
+
+
+
+        <div id="profile-stats">
+
+
+          <div>
+
+
+            <div class="stat-value">
+
+
+              {{ accepted_number }}
+
+
+            </div>
+
+
+            <div class="stat-label">Accepted problems</div>
+
+
+          </div>
+
+
+          <div>
+
+
+            <div class="stat-value">
+
+
+              {{ submission_number }}
+
+
+            </div>
+
+
+            <div class="stat-label">Submissions</div>
+
+
+          </div>
+
+
+          <div>
+
+
+            <div class="stat-value">
+
+
+              {{ total_score }}
+
+
+            </div>
+
+
+            <div class="stat-label">Total score</div>
+
+
+          </div>
+
+
+        </div>
+
+
+
+
+
+      </aside>
+
+
+      <section id="latest-homework">
+
+
+        <div class="card skeleton">
+
+
+          <div class="card-head">
+
+
+            <div class="card-title">Latest homework progress</div>
+
+
+          </div>
+
+
+          <div class="progress">
+
+
+            <div class="progress-fill" style="width: 0%"></div>
+
+
+            <div class="progress-text">-</div>
+
+
+          </div>
+
+
+        </div>
+
+
+      </section>
+
+
+    </div>
+
+
+
+
+
+    <div class="streak-header">
+
+
+      <div class="streak-title"></div>
+
+
+      <div class="streak-controls">
+
+
+        <button class="streak-btn" data-days="7">7 days</button>
+
+
+        <button class="streak-btn" data-days="30">30 days</button>
+
+
+        <button class="streak-btn" data-days="90">90 days</button>
+
+
+      </div>
+
+
+    </div>
+
+
+
+
+
+    <div class="streak-container">
+
+
+      <div id="streak-grid" class="streak-grid">
+
+
+        {% for day in streak_data %}
+
+
+        <div
+
+
+          class="streak-cell"
+
+
+          data-count="{{ day.count }}"
+
+
+          {%
+
+
+          if
+
+
+          day.details
+
+
+          %}
+
+
+          data-details="{{ day.details | tojson | forceescape }}"
+
+
+          {%
+
+
+          endif
+
+
+          %}
+
+
+        >
+
+
+          <div class="date-info">
+
+
+            <div class="weekday">{{ day.weekday }}</div>
+
+
+            <div class="date">{{ day.date }}</div>
+
+
+          </div>
+
+
+          <span class="count">{{ day.count }}</span>
+
+
+
+
+
+          
+
+
+        </div>
+
+
+        {% endfor %}
+
+
+      </div>
+
+
+    </div>
+
+
+
+
+
+    <h2 id="result-title" style="display: none"></h2>
+
+
+
+
+
+    <div id="charts-container"></div>
+
+
+
+
+
+    <footer style="padding: 20px; text-align: center">
+
+
+      <button id="update-btn" class="footer-btn" onclick="updateProblems()">Refresh problem list</button>
+
+
+      
+
+
+      
+
+
+      <div
+
+
+        id="update-time"
+
+
+        style="margin-top: 10px; font-size: 14px; color: var(--muted)"
+
+
+      ></div>
+
+
+
+
+
+      <a class="footer-btn" href="/logout">Sign out</a>
+
+      <button class="footer-btn" onclick="fetch('/clear_data').then(() => alert('Local data cleared.'))">Clear local data</button>
+
+
+    </footer>
+
+
+    
+
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+
+
+
+
+    <script>
+
+
+      (async function mountLatestHomeworkCard() {
+
+
+        const userUuid = "{{ user_uuid }}";
+
+
+        try {
+
+
+          const ttlMs = 60_000;
+
+
+          const first = await fetch(
+
+
+            `/api/students/${userUuid}/homework_status`
+
+
+          ).then((r) => r.json());
+
+
+          const updatedAt = first.updated_at ? Date.parse(first.updated_at) : 0;
+
+
+          if (!updatedAt || Date.now() - updatedAt > ttlMs) {
+
+
+            await fetch(`/api/students/${userUuid}/refresh`, {
+
+
+              method: "POST",
+
+
+            });
+
+
+          }
+
+
+        } catch (e) {}
+
+
+
+        const data = await fetch(`/api/students/${userUuid}/homework_latest`)
+
+
+          .then((r) => r.json())
+
+
+          .catch(() => ({}));
+
+
+        const host = document.querySelector("#latest-homework");
+
+
+        if (!host) return;
+
+
+
+
+
+        if (!data || !data.ok || !data.log) {
+          host.innerHTML = `<div class="card"><div class="card-title">No homework found.</div></div>`;
+          return;
+        }
+
+
+
+
+
+        const { log } = data;
+
+
+        const pct = log.counts.total
+
+
+          ? Math.round((log.counts.passed / log.counts.total) * 100)
+
+
+          : 0;
+
+
+
+        const statusByLegacy = Object.fromEntries(
+
+
+          (log.problem_status || []).map((p) => [p.legacy_code, p.status])
+
+
+        );
+
+
+        const statusById = Object.fromEntries(
+
+
+          (log.problem_status || []).map((p) => [
+
+
+            String(p.server_problem_id),
+
+
+            p.status,
+
+
+          ])
+
+
+        );
+
+
+
+
+
+        const problemLis = (log.problems || [])
+
+
+          .map((p) => {
+
+
+            const st = p.legacy_code
+
+
+              ? statusByLegacy[p.legacy_code]
+
+
+              : statusById[String(p.server_problem_id)];
+
+
+            const icon = st === "passed" ? "✅" : st === "⚠️" ? "❌" : "-";
+
+
+            const cls = st || "pending";
+
+
+            const code = p.legacy_code
+
+
+              ? `<code>${p.legacy_code}</code>`
+
+
+              : p.server_problem_id
+
+
+              ? `<code>#${p.server_problem_id}</code>`
+
+
+              : "";
+
+
+            const title = p.title || p.title_at_issue || "";
+
+
+            return `<li class="problem-row ${cls}" data-legacy-code="${
+
+
+              p.legacy_code || ""
+
+
+            }" data-server-problem-id="${p.server_problem_id || ""}">
+
+
+      <span class="mark">${icon}</span> ${code} <span class="title">${title}</span>
+
+
+    </li>`;
+
+
+          })
+
+
+          .join("");
+
+
+
+
+
+        host.innerHTML = `
+    <article class="card" data-log-id="${log.key || ""}" data-id="${log.id || ""}">
+      <div class="card-head" style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="card-title">${log.title || "Untitled homework"}</div>
+        <span class="badge">${(log.channel || "kakao").toUpperCase()}</span>
+      </div>
+
+      <div class="progress">
+        <div><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="progress-text">Passed ${log.counts.passed} | Wrong ${log.counts.wrong} | Pending ${log.counts.pending}</div>
+      </div>
+
+      <div class="meta" style="font-size:.9rem; color:var(--muted); display:flex; gap:12px; flex-wrap:wrap;">
+        <span>Assigned: <span class="ts" data-iso="${log.ts}">${log.ts || "-"}</span></span>
+        ${
+          log.due_at
+            ? `<span>Due: <span class="ts" data-iso="${log.due_at}">${log.due_at}</span></span>`
+            : ""
+        }
+        ${
+          log.url
+            ? `<span>Link: <a href="${log.url}" target="_blank" rel="noopener">${log.url}</a></span>`
+            : ""
+        }
+      </div>
+
+      ${
+        log.problems && log.problems.length
+          ? `<ol class="problems">${problemLis}</ol>`
+          : ""
+      }
+
+      <div class="actions" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+        ${
+          log.url
+            ? `<a class="btn" href="${log.url}" target="_blank" rel="noopener">Open homework link</a>`
+            : ""
+        }
+        <button class="btn" id="reopen-homework">View all homework</button>
+      </div>
+    </article>
+  `;
+
+
+
+        document
+
+
+          .getElementById("reopen-homework")
+
+
+          ?.addEventListener("click", () => {
+
+
+            window.open(`/students/${userUuid}/homework`, "_blank");
+
+
+          });
+
+
+      })();
+
+
+
+      function ensureEl(id, { className = "", style = "" } = {}) {
+
+
+        let el = document.getElementById(id);
+
+
+        if (!el) {
+
+
+          el = document.createElement("div");
+
+
+          el.id = id;
+
+
+          if (className) el.className = className;
+
+
+          if (style) el.setAttribute("style", style);
+
+
+          document.body.appendChild(el);
+
+
+        }
+
+
+        return el;
+
+
+      }
+
+
+
+      const overlayEl = ensureEl("overlay", { style: "display:none" });
+
+
+      const popover = ensureEl("submission-popover", {
+
+
+        className: "details",
+
+
+        style: "display:none; position:absolute;",
+
+
+      });
+
+
+
+
+
+      const streakGrid = document.getElementById("streak-grid");
+
+
+
+      const TODAY_MMDD = (() => {
+
+
+        const kst = new Date().toLocaleString("en-US", {
+
+
+          timeZone: "Asia/Seoul",
+
+
+        });
+
+
+        const d = new Date(kst);
+
+
+        return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+
+
+          d.getDate()
+
+
+        ).padStart(2, "0")}`;
+
+
+      })();
+
+
+
+      document.addEventListener("DOMContentLoaded", () => {
+
+
+        const initialDays = Number("{{ streak_days|default(7) }}");
+
+
+        document.querySelectorAll(".streak-btn").forEach((b) => {
+
+
+          if (Number(b.dataset.days) === initialDays) b.classList.add("active");
+
+
+        });
+
+
+      });
+
+
+
+
+
+      (function hydrateInitialDetails() {
+
+
+        document.querySelectorAll(".streak-cell").forEach((cell) => {
+
+
+          if (cell.dataset.details) return;
+
+
+          const box = cell.querySelector(".details");
+
+
+          if (!box) return;
+
+
+
+
+
+
+          cell.dataset.details = JSON.stringify(list);
+
+
+          box.remove();
+
+
+        });
+
+
+
+      })();
+
+
+
+
+
+      if (!streakGrid.__bound) {
+
+
+        streakGrid.addEventListener("click", (e) => {
+
+
+          const cell = e.target.closest(".streak-cell");
+
+
+          if (!cell) return;
+
+
+
+
+
+          const raw = cell.dataset.details;
+
+
+          if (!raw) return;
+
+
+
+
+
+          const list = JSON.parse(raw);
+
+
+          const same =
+
+
+            popover.__ownerCell === cell && popover.style.display === "block";
+
+
+          document.body.appendChild(popover);
+
+
+          if (same) {
+
+
+            popover.style.display = "none";
+
+
+            overlayEl.style.display = "none";
+
+
+            popover.__ownerCell = null;
+
+
+            return;
+
+
+          }
+
+
+
+
+
+          popover.innerHTML = list.length
+
+
+            ? list
+
+
+                .map(
+
+
+                  (p) => `
+
+
+      <div class="prob-item">
+
+
+        <a href="http://edu.doingcoding.com/status/${p.server_sub_id}" target="_blank" rel="noopener">
+
+
+          ${p.title}
+
+
+        </a><br/>(${p.language}, ${p.score}?? ${p.time})
+
+
+      </div>
+
+
+    `
+
+
+                )
+
+
+                .join("")
+
+
+            : `<div style="padding:8px">No submissions</div>`;
+
+
+
+
+
+          const rect = cell.getBoundingClientRect();
+
+
+          popover.style.top = `${
+
+
+            rect.top + window.scrollY + cell.offsetHeight + 8
+
+
+          }px`;
+
+
+          popover.style.left = `${rect.left + rect.width / 2}px`;
+
+
+          popover.style.transform = "translateX(-50%)";
+
+
+          popover.style.display = "block";
+
+
+          popover.style.zIndex = "10000";
+
+
+          popover.style.position = "absolute";
+
+
+          overlayEl.style.display = "block";
+
+
+          popover.__ownerCell = cell;
+
+
+        });
+
+
+
+
+
+        overlayEl.addEventListener("click", () => {
+
+
+          popover.style.display = "none";
+
+
+          overlayEl.style.display = "none";
+
+
+          popover.__ownerCell = null;
+
+
+        });
+
+
+
+
+
+        streakGrid.__bound = true;
+
+
+      }
+
+
+
+
+
+      (function primeInitialGrid() {
+
+
+        const cells = document.querySelectorAll(".streak-cell");
+
+
+        if (!cells.length) return;
+
+
+
+
+
+        cells.forEach((cell) => {
+
+
+          const c = Number(cell.dataset.count || 0);
+
+
+          let tier = calcTier(c);
+
+
+
+
+
+          if (tier) cell.dataset.tier = String(tier);
+
+
+          if (c >= 10) cell.dataset.milestone = "1";
+
+
+        });
+
+
+        const kst = new Date().toLocaleString("en-US", {
+
+
+          timeZone: "Asia/Seoul",
+
+
+        });
+
+
+        const d = new Date(kst);
+
+
+
+
+
+        document.querySelectorAll(".streak-cell .date").forEach((el) => {
+
+
+          if (el.textContent.trim() === TODAY_MMDD) {
+
+
+            el.closest(".streak-cell")?.setAttribute("data-today", "1");
+
+
+          }
+
+
+        });
+
+
+      })();
+
+
+
+      function renderStreakGrid(streakData) {
+
+
+
+        const frag = document.createDocumentFragment();
+
+
+
+
+
+        for (const day of streakData) {
+
+
+          const c = Number(day.count || 0);
+
+
+
+          let tier = calcTier(c);
+
+
+          const milestone = c >= 10 ? "1" : "";
+
+
+
+
+
+          const cell = document.createElement("div");
+
+
+          cell.className = "streak-cell";
+
+
+          cell.dataset.count = String(c);
+
+
+          if (tier) cell.dataset.tier = String(tier);
+
+
+          if (milestone) cell.dataset.milestone = "1";
+
+
+          if (day.date === TODAY_MMDD) cell.dataset.today = "1";
+
+
+
+          cell.innerHTML = `
+
+
+      <div class="date-info">
+
+
+        <div class="weekday">${day.weekday}</div>
+
+
+        <div class="date">${day.date}</div>
+
+
+      </div>
+
+
+      <span class="count">${c}</span>
+
+
+    `;
+
+
+          if (day.details && day.details.length) {
+
+
+            cell.dataset.details = JSON.stringify(day.details);
+
+
+          }
+
+
+
+
+
+          frag.appendChild(cell);
+
+
+        }
+
+
+
+        streakGrid.replaceChildren(frag);
+
+
+      }
+
+
+
+      function updateProblems() {
+        const btn = document.getElementById("update-btn");
+        const timeDisplay = document.getElementById("update-time");
+        const originalText = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = "Updating...";
+
+        fetch("/update_problems", { method: "POST" })
+          .then((res) => {
+            if (res.ok) {
+              alert("Problem list updated.");
+              const now = new Date();
+              const formattedTime = now.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              });
+              timeDisplay.textContent = `Last updated: ${formattedTime}`;
+            } else {
+              alert("Update failed.");
+            }
+          })
+          .catch(() => alert("Request failed."))
+          .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          });
+      }
+
+overlayEl.addEventListener("click", () => {
+
+
+        popover.style.display = "none";
+
+
+        overlayEl.style.display = "none";
+
+
+        popover.__ownerCell = null;
+
+
+      });
+
+
+
+
+
+      function calcTier(c) {
+
+
+        if (c >= 1 && c <= 2) return 1;
+
+
+        if (c <= 4) return 2;
+
+
+        if (c <= 7) return 3;
+
+
+        if (c <= 12) return 4;
+
+
+        if (c >= 13) return 5;
+
+
+        return 0;
+
+
+      }
+
+
+
+
+
+      const SERVER_VIEW_MODE = "{{ view_mode|default('') }}";
+
+
+      const SERVER_VIEW_USERNAME = "{{ view_username|default('') }}";
+
+
+
+      const m = location.pathname.match(/^\/user\/([^\/]+)/);
+
+
+      const PATH_VIEW_MODE = m ? "user" : "me";
+
+
+      const PATH_VIEW_USERNAME = m ? decodeURIComponent(m[1]) : "";
+
+
+      const viewMode = SERVER_VIEW_MODE || PATH_VIEW_MODE;
+
+
+      const viewUsername = SERVER_VIEW_USERNAME || PATH_VIEW_USERNAME;
+
+
+
+
+
+      console.log("viewMode=", viewMode);
+
+
+
+
+
+      document.addEventListener("click", async (e) => {
+
+
+        const btn = e.target.closest(".streak-btn");
+
+
+        if (!btn) return;
+
+
+
+
+
+        e.preventDefault();
+
+
+        document
+
+
+          .querySelectorAll(".streak-btn")
+
+
+          .forEach((b) => b.classList.remove("active"));
+
+
+        btn.classList.add("active");
+
+
+
+
+
+        const days = btn.dataset.days;
+
+
+        console.log("viewUsername=", viewUsername, "days=", days);
+
+
+
+
+
+        try {
+
+
+          const url = `/api/streak?viewMode=${viewMode}&viewUsername=${encodeURIComponent(
+
+
+            viewUsername
+
+
+          )}&days=${days}`;
+
+
+          console.log("viewMode: ", viewMode);
+
+
+          console.log("[streak] fetching:", url);
+
+
+
+
+
+          const res = await fetch(url, {
+
+
+            headers: { Accept: "application/json" },
+
+
+          });
+
+
+          if (!res.ok) {
+
+
+            const txt = await res.text();
+
+
+            console.error("streak api error:", res.status, txt);
+
+
+            alert(`API request failed (${res.status})`);
+
+
+            return;
+
+
+          }
+
+
+          const data = await res.json();
+
+
+          if (data.streak_data) {
+
+
+            renderStreakGrid(data.streak_data);
+
+
+          } else {
+
+
+            console.error("payload:", data);
+
+
+            alert("Failed to load streak data.");
+
+
+          }
+
+
+        } catch (err) {
+
+
+          console.error("fetch failed:", err);
+
+
+          alert("Streak request failed.");
+
+
+        }
+
+
+      });
+
+
+      window.addEventListener("scroll", repositionPopover, { passive: true });
+
+
+      window.addEventListener("resize", repositionPopover);
+
+
+      function repositionPopover() {
+
+
+        if (popover.style.display !== "block" || !popover.__ownerCell) return;
+
+
+        const cell = popover.__ownerCell;
+
+
+        const rect = cell.getBoundingClientRect();
+
+
+        popover.style.top = `${
+
+
+          rect.top + window.scrollY + cell.offsetHeight + 8
+
+
+        }px`;
+
+
+        popover.style.left = `${rect.left + rect.width / 2}px`;
+
+
+      }
+
+
+
+      function centerTextPlugin(text) {
+
+
+        return {
+
+
+          id: "centerText",
+
+
+          beforeDraw(chart) {
+
+
+            const { ctx, chartArea, width, height } = chart;
+
+
+
+
+
+            if (!chartArea) return;
+
+
+
+
+
+            ctx.save();
+
+
+
+
+
+            const fontSize = Math.min(width / 10, 20);
+
+
+            ctx.font = `bold ${fontSize}px sans-serif`;
+
+
+            ctx.textBaseline = "middle";
+
+
+            ctx.textAlign = "center";
+
+
+            ctx.fillStyle = "#444";
+
+
+
+
+
+            const centerX = (chartArea.left + chartArea.right) / 2;
+
+
+            const centerY = (chartArea.top + chartArea.bottom) / 2;
+
+
+
+
+
+            ctx.fillText(text, centerX, centerY);
+
+
+            ctx.restore();
+
+
+          },
+
+
+        };
+
+
+      }
+
+
+
+
+
+      let progressData = JSON.parse(`{{ progress_data | tojson  }}`);
+
+
+      const username = "{{ username }}";
+
+
+
+
+
+      const resultTitle = document.getElementById("result-title");
+
+
+
+
+      document.getElementById("result-title").style.display = "block";
+
+
+
+
+
+      const container = document.getElementById("charts-container");
+      if (!Array.isArray(progressData)) {
+        progressData = [];
+      }
+
+      if (!progressData.length) {
+        container.innerHTML = `<div class="chart-card">No progress data yet.</div>`;
+      } else {
+        container.innerHTML = progressData
+          .map(
+            (item, idx) => `
+            <div class="chart-card" data-href="/user/${encodeURIComponent(
+              username
+            )}/chapter/${encodeURIComponent(item.chapter)}">
+              <canvas id="chart-${idx}" width="160" height="160"></canvas>
+              <p style="margin-top: 12px; font-weight: bold;">${
+                item.chapter
+              }</p>
+            </div>
+          `
+          )
+          .join("");
+      }
+
+
+
+
+
+      document.querySelectorAll(".chart-card").forEach((card) => {
+
+
+        card.addEventListener("click", () => {
+
+
+          const href = card.dataset.href;
+
+
+          if (href) window.location.href = href;
+
+
+        });
+
+
+      });
+
+
+
+
+
+      if (progressData.length) {
+        progressData.forEach((item, idx) => {
+          const canvas = document.getElementById(`chart-${idx}`);
+          const ctx = canvas.getContext("2d");
+
+          const gradient = ctx.createLinearGradient(0, 0, 200, 200);
+          if (item.percent === 100) {
+            gradient.addColorStop(0, "rgb(142,234,220)");
+            gradient.addColorStop(1, "rgb(46,147,248)");
+          } else if (item.percent >= 80) {
+            gradient.addColorStop(0, "rgb(128,240,131)");
+            gradient.addColorStop(1, "rgb(44,206,190)");
+          } else if (item.percent >= 51) {
+            gradient.addColorStop(0, "rgb(219,234,134)");
+            gradient.addColorStop(1, "rgb(50,214,58)");
+          } else if (item.percent >= 21) {
+            gradient.addColorStop(0, "rgb(236,219,135)");
+            gradient.addColorStop(1, "rgb(245,151,35)");
+          } else if (item.percent >= 1) {
+            gradient.addColorStop(0, "rgb(236,167,184)");
+            gradient.addColorStop(1, "rgb(241,53,35)");
+          } else {
+            gradient.addColorStop(0, "#ddd");
+            gradient.addColorStop(1, "#ddd");
+          }
+
+          new Chart(ctx, {
+            type: "doughnut",
+            data: {
+              labels: ["Completed", "Remaining"],
+              datasets: [
+                {
+                  data: [item.percent, 100 - item.percent],
+                  backgroundColor: [gradient, "#f0f0f0"],
+                  borderWidth: 0,
+                  borderRadius: 100,
+                },
+              ],
+            },
+            options: {
+              cutout: "85%",
+              responsive: true,
+              rotation: -Math.PI * 0.75,
+              plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false },
+                title: {
+                  display: true,
+                  text: `${item.percent}%`,
+                  color: "#444",
+                  font: { size: 20, weight: "bold" },
+                  position: "center",
+                },
+              },
+            },
+            plugins: [centerTextPlugin(`${item.percent}%`)],
+          });
+        });
+      }
+    </script>
+
+
+  </body>
+
+
+</html>
+
+
+
+
+
+
