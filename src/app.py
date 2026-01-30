@@ -60,6 +60,10 @@ from config import (
     COOKIE_PATH,
     ADMIN_DOMAIN,
     STUDENT_DOMAIN,
+    SESSION_COOKIE_DOMAIN,
+    SESSION_COOKIE_SAMESITE,
+    SESSION_COOKIE_SECURE,
+    CORS_ALLOWED_ORIGINS,
 )  # 필요 시 조정
 
 
@@ -252,7 +256,22 @@ def append_homework_log(user_uuid: str, payload: dict) -> dict:
 # app = Flask(__name__)
 app = Flask(__name__, static_folder="static")
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)  # ✅ 여기에 바로 설정
-CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+
+if SESSION_COOKIE_DOMAIN:
+    app.config["SESSION_COOKIE_DOMAIN"] = SESSION_COOKIE_DOMAIN
+app.config["SESSION_COOKIE_SAMESITE"] = SESSION_COOKIE_SAMESITE
+app.config["SESSION_COOKIE_SECURE"] = SESSION_COOKIE_SECURE
+
+cors_origins = CORS_ALLOWED_ORIGINS or []
+if not cors_origins and ADMIN_DOMAIN:
+    cors_origins.append(f"https://{ADMIN_DOMAIN}")
+if not cors_origins and STUDENT_DOMAIN:
+    cors_origins.append(f"https://{STUDENT_DOMAIN}")
+
+if not cors_origins:
+    cors_origins.extend(["http://localhost:5000", "http://127.0.0.1:5000"])
+
+CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=True)
 
 # --- imports 상단 ---
 from flask import session as fsession
@@ -1004,6 +1023,7 @@ def group_detail(username, chapter, group_id):
     # 세션 role→템플릿 컨텍스트
     # print(f"result: {result}")
     role_ctx = role_ctx_from_session()
+    print(f"[group_detail] role_ctx={role_ctx}")
     return render_template(
         "group_detail.html",
         username=username,

@@ -30,6 +30,13 @@ SESSION_COOKIE_SECURE = (
     os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true"
 )
 
+# Comma-separated allowed origins for CORS, e.g. "https://admin.example.com,https://student.example.com"
+CORS_ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
+    if o.strip()
+]
+
 
 if not BASE_URL:
     raise RuntimeError("환경 변수 API_BASE_URL이 설정되지 않았습니다.")

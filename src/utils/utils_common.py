@@ -144,7 +144,8 @@ def ensure_admin_or_403():
 def normalize_role(admin_type: str | None):
     """admin_type 문자열을 일관된 라벨/플래그로 변환"""
     t = (admin_type or "").strip().lower()
-    if t in ("super admin", "superadmin", "owner"):
+    print(f"[role] admin_type raw={admin_type!r} normalized={t!r}")
+    if t in ("super admin", "superadmin", "super_admin", "super-admin", "owner", "root"):
         return ("총관리자", True, "superadmin")
     if t in ("admin", "teacher", "coach"):
         return ("관리자", True, "admin")
@@ -434,13 +435,28 @@ def calculate_progress(solved_list, chapter_json):
 
 
 def role_ctx_from_session():
-    """세션에 저장된 정규화 role → 템플릿용 컨텍스트로 변환"""
-    r = (fsession.get("role") or "user").lower()
+    """??? ??? role? ???? ????? ??"""
+    r = (fsession.get("role") or "").lower()
+    if not r:
+        s = get_api_session()
+        if s:
+            try:
+                prof = fetch_profile(s, username=None)
+                user_data = (prof.get("data", {}) or {}).get("user", {}) or {}
+                role_label, is_admin, role_norm = normalize_role(
+                    user_data.get("admin_type")
+                )
+                fsession["role"] = role_norm
+                return {"role_label": role_label, "is_admin": is_admin}
+            except Exception:
+                pass
+        r = "user"
     if r in ("superadmin", "owner"):
-        return {"role_label": "총관리자", "is_admin": True}
+        return {"role_label": "????", "is_admin": True}
     if r in ("admin", "teacher", "coach"):
-        return {"role_label": "관리자", "is_admin": True}
-    return {"role_label": "일반", "is_admin": False}
+        return {"role_label": "???", "is_admin": True}
+    return {"role_label": "??", "is_admin": False}
+
 
 
 def sync_user_problems_cache(
