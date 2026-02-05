@@ -175,6 +175,7 @@
 
 
     color: var(--text);
+    line-height: 1.35;
 
 
   }
@@ -343,6 +344,44 @@
 
 
   .page-subtitle {
+
+    margin: 0;
+
+    font-size: 0.95rem;
+
+    color: var(--muted);
+
+  }
+
+  .section-title {
+    margin: 18px 0 10px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .empty-state {
+    padding: 18px;
+    text-align: center;
+  }
+
+  .empty-title {
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .empty-desc {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .card-cta {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: var(--accent-strong);
+  }
+
 
 
     margin: 0;
@@ -634,6 +673,7 @@
 
 
     color: var(--text);
+    line-height: 1.35;
 
 
     display: inline-flex;
@@ -859,6 +899,7 @@
 
 
     color: var(--text);
+    line-height: 1.35;
 
 
     border: 1px solid var(--border);
@@ -957,7 +998,7 @@
   .stat-value {
 
 
-  font-size: 18px;
+  font-size: 20px;
 
 
   font-weight: 700;
@@ -972,7 +1013,7 @@
 .stat-label {
 
 
-  font-size: 13px;
+  font-size: 12px;
 
 
   color: var(--muted);
@@ -2796,6 +2837,8 @@
 
 
 
+    <h2 class="section-title">Chapter progress</h2>
+
     <div id="charts-container"></div>
 
 
@@ -2911,7 +2954,8 @@
 
 
         if (!data || !data.ok || !data.log) {
-          host.innerHTML = `<div class="card"><div class="card-title">No homework found.</div></div>`;
+          host.innerHTML = `<div class="card empty-state"><div class="empty-title">No homework found</div><div class="empty-desc">Try refreshing the list or check the schedule.</div><div style="margin-top:10px"><button class="btn primary" id="refresh-homework">Refresh homework</button></div></div>`;
+          document.getElementById("refresh-homework")?.addEventListener("click", updateProblems);
           return;
         }
 
@@ -3917,7 +3961,7 @@ overlayEl.addEventListener("click", () => {
       }
 
       if (!progressData.length) {
-        container.innerHTML = `<div class="chart-card">No progress data yet.</div>`;
+        container.innerHTML = `<div class="chart-card empty-state"><div class="empty-title">No progress data yet</div><div class="empty-desc">Search a student or check assignments to see progress.</div></div>`;
       } else {
         container.innerHTML = progressData
           .map(
@@ -3928,7 +3972,7 @@ overlayEl.addEventListener("click", () => {
               <canvas id="chart-${idx}" width="160" height="160"></canvas>
               <p style="margin-top: 12px; font-weight: bold;">${
                 item.chapter
-              }</p>
+              }</p><span class="card-cta">Open chapter →</span>
             </div>
           `
           )
