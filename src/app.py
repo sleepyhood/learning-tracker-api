@@ -18,6 +18,7 @@ from uuid import uuid4
 
 
 from urllib.parse import quote
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from utils.questions_crawler import do_crawling
 
 from utils.summarizer import (
@@ -480,48 +481,70 @@ def pull_and_store_user(username: str):
     return doc
 
 
+def _parse_iso_datetime(value: str | None):
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def is_doc_stale(doc: dict, ttl_ms: int = 60_000) -> bool:
+    if ttl_ms < 0:
+        ttl_ms = 0
+    parsed = _parse_iso_datetime((doc or {}).get("updated_at"))
+    if not parsed:
+        return True
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=KST)
+    age_ms = (datetime.now(tz=KST) - parsed.astimezone(KST)).total_seconds() * 1000
+    return age_ms > ttl_ms
+
+
+def refresh_user_doc_by_uuid(user_uuid: str) -> dict:
+    cookies = load_cookies(COOKIE_PATH)
+    session = get_authenticated_session(cookies)
+
+    base = load_doc_by_any(user_uuid)
+    username = (base.get("profile") or {}).get("student_id") or (
+        base.get("profile") or {}
+    ).get("name")
+    if not username:
+        username = reverse_lookup(user_uuid)
+        if not username:
+            raise ValueError("username not resolvable")
+        base.setdefault("profile", {})
+        base["profile"]["student_id"] = username
+        base["profile"].setdefault("name", username)
+
+    # 원격 데이터
+    res = session.get(f"{BASE_URL}/api/profile?username={quote(username)}")
+    data = res.json()
+    user_data = data["data"]["user"]
+    problems = data["data"]["oi_problems_status"]["problems"]
+
+    # 저장 직전 다시 읽어 homework_logs 보존
+    current = load_doc_by_any(user_uuid)
+    current["profile"] = {
+        "student_id": user_data["username"],
+        "name": user_data.get("realname") or user_data.get("username"),
+        "class_id": user_data.get("class_id"),
+    }
+    current["oi_problems"] = problems
+    current["updated_at"] = datetime.now(tz=KST).isoformat()
+
+    save_doc_by_any(user_uuid, current)
+    return current
+
+
 @app.route("/api/students/<user_uuid>/refresh", methods=["POST"])
 def refresh_by_uuid(user_uuid):
     s, err = ensure_admin_or_403()
     if err:
         return err
     try:
-        cookies = load_cookies(COOKIE_PATH)
-        session = get_authenticated_session(cookies)
-
-        base = load_doc_by_any(user_uuid)
-        username = (base.get("profile") or {}).get("student_id") or (
-            base.get("profile") or {}
-        ).get("name")
-        if not username:
-            username = reverse_lookup(user_uuid)
-            if not username:
-                return (
-                    jsonify({"success": False, "error": "username not resolvable"}),
-                    400,
-                )
-            base.setdefault("profile", {})
-            base["profile"]["student_id"] = username
-            base["profile"].setdefault("name", username)
-
-        # 원격 데이터
-        res = session.get(f"{BASE_URL}/api/profile?username={quote(username)}")
-        data = res.json()
-        user_data = data["data"]["user"]
-        problems = data["data"]["oi_problems_status"]["problems"]
-
-        # ✅ 저장 직전 다시 읽어 'homework_logs' 보존
-        current = load_doc_by_any(user_uuid)
-        current["profile"] = {
-            "student_id": user_data["username"],
-            "name": user_data.get("realname") or user_data.get("username"),
-            "class_id": user_data.get("class_id"),
-        }
-        current["oi_problems"] = problems
-        current["updated_at"] = datetime.now(tz=KST).isoformat()
-        # current["homework_logs"] 는 그대로 두기!
-
-        save_doc_by_any(user_uuid, current)
+        current = refresh_user_doc_by_uuid(user_uuid)
         return jsonify(
             {
                 "success": True,
@@ -695,15 +718,10 @@ def api_save_homework_log(id_or_uuid):
     )
 
 
-@app.get("/api/students/<user_uuid>/homework_latest")
-def homework_latest(user_uuid):
-    s, err = ensure_admin_or_403()
-    if err:
-        return err
-    doc = load_doc_by_any(user_uuid)
+def build_homework_latest_payload(doc: dict) -> dict:
     logs = doc.get("homework_logs", [])
     if not logs:
-        return jsonify({"ok": True, "log": None})
+        return {"ok": True, "updated_at": doc.get("updated_at"), "log": None}
 
     # 가장 최신: ts 기준(없으면 배열 마지막)
     def ts_val(x):
@@ -716,8 +734,7 @@ def homework_latest(user_uuid):
     status = compute_homework_status(doc)
     item = next((it for it in status["items"] if it["key"] == key), None)
 
-    
-    # 🔻 새로 추가: 오늘 숙제 여부 / 완료 여부 플래그 계산
+    # 오늘 숙제 여부 / 완료 여부 플래그 계산
     today = datetime.now(tz=KST).date()
 
     ts_raw = latest_log.get("ts")
@@ -741,49 +758,107 @@ def homework_latest(user_uuid):
         }
     )
 
-    total = (counts.get("total") or 0)
-    passed = (counts.get("passed") or 0)
-    wrong = (counts.get("wrong") or 0)
-    pending = (counts.get("pending") or 0)
+    total = counts.get("total") or 0
+    passed = counts.get("passed") or 0
+    wrong = counts.get("wrong") or 0
+    pending = counts.get("pending") or 0
 
     flags = {
-        # 오늘 새로 숙제 로그를 남겼는지 (숙제 '줬는지')
         "is_given_today": bool(given_date and given_date == today),
-        # 최신 숙제의 모든 문제가 통과했는지
         "all_passed": total > 0 and passed == total,
-        # 숙제 자체는 있는지
         "has_any": total > 0,
-        # 아직 오답/미시도 문제가 있는지
         "has_unresolved": (wrong + pending) > 0,
     }
 
+    return {
+        "ok": True,
+        "updated_at": status.get("updated_at"),
+        "log": {
+            "key": key,
+            "id": latest_log.get("id"),
+            "title": latest_log.get("title"),
+            "url": latest_log.get("url"),
+            "due_at": latest_log.get("due_at"),
+            "ts": latest_log.get("ts"),
+            "channel": latest_log.get("channel"),
+            "problems": latest_log.get("problems", []),
+            "counts": (
+                item["counts"]
+                if item
+                else {"total": 0, "passed": 0, "wrong": 0, "partial": 0, "pending": 0}
+            ),
+            "problem_status": item["problems"] if item else [],
+            "flags": flags,
+        },
+    }
 
 
-    # 결합 응답 (뷰에서 쓰는 필드만)
-    return jsonify(
-        {
-            "ok": True,
-            "updated_at": status.get("updated_at"),
-            "log": {
-                "key": key,
-                "id": latest_log.get("id"),
-                "title": latest_log.get("title"),
-                "url": latest_log.get("url"),
-                "due_at": latest_log.get("due_at"),
-                "ts": latest_log.get("ts"),
-                "channel": latest_log.get("channel"),
-                "problems": latest_log.get("problems", []),
-                "counts": (
-                    item["counts"]
-                    if item
-                    else {"total": 0, "passed": 0, "wrong": 0, "pending": 0}
-                ),
-                "problem_status": item["problems"] if item else [],
-                                # 🔻 새로 추가
-                "flags": flags,
-            },
-        }
-    )
+@app.get("/api/students/<user_uuid>/homework_latest")
+def homework_latest(user_uuid):
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
+    doc = load_doc_by_any(user_uuid)
+    return jsonify(build_homework_latest_payload(doc))
+
+
+@app.post("/api/students/homework_latest_batch")
+def homework_latest_batch():
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
+
+    payload = request.get_json(force=True) or {}
+    raw_uuids = payload.get("user_uuids") or []
+    if not isinstance(raw_uuids, list):
+        return jsonify({"ok": False, "error": "user_uuids must be an array"}), 400
+
+    refresh_stale = bool(payload.get("refresh_stale", True))
+    try:
+        ttl_ms = int(payload.get("ttl_ms", 60_000))
+    except (TypeError, ValueError):
+        ttl_ms = 60_000
+
+    try:
+        max_workers = int(payload.get("max_workers", 6))
+    except (TypeError, ValueError):
+        max_workers = 6
+    max_workers = max(1, min(max_workers, 12))
+
+    user_uuids = []
+    seen = set()
+    for token in raw_uuids:
+        raw = str(token or "").strip()
+        if not raw:
+            continue
+        user_uuid = raw if "-" in raw else resolve_uuid(raw)
+        if not user_uuid or user_uuid in seen:
+            continue
+        seen.add(user_uuid)
+        user_uuids.append(user_uuid)
+
+    def process_user(user_uuid: str):
+        doc = load_doc_by_any(user_uuid)
+        if refresh_stale and is_doc_stale(doc, ttl_ms=ttl_ms):
+            doc = refresh_user_doc_by_uuid(user_uuid)
+        return build_homework_latest_payload(doc)
+
+    items = {}
+    with ThreadPoolExecutor(max_workers=min(max_workers, len(user_uuids) or 1)) as pool:
+        future_map = {pool.submit(process_user, user_uuid): user_uuid for user_uuid in user_uuids}
+        for future in as_completed(future_map):
+            user_uuid = future_map[future]
+            try:
+                items[user_uuid] = future.result()
+            except Exception as e:
+                items[user_uuid] = {
+                    "ok": False,
+                    "error": str(e),
+                    "updated_at": None,
+                    "log": None,
+                }
+
+    return jsonify({"ok": True, "items": items})
 
 
 # ✅ 뷰어: UUID로 학생 숙제로그 열람 (템플릿: templates/homework_view.html 필요)
