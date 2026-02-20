@@ -518,9 +518,9 @@
 
         justify-content: space-between;
 
-        align-items: center;
+        align-items: flex-start;
 
-        gap: 4px;
+        gap: 8px;
 
       }
 
@@ -530,7 +530,9 @@
 
         display: inline-flex;
 
-        align-items: center;
+        flex-direction: column;
+
+        align-items: flex-start;
 
         gap: 4px;
 
@@ -582,7 +584,73 @@
 
       .hw-text {
 
-        white-space: nowrap;
+        white-space: normal;
+
+        line-height: 1.25;
+
+      }
+
+      .hw-main {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 6px;
+
+      }
+
+      .today-pill {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        border-radius: 999px;
+
+        padding: 2px 8px;
+
+        font-size: 0.66rem;
+
+        font-weight: 700;
+
+        letter-spacing: 0.01em;
+
+        border: 1px solid rgba(148, 163, 184, 0.35);
+
+        color: rgba(226, 232, 240, 0.95);
+
+        background: rgba(15, 23, 42, 0.72);
+
+      }
+
+      .today-pill.is-solved {
+
+        border-color: rgba(16, 185, 129, 0.55);
+
+        color: rgba(167, 243, 208, 0.98);
+
+        background: rgba(6, 95, 70, 0.45);
+
+      }
+
+      .today-pill.is-login {
+
+        border-color: rgba(245, 158, 11, 0.55);
+
+        color: rgba(254, 240, 138, 0.98);
+
+        background: rgba(120, 53, 15, 0.45);
+
+      }
+
+      .today-pill.is-none {
+
+        border-color: rgba(71, 85, 105, 0.55);
+
+        color: rgba(148, 163, 184, 0.95);
+
+        background: rgba(15, 23, 42, 0.62);
 
       }
 
@@ -758,6 +826,26 @@
 
 }
 
+.hw-dot.hw-progress {
+
+  border-color: rgba(249, 115, 22, 0.9);
+
+  background: rgba(249, 115, 22, 0.9);
+
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.7);
+
+}
+
+.hw-dot.hw-unattempted {
+
+  border-color: rgba(239, 68, 68, 0.95);
+
+  background: rgba(239, 68, 68, 0.95);
+
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.75);
+
+}
+
 
 
     </style>
@@ -892,9 +980,11 @@
 
                     >
 
-                      <span class="hw-dot" aria-hidden="true"></span>
-
-                      <span class="hw-text">숙제 확인</span>
+                      <span class="hw-main">
+                        <span class="hw-dot" aria-hidden="true"></span>
+                        <span class="hw-text">숙제 확인</span>
+                      </span>
+                      <span class="today-pill is-none">오늘 미접속</span>
 
                     </a>
 
@@ -1115,10 +1205,11 @@
               <div class="student-meta">
 
                 <a class="hw-link" href="/students/${s.user_uuid}/homework" title="숙제 기록 보기">
-
-                  <span class="hw-dot" aria-hidden="true"></span>
-
-                  <span class="hw-text">숙제 확인</span>
+                  <span class="hw-main">
+                    <span class="hw-dot" aria-hidden="true"></span>
+                    <span class="hw-text">숙제 확인</span>
+                  </span>
+                  <span class="today-pill is-none">오늘 미접속</span>
 
                 </a>
 
@@ -1171,10 +1262,13 @@ async function attachHomeworkBadges() {
       .forEach((el) => {
         const dot = el.querySelector(".hw-dot");
         const text = el.querySelector(".hw-text");
-        if (!dot || !text) return;
+        const today = el.querySelector(".today-pill");
+        if (!dot || !text || !today) return;
 
         // 기본 상태 초기화
         dot.className = "hw-dot";
+        today.className = "today-pill is-none";
+        today.textContent = "오늘 미접속";
 
         if (!log) {
           text.textContent = "숙제 X";
@@ -1182,31 +1276,60 @@ async function attachHomeworkBadges() {
         }
 
         const flags = log.flags || {};
+        const activity = log.today_activity || {};
         const counts = log.counts || {};
         const total = counts.total || 0;
+        const passed = counts.passed || 0;
+        const wrong = counts.wrong || 0;
+        const partial = counts.partial || 0;
+        const attempted = passed + wrong + partial;
+        const scoreText = total > 0 ? ` (${passed}/${total})` : "";
 
         if (flags.is_given_today) {
           if (flags.all_passed) {
             dot.classList.add("hw-today", "hw-done");
-            text.textContent = "오늘 숙제 완료";
+            text.textContent = `오늘 숙제 완료${scoreText}`;
           } else {
-            dot.classList.add("hw-today");
-            text.textContent = "오늘 숙제 있음";
+            if (attempted > 0) {
+              dot.classList.add("hw-today", "hw-progress");
+              text.textContent = `오늘 숙제 진행중${scoreText}`;
+            } else {
+              dot.classList.add("hw-today", "hw-unattempted");
+              text.textContent = `오늘 숙제 미시도${scoreText}`;
+            }
           }
         } else {
           if (flags.all_passed) {
             dot.classList.add("hw-done");
-            text.textContent = "최근 숙제 완료";
+            text.textContent = `최근 숙제 완료${scoreText}`;
           } else if (flags.has_any && flags.has_unresolved) {
-            dot.classList.add("hw-pending");
-            text.textContent = "최근 숙제 미완";
+            if (attempted > 0) {
+              dot.classList.add("hw-progress");
+              text.textContent = `최근 숙제 진행중${scoreText}`;
+            } else {
+              dot.classList.add("hw-unattempted");
+              text.textContent = `최근 숙제 미시도${scoreText}`;
+            }
           } else if (total > 0) {
             // 혹시라도 카운트만 있고 플래그가 비어 있는 경우 대비
-            dot.classList.add("hw-pending");
-            text.textContent = "최근 숙제 미완";
+            if (attempted > 0) {
+              dot.classList.add("hw-progress");
+              text.textContent = `최근 숙제 진행중${scoreText}`;
+            } else {
+              dot.classList.add("hw-unattempted");
+              text.textContent = `최근 숙제 미시도${scoreText}`;
+            }
           } else {
             text.textContent = "숙제 X";
           }
+        }
+
+        if (activity.has_submission_today) {
+          today.className = "today-pill is-solved";
+          today.textContent = "오늘 풀이";
+        } else if (activity.has_login_today) {
+          today.className = "today-pill is-login";
+          today.textContent = "오늘 접속";
         }
       });
   };

@@ -471,6 +471,7 @@ def pull_and_store_user(username: str):
         "student_id": student_id,
         "name": user_data.get("realname") or user_data.get("username"),
         "class_id": user_data.get("class_id"),
+        "last_login": user_data.get("last_login"),
     }
     doc["user_uuid"] = resolve_uuid(student_id)
     doc["oi_problems"] = problems
@@ -530,6 +531,7 @@ def refresh_user_doc_by_uuid(user_uuid: str) -> dict:
         "student_id": user_data["username"],
         "name": user_data.get("realname") or user_data.get("username"),
         "class_id": user_data.get("class_id"),
+        "last_login": user_data.get("last_login"),
     }
     current["oi_problems"] = problems
     current["updated_at"] = datetime.now(tz=KST).isoformat()
@@ -718,7 +720,83 @@ def api_save_homework_log(id_or_uuid):
     )
 
 
-def build_homework_latest_payload(doc: dict) -> dict:
+def _today_activity_from_doc(doc: dict) -> dict:
+    today = datetime.now(tz=KST).date()
+    profile = (doc or {}).get("profile") or {}
+    last_login_raw = profile.get("last_login")
+    last_login_dt = _parse_iso_datetime(last_login_raw)
+    if last_login_dt and last_login_dt.tzinfo is None:
+        last_login_dt = last_login_dt.replace(tzinfo=timezone.utc)
+    has_login_today = (
+        bool(last_login_dt) and last_login_dt.astimezone(KST).date() == today
+    )
+    return {
+        "has_login_today": has_login_today,
+        "has_submission_today": False,
+        "submission_count_today": 0,
+    }
+
+
+def _fetch_today_activity_for_student(session: requests.Session | None, username: str) -> dict:
+    activity = {
+        "has_login_today": False,
+        "has_submission_today": False,
+        "submission_count_today": 0,
+    }
+    if not session or not username:
+        return activity
+
+    today = datetime.now(tz=KST).date()
+    page = 1
+    limit = 100
+    max_pages = 3
+
+    while page <= max_pages:
+        res = session.get(
+            f"{BASE_URL}/api/submissions",
+            params={
+                "myself": 0,
+                "starred": 0,
+                "result": "",
+                "username": username,
+                "page": page,
+                "limit": limit,
+                "offset": (page - 1) * limit,
+            },
+            timeout=10,
+        )
+        if res.status_code != 200:
+            break
+
+        payload = res.json() or {}
+        results = (payload.get("data") or {}).get("results") or []
+        if not results:
+            break
+
+        saw_older = False
+        for rec in results:
+            ts_raw = rec.get("create_time")
+            if not ts_raw:
+                continue
+            try:
+                dt = datetime.fromisoformat(ts_raw.replace("Z", "+00:00")).astimezone(KST)
+            except ValueError:
+                continue
+            day = dt.date()
+            if day == today:
+                activity["submission_count_today"] += 1
+            elif day < today:
+                saw_older = True
+
+        if saw_older:
+            break
+        page += 1
+
+    activity["has_submission_today"] = activity["submission_count_today"] > 0
+    return activity
+
+
+def build_homework_latest_payload(doc: dict, today_activity: dict | None = None) -> dict:
     logs = doc.get("homework_logs", [])
     if not logs:
         return {"ok": True, "updated_at": doc.get("updated_at"), "log": None}
@@ -789,6 +867,7 @@ def build_homework_latest_payload(doc: dict) -> dict:
             ),
             "problem_status": item["problems"] if item else [],
             "flags": flags,
+            "today_activity": today_activity or _today_activity_from_doc(doc),
         },
     }
 
@@ -837,11 +916,25 @@ def homework_latest_batch():
         seen.add(user_uuid)
         user_uuids.append(user_uuid)
 
+    cookie_dict = load_cookies(COOKIE_PATH)
+
     def process_user(user_uuid: str):
         doc = load_doc_by_any(user_uuid)
         if refresh_stale and is_doc_stale(doc, ttl_ms=ttl_ms):
             doc = refresh_user_doc_by_uuid(user_uuid)
-        return build_homework_latest_payload(doc)
+        profile = doc.get("profile") or {}
+        username = profile.get("student_id") or profile.get("name")
+
+        activity = _today_activity_from_doc(doc)
+        try:
+            session = get_authenticated_session(cookie_dict) if cookie_dict else None
+            fetched = _fetch_today_activity_for_student(session, username)
+            fetched["has_login_today"] = activity["has_login_today"]
+            activity = fetched
+        except Exception:
+            pass
+
+        return build_homework_latest_payload(doc, today_activity=activity)
 
     items = {}
     with ThreadPoolExecutor(max_workers=min(max_workers, len(user_uuids) or 1)) as pool:
