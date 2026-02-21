@@ -6,9 +6,9 @@ load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-PROBLEM_DIR = os.path.join(BASE_DIR, "problems_data")
-USER_DATA_DIR = os.path.join(BASE_DIR, "users_data")
-COOKIE_PATH = os.path.join(BASE_DIR, "cookies.json")
+PROBLEM_DIR = os.environ.get("PROBLEM_DIR") or os.path.join(BASE_DIR, "problems_data")
+USER_DATA_DIR = os.environ.get("USER_DATA_DIR") or os.path.join(BASE_DIR, "users_data")
+COOKIE_PATH = os.environ.get("COOKIE_PATH") or os.path.join(BASE_DIR, "cookies.json")
 
 PROBLEM_FILE = os.path.join(PROBLEM_DIR, "all_problems.json")
 SERVER_DUMP_FILE = os.path.join(PROBLEM_DIR, "server_problems.json")
@@ -19,7 +19,7 @@ LEGACY_TO_SERVER_FILE = os.path.join(PROBLEM_DIR, "server_legacy_map_reverse.jso
 UNMATCHED_FILE = os.path.join(PROBLEM_DIR, "legacy_unmatched.json")
 
 
-BASE_URL = os.environ.get("API_BASE_URL")
+BASE_URL = (os.environ.get("API_BASE_URL") or "").strip()
 
 
 if not BASE_URL:

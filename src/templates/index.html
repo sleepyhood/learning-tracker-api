@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>진도율 시각화</title>
 
-    <!-- Charts -->
+    <!-- (Chart.js kept for future, but current progress uses CSS bars) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link
       rel="stylesheet"
@@ -14,30 +14,29 @@
 
     <style>
       /*
-        Minimal, JSX-like look:
-        - neutral grayscale, single dark accent
-        - soft borders & large radii
-        - remove glass/blur & heavy gradients
-        - robust streak grid that doesn't break layout
+        시각화 대시보드 = 라이트 모드 고정
+        - 숙제 대시보드의 밀도/여백/바 형태와 맞춤
+        - 상단 크롬 포함 전체 라이트, 데이터 영역은 동일한 카드 스킨
       */
       :root {
-        --content-w: 1280px;
-        --g: clamp(10px, 1.6vw, 16px);
-        --pad: clamp(10px, 1.2vw, 16px);
+        --content-w: 960px; /* 숙제 대시보드와 동일 폭 */
+        --g: 16px;
+        --pad: 14px;
 
-        --bg: #f7f7f8;
+        /* Light tokens */
+        --bg: #f6f7f9;
         --surface: #ffffff;
-        --text: #111827;
+        --text: #111111;
         --muted: #6b7280;
         --line: #e5e7eb;
         --line-strong: #d1d5db;
 
         --radius-lg: 14px;
         --radius-xl: 20px;
-        --accent: #0f172a; /* near-black accent */
+        --accent: #111111; /* 진행도 채움색 */
 
-        /* streak tiers (light → dark) */
-        --tier-0: #eef2f7; /* 0 */
+        /* streak tiers */
+        --tier-0: #eef2f7;
         --tier-1: #e8f5e9;
         --tier-2: #c8e6c9;
         --tier-3: #a5d6a7;
@@ -63,8 +62,8 @@
       /* ===== Layout */
       .wrap {
         max-width: var(--content-w);
-        margin: 0 auto;
-        padding: 20px;
+        margin: 24px auto;
+        padding: 0 16px;
       }
 
       header.appbar {
@@ -88,6 +87,7 @@
         font-size: 18px;
         margin: 0;
         font-weight: 700;
+        color: var(--text);
       }
 
       .right {
@@ -105,10 +105,14 @@
       #username-input {
         height: 36px;
         padding: 8px 12px;
-        border: 1px solid var(--line);
+        border: 1px solid var(--line-strong);
         border-radius: 10px;
         background: #fff;
+        color: var(--text);
         width: 220px;
+      }
+      #username-input::placeholder {
+        color: var(--muted);
       }
       #search-btn {
         display: inline-flex;
@@ -117,8 +121,9 @@
         height: 36px;
         padding: 0 12px;
         border-radius: 10px;
-        border: 1px solid var(--line);
+        border: 1px solid var(--line-strong);
         background: #fff;
+        color: var(--text);
         cursor: pointer;
       }
       #search-btn:hover {
@@ -132,7 +137,8 @@
         margin: 0;
         padding: 6px;
         background: #fff;
-        border: 1px solid var(--line);
+        color: var(--text);
+        border: 1px solid var(--line-strong);
         border-radius: 10px;
         list-style: none;
         display: none;
@@ -141,31 +147,18 @@
       .header-btn {
         height: 36px;
         padding: 0 12px;
-        border: 1px solid var(--line);
+        border: 1px solid var(--line-strong);
         border-radius: 10px;
         background: #fff;
+        color: var(--text);
         display: inline-flex;
         align-items: center;
         gap: 6px;
         text-decoration: none;
-        color: #111;
         font-weight: 700;
       }
       .header-btn:hover {
         background: #f3f4f6;
-      }
-
-      /* ===== 2-column: profile + recent homework */
-      .grid-2 {
-        display: grid;
-        grid-template-columns: clamp(280px, 26vw, 360px) 1fr;
-        gap: var(--g);
-        align-items: start;
-      }
-      @media (max-width: 960px) {
-        .grid-2 {
-          grid-template-columns: 1fr;
-        }
       }
 
       /* ===== Cards */
@@ -173,13 +166,26 @@
         background: var(--surface);
         border: 1px solid var(--line);
         border-radius: var(--radius-xl);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
       }
       .card.pad {
         padding: var(--pad);
       }
       .card + .card {
         margin-top: var(--g);
+      }
+
+      /* ===== 2-column: profile + recent homework */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: clamp(280px, 32%, 360px) 1fr;
+        gap: var(--g);
+        align-items: start;
+      }
+      @media (max-width: 960px) {
+        .grid-2 {
+          grid-template-columns: 1fr;
+        }
       }
 
       /* Profile */
@@ -238,7 +244,7 @@
         color: #4b5563;
       }
 
-      /* Latest homework */
+      /* Latest homework (light) */
       #latest-homework .title {
         font-weight: 700;
         font-size: 16px;
@@ -247,7 +253,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
-        color: #6b7280;
+        color: var(--muted);
         font-size: 13px;
       }
       .badge {
@@ -287,7 +293,7 @@
       .progress .text {
         grid-column: 2;
         font-size: 12px;
-        color: #6b7280;
+        color: var(--muted);
       }
 
       .problems {
@@ -318,7 +324,7 @@
         opacity: 0.9;
       }
 
-      /* ===== Streak ===== */
+      /* ===== Streak */
       .streak-section {
         margin-top: 24px;
       }
@@ -334,10 +340,10 @@
         padding: 0 12px;
         border: 1px solid var(--line);
         background: #fff;
+        color: #374151;
         border-radius: 999px;
         cursor: pointer;
         font-weight: 700;
-        color: #6b7280;
       }
       .streak-btn.active {
         color: #111;
@@ -345,9 +351,6 @@
       }
 
       .streak-container {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-radius: var(--radius-xl);
         padding: var(--pad);
       }
       .streak-grid {
@@ -364,7 +367,7 @@
 
       .streak-cell {
         width: clamp(28px, 8vw, 64px);
-        aspect-ratio: 1/1; /* square, robust */
+        aspect-ratio: 1/1;
         border-radius: 10px;
         border: 1px solid var(--line);
         display: flex;
@@ -398,87 +401,93 @@
         outline-offset: 2px;
         background: #f8fafc;
       }
-
-      /* tiers */
       .streak-cell[data-tier="1"] {
-        background: var(--tier-1);
+        background: #eef7ec;
       }
       .streak-cell[data-tier="2"] {
-        background: var(--tier-2);
+        background: #dff1e0;
       }
       .streak-cell[data-tier="3"] {
-        background: var(--tier-3);
+        background: #cfead2;
       }
       .streak-cell[data-tier="4"] {
-        background: var(--tier-4);
+        background: #bfe3c4;
       }
       .streak-cell[data-tier="5"] {
-        background: var(--tier-5);
+        background: #aedeb6;
       }
-
-      /* simple milestone */
       .streak-cell[data-milestone="1"] {
         border-color: #22c55e;
         box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25) inset;
       }
 
-      /* Popover */
-      #overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(15, 23, 42, 0.2);
-        display: none;
-        z-index: 99;
-      }
-      .details {
-        display: none;
-        position: absolute;
-        z-index: 100;
-        background: #fff;
-        color: #111;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        padding: 10px 12px;
-        width: min(480px, calc(100vw - 32px));
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-      }
-      .prob-item {
-        padding: 6px 8px;
-        border-radius: 8px;
-        background: #eef6ee;
-        color: #14532d;
-        font-weight: 600;
-      }
-      .prob-item + .prob-item {
-        margin-top: 6px;
-        border-top: 1px dashed #d1d5db;
-        padding-top: 6px;
-      }
-
-      /* ===== Charts grid */
+      /* ===== Chapter progress (bar list) */
       #result-title {
         margin: 18px 0 8px;
         font-size: 16px;
         text-align: center;
       }
-      #charts-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 12px;
-        padding: 6px;
+      #chapter-box {
+        margin-top: 10px;
       }
-      .chart-card {
-        background: #fff;
-        border: 1px solid var(--line);
-        border-radius: var(--radius-lg);
-        padding: 14px;
-        display: flex;
-        flex-direction: column;
+      .progress-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
         align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+      }
+      .progress-row + .progress-row {
+        margin-top: 10px;
+      }
+      .progress-row .chapter {
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .progress-row .bar {
+        width: 200px;
+        height: 8px;
+        background: #eceff1;
+        border-radius: 999px;
+        position: relative;
+      }
+      .progress-row .fill {
+        position: absolute;
+        inset: 0;
+        width: 0;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--accent);
+        transition: width 0.25s ease;
+      }
+      .progress-row .pct {
+        font-size: 12px;
+        color: var(--muted);
+        margin-left: 8px;
+      }
+      .progress-row .links {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .link-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
         cursor: pointer;
       }
-      .chart-card:hover {
-        border-color: #111;
+      .link-icon:hover {
+        background: #f3f4f6;
       }
 
       footer.actions {
@@ -492,6 +501,7 @@
         padding: 10px 14px;
         border: 1px solid var(--line);
         background: #fff;
+        color: var(--text);
         border-radius: 12px;
         cursor: pointer;
       }
@@ -607,14 +617,13 @@
         </section>
       </section>
 
-      <!-- Streak -->
-      <section class="streak-section">
-        <div class="streak-head">
+      <!-- Streak (light) -->
+      <section class="streak-section card">
+        <div class="streak-head" style="padding-top: 12px">
           <button class="streak-btn" data-days="7">7일</button>
           <button class="streak-btn" data-days="30">30일</button>
           <button class="streak-btn" data-days="90">90일</button>
         </div>
-
         <div class="streak-container">
           <div id="streak-grid" class="streak-grid">
             {% for day in streak_data %}
@@ -639,8 +648,9 @@
         </div>
       </section>
 
-      <h2 id="result-title" style="display: none">&nbsp;</h2>
-      <section id="charts-container"></section>
+      <!-- Chapter progress (bar list) -->
+      <h2 id="result-title" style="text-align: center">&nbsp;</h2>
+      <section id="chapter-box" class="card pad"></section>
 
       <footer class="actions">
         <a
@@ -669,7 +679,7 @@
       </footer>
     </main>
 
-    <!-- singletons created on demand -->
+    <!-- overlays -->
     <div id="overlay" aria-hidden="true" style="display: none"></div>
     <div
       id="submission-popover"
@@ -680,7 +690,7 @@
 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script>
-      // Ensure singleton helpers
+      // Element helpers
       function ensureEl(id, { className = "", style = "" } = {}) {
         let el = document.getElementById(id);
         if (!el) {
@@ -710,7 +720,7 @@
         ).padStart(2, "0")}`;
       })();
 
-      // Prime streak grid: tiers, milestones, today
+      // Prime streak grid
       (function primeInitialGrid() {
         const cells = document.querySelectorAll(".streak-cell");
         cells.forEach((cell) => {
@@ -724,7 +734,6 @@
         });
       })();
 
-      // Streak interactions
       const streakGrid = document.getElementById("streak-grid");
       if (!streakGrid.__bound) {
         streakGrid.addEventListener("click", (e) => {
@@ -781,7 +790,6 @@
         popover.style.top = `${rect.top + window.scrollY + rect.height + 8}px`;
         popover.style.left = `${rect.left + rect.width / 2}px`;
       }
-
       function calcTier(c) {
         if (c >= 1 && c <= 2) return 1;
         if (c <= 4) return 2;
@@ -851,7 +859,7 @@
           if (tier) cell.dataset.tier = String(tier);
           if (milestone) cell.dataset.milestone = "1";
           if (day.date === TODAY_MMDD) cell.dataset.today = "1";
-          cell.innerHTML = `<div class="weekday">${day.weekday}</div><div class="date">${day.date}</div><div class="count">${c}</div>`;
+          cell.innerHTML = `<div class=\"weekday\">${day.weekday}</div><div class=\"date\">${day.date}</div><div class=\"count\">${c}</div>`;
           if (day.details && day.details.length)
             cell.dataset.details = JSON.stringify(day.details);
           frag.appendChild(cell);
@@ -859,7 +867,7 @@
         streakGrid.replaceChildren(frag);
       }
 
-      // Latest homework card mount (kept endpoints & semantics)
+      // Latest homework card mount
       (async function mountLatestHomeworkCard() {
         const userUuid = "{{ user_uuid }}";
         try {
@@ -881,10 +889,7 @@
         const host = document.querySelector("#latest-homework");
         if (!host) return;
         if (!data || !data.ok || !data.log) {
-          host.innerHTML = `<div class="title" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-            <span>최근 숙제가 없습니다</span>
-            <a class="header-btn" href="/students/${userUuid}/homework" target="_blank" rel="noopener">📋 대시보드</a>
-          </div>`;
+          host.innerHTML = `<div class=\"title\" style=\"display:flex; align-items:center; justify-content:space-between; gap:8px;\">\n            <span>최근 숙제가 없습니다</span>\n            <a class=\"header-btn\" href=\"/students/${userUuid}/homework\" target=\"_blank\" rel=\"noopener\">📋 대시보드</a>\n          </div>`;
           return;
         }
 
@@ -914,11 +919,11 @@
               ? `<code>#${p.server_problem_id}</code>`
               : "";
             const title = p.title || p.title_at_issue || "";
-            return `<li class="problem-row ${cls}" data-legacy-code="${
+            return `<li class=\"problem-row ${cls}\" data-legacy-code=\"${
               p.legacy_code || ""
-            }" data-server-problem-id="${
+            }\" data-server-problem-id=\"${
               p.server_problem_id || ""
-            }"><span class="mark">${icon}</span> ${code} <span class="title">– ${title}</span></li>`;
+            }\"><span class=\"mark\">${icon}</span> ${code} <span class=\"title\">– ${title}</span></li>`;
           })
           .join("");
 
@@ -961,82 +966,44 @@
         `;
       })();
 
-      // Charts (chapter progress)
+      // Chapter progress (CSS bars with deep-links)
       const progressData = JSON.parse(`{{ progress_data | tojson }}`);
       const username = "{{ username }}";
       const resultTitle = document.getElementById("result-title");
-      const container = document.getElementById("charts-container");
+      const chapterBox = document.getElementById("chapter-box");
       resultTitle.textContent = `${username} 님의 챕터별 진도`;
-      resultTitle.style.display = "block";
-      container.innerHTML = progressData
-        .map(
-          (item, idx) => `
-        <div class="chart-card" data-href="/user/${encodeURIComponent(
-          username
-        )}/chapter/${encodeURIComponent(item.chapter)}">
-          <canvas id="chart-${idx}" width="160" height="160"></canvas>
-          <p style="margin-top: 10px; font-weight: 700;">${item.chapter}</p>
-        </div>`
-        )
+
+      const STATIC_BASE = "/viz/chapter/"; // 향후 정적 페이지 링크 베이스(필요시 서버에서 주입해도 됨)
+
+      chapterBox.innerHTML = (progressData || [])
+        .map((item) => {
+          const href = `/user/${encodeURIComponent(
+            username
+          )}/chapter/${encodeURIComponent(item.chapter)}`;
+          const staticHref = `${STATIC_BASE}${encodeURIComponent(
+            item.chapter
+          )}`;
+          return `
+          <div class="progress-row" data-href="${href}" data-static="${staticHref}">
+            <div class="chapter">${item.chapter}</div>
+            <div class="links">
+              <div class="bar"><div class="fill" style="width:${item.percent}%;"></div></div>
+              <span class="pct">${item.percent}%</span>
+              <a class="link-icon" title="정적 페이지" href="${staticHref}" target="_blank" rel="noopener">🔗</a>
+            </div>
+          </div>`;
+        })
         .join("");
-      document.querySelectorAll(".chart-card").forEach((card) => {
-        card.addEventListener("click", () => {
-          const href = card.dataset.href;
-          if (href) window.location.href = href;
-        });
+
+      // Row click → 동적 상세
+      chapterBox.addEventListener("click", (e) => {
+        const row = e.target.closest(".progress-row");
+        if (!row) return;
+        if (e.target.closest("a")) return; // 링크 아이콘은 새 탭 이동
+        location.href = row.dataset.href;
       });
 
-      function centerTextPlugin(text) {
-        return {
-          id: "centerText",
-          beforeDraw(chart) {
-            const { ctx, chartArea, width, height } = chart;
-            if (!chartArea) return;
-            ctx.save();
-            const fontSize = Math.min(width / 10, 20);
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            ctx.textBaseline = "middle";
-            ctx.textAlign = "center";
-            ctx.fillStyle = "#111";
-            const centerX = (chartArea.left + chartArea.right) / 2;
-            const centerY = (chartArea.top + chartArea.bottom) / 2;
-            ctx.fillText(text, centerX, centerY);
-            ctx.restore();
-          },
-        };
-      }
-
-      progressData.forEach((item, idx) => {
-        const canvas = document.getElementById(`chart-${idx}`);
-        const ctx = canvas.getContext("2d");
-        new Chart(ctx, {
-          type: "doughnut",
-          data: {
-            labels: ["완료", "미완료"],
-            datasets: [
-              {
-                data: [item.percent, 100 - item.percent],
-                backgroundColor: ["#111", "#e5e7eb"],
-                borderWidth: 0,
-                hoverOffset: 0,
-              },
-            ],
-          },
-          options: {
-            cutout: "72%",
-            rotation: -90,
-            circumference: 360,
-            plugins: {
-              legend: { display: false },
-              tooltip: { enabled: false },
-            },
-            animation: { duration: 0 },
-          },
-          plugins: [centerTextPlugin(`${item.percent}%`)],
-        });
-      });
-
-      // Update problems with timestamp fix
+      // Update problems with timestamp
       function updateProblems() {
         const btn = document.getElementById("update-btn");
         const timeDisplay = document.getElementById("update-time");

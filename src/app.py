@@ -793,4 +793,7 @@ def group_detail(username, chapter, group_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    host = os.environ.get("FLASK_HOST", "0.0.0.0")
+    port = int(os.environ.get("FLASK_PORT", "5000"))
+    debug = os.environ.get("FLASK_DEBUG", "0").lower() in ("1", "true", "yes")
+    app.run(host=host, port=port, debug=debug)
