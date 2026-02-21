@@ -58,7 +58,8 @@ cp .env.example .env
 
 # 3) 실행
 python src/app.py
-# 브라우저로 http://127.0.0.1:5000 접속
+# 기본: http://127.0.0.1:5000
+# 사내 공유 실행: FLASK_HOST=0.0.0.0 로 실행 후 http://<서버IP>:5000 접속
 ```
 
 **.env 예시**
@@ -66,13 +67,25 @@ python src/app.py
 ```
 # DoingCoding API
 API_BASE_URL=https://...
+# 서버 바인딩(공유 운영 시 권장)
+FLASK_HOST=0.0.0.0
+FLASK_PORT=5000
+FLASK_DEBUG=0
+
+# 공유 스토리지 경로(선택)
+# 여러 PC에서 같은 데이터가 보여야 하면 USER_DATA_DIR/PROBLEM_DIR/COOKIE_PATH를
+# 동일한 공용 경로로 맞추세요.
+# USER_DATA_DIR=Z:/learning-tracker/users_data
+# PROBLEM_DIR=Z:/learning-tracker/problems_data
+# COOKIE_PATH=Z:/learning-tracker/cookies.json
+
 # 선택: 계정 직접 로그인 플로우를 사용할 경우
 USER_ID=your_id
 USER_PW=your_password
 
-# 경로 커스터마이즈(선택)
-PROBLEM_DIR=./src/problems_data
-USER_DATA_DIR=./src/users_data
+# 경로 커스터마이즈(단일 PC 운영 시)
+# PROBLEM_DIR=./src/problems_data
+# USER_DATA_DIR=./src/users_data
 ```
 
 > 보안 안내

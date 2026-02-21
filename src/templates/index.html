@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 
-<html lang="en">
+<html lang="ko">
 
 
   <head>
@@ -16,34 +16,7 @@
 
 
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-
-    
-
-
-    <link
-
-
-      rel="stylesheet"
-
-
-      href="{{ url_for('static', filename='css/fab.css') }}"
-
-
-    />
-
-
-
-
-
-    
-
-
-
-
-
-    <style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script><style>
 
 
   
@@ -189,6 +162,8 @@
 
   body > header,
 
+  .fab-container,
+
 
   .viz-2col,
 
@@ -197,6 +172,8 @@
 
 
   .streak-container,
+
+  .section-head,
 
 
   #charts-container,
@@ -704,25 +681,19 @@
   .fab-container {
 
 
-    position: fixed;
-
-
-    right: 24px;
-
-
-    bottom: 24px;
-
-
     display: flex;
 
 
-    flex-direction: column;
+    flex-direction: row;
+
+
+    justify-content: flex-end;
 
 
     gap: 10px;
 
 
-    z-index: 50;
+    margin-bottom: 10px;
 
 
   }
@@ -2379,13 +2350,22 @@
     .fab-container {
 
 
-      right: 16px;
+    display: flex;
 
 
-      bottom: 16px;
+    flex-direction: row;
 
 
-    }
+    justify-content: flex-end;
+
+
+    gap: 10px;
+
+
+    margin-bottom: 10px;
+
+
+  }
 
 
   }
@@ -2424,39 +2404,15 @@
       style="display: none"
 
 
-    ></div>
-
-
-    <div
-
-
-      id="submission-popover"
-
-
-      style="display: none; position: absolute; z-index: 1001"
-
-
-      class="details"
-
-
-    ></div>
-
-
-    
-
-
-
-
-
-    <header class="page-header">
+    ></div><header class="page-header">
       <div class="header-left">
         <a href="/" class="brand-link">
           <h1 class="page-title">진도율 시각화</h1>
         </a>
         <p class="page-subtitle">
-          Track student progress and manage homework in one unified dashboard.
+          학생 진도와 숙제 현황을 하나의 대시보드에서 관리합니다.
         </p>
-        <a href="/schedule" class="btn-secondary">View schedule</a>
+        <a href="/schedule" class="btn-secondary">수업 스케줄 보기</a>
       </div>
 
       <div class="header-actions">
@@ -2466,46 +2422,38 @@
               type="text"
               id="username-input"
               name="username"
-              placeholder="Search student by name"
+              placeholder="학생 이름으로 검색"
               required
             />
             <ul id="autocomplete-list" class="autocomplete-box"></ul>
             <button type="submit" id="search-btn">
               <img
                 src="/static/search-icon.png"
-                alt="Search"
+                alt="검색"
                 width="30"
                 height="auto"
               />
             </button>
           </div>
         </form>
+        <div class="fab-container">
+          <div
+            class="fab fab-refresh"
+            title="진도 새로고침"
+            onclick="refreshUserProgress('{{ username }}')"
+          >
+            🔃
+          </div>
+          <div
+            class="fab fab-back"
+            title="목록으로 이동"
+            onclick="goToParentPage()"
+          >
+            🔙
+          </div>
+        </div>
       </div>
     </header>
-
-
-
-
-
-
-
-
-    <div class="fab-container">
-      <div
-        class="fab fab-refresh"
-        title="Refresh progress"
-        onclick="refreshUserProgress('{{ username }}')"
-      >
-        🔃
-      </div>
-      <div
-        class="fab fab-back"
-        title="Back to list"
-        onclick="goToParentPage()"
-      >
-        🔙
-      </div>
-    </div>
 
     <div class="viz-2col">
 
