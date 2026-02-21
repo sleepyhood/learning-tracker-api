@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -15,19 +16,64 @@ from utils.utils_common import (
     COOKIE_PATH,
 )  # 필요 시 조정
 
-LOGIN_URL = f"{BASE_URL}/api/profile"  # 인증 필요한 URL
+LOGIN_URL = f"{BASE_URL}/api/profile"
+load_dotenv()
+
+LOGIN_USER = os.getenv("USER_ID")
+LOGIN_PW = os.getenv("USER_PW")  # 인증 필요한 URL
+
+COOKIE_DIR = Path(COOKIE_PATH).parent / "cookies"
+ACTIVE_USER_PATH = Path(COOKIE_PATH).parent / "active_user.json"
+COOKIE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _safe_username(username: str) -> str:
+    return (username or "").strip().replace("/", "_").replace("\\", "_")
+
+
+def _cookie_path_for(username: str) -> Path:
+    return COOKIE_DIR / f"{_safe_username(username)}.json"
+
+
+def _set_active_username(username: str):
+    ACTIVE_USER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    ACTIVE_USER_PATH.write_text(
+        json.dumps({"username": username}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
 
 def load_cookies(cookie_path=None):
-    if os.path.exists(COOKIE_PATH):
-        with open(COOKIE_PATH, "r") as f:
+    if LOGIN_USER:
+        target_path = _cookie_path_for(LOGIN_USER)
+    else:
+        target_path = Path(COOKIE_PATH)
+
+    # legacy migration: root cookies.json -> target_path
+    try:
+        legacy_path = Path("cookies.json")
+        if legacy_path.exists() and not target_path.exists():
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(str(legacy_path), str(target_path))
+    except Exception as e:
+        print("[load_cookies] legacy cookie migration failed:", e)
+
+    if target_path.exists():
+        with open(target_path, "r") as f:
             return json.load(f)
     return None
 
 
 def save_cookies(cookie_dict):
-    with open(COOKIE_PATH, "w") as f:
+    if LOGIN_USER:
+        target_path = _cookie_path_for(LOGIN_USER)
+    else:
+        target_path = Path(COOKIE_PATH)
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(target_path, "w") as f:
         json.dump(cookie_dict, f)
+    if LOGIN_USER:
+        _set_active_username(LOGIN_USER)
 
 
 def selenium_login():
@@ -54,8 +100,11 @@ def selenium_login():
         "/html/body/div[3]/div[2]/div/div/div[2]/div/form/div[2]/div/div/input",
     )
 
-    username_input.send_keys("osw1110")
-    password_input.send_keys("lucky636!")
+    if not LOGIN_USER or not LOGIN_PW:
+        raise RuntimeError("Missing USER_ID/USER_PW in environment for selenium_login")
+
+    username_input.send_keys(LOGIN_USER)
+    password_input.send_keys(LOGIN_PW)
     password_input.send_keys(Keys.RETURN)
 
     time.sleep(2)

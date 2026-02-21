@@ -12,6 +12,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from datetime import datetime
 from urllib.parse import urlparse
+from pathlib import Path
 
 from config import (
     USER_DATA_DIR,
@@ -23,22 +24,105 @@ from config import (
 
 MAX_DATA_AGE_SECONDS = 86400  # 하루(60*60*24)
 
+COOKIE_DIR = Path(COOKIE_PATH).parent / "cookies"
+ACTIVE_USER_PATH = Path(COOKIE_PATH).parent / "active_user.json"
+COOKIE_DIR.mkdir(parents=True, exist_ok=True)
 
-def load_cookies(cookie_path=COOKIE_PATH):
 
-    print(f"[load_cookies] 받은 cookie_path: {cookie_path}")
+def _safe_username(username: str) -> str:
+    return (username or "").strip().replace("/", "_").replace("\\", "_")
 
-    if os.path.exists(cookie_path):
-        with open(cookie_path, "r") as f:
+
+def _cookie_path_for(username: str) -> Path:
+    return COOKIE_DIR / f"{_safe_username(username)}.json"
+
+
+def _read_active_username() -> str | None:
+    if not ACTIVE_USER_PATH.exists():
+        return None
+    try:
+        data = json.loads(ACTIVE_USER_PATH.read_text(encoding="utf-8"))
+        name = (data.get("username") or "").strip()
+        return name or None
+    except Exception:
+        return None
+
+
+def set_active_username(username: str):
+    ACTIVE_USER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    ACTIVE_USER_PATH.write_text(
+        json.dumps({"username": username}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def clear_active_session():
+    removed = []
+    active = _read_active_username()
+    if active:
+        p = _cookie_path_for(active)
+        if p.exists():
+            p.unlink()
+            removed.append(str(p))
+    else:
+        # If active user is unknown, clear all stored cookies.
+        for p in COOKIE_DIR.glob("*.json"):
+            try:
+                p.unlink()
+                removed.append(str(p))
+            except Exception:
+                pass
+    if ACTIVE_USER_PATH.exists():
+        ACTIVE_USER_PATH.unlink()
+        removed.append(str(ACTIVE_USER_PATH))
+    try:
+        legacy = Path(COOKIE_PATH)
+        if legacy.exists():
+            legacy.unlink()
+            removed.append(str(legacy))
+    except Exception:
+        pass
+    return removed
+
+
+def load_cookies(cookie_path=COOKIE_PATH, username: str | None = None):
+    print(f"[load_cookies] cookie_path: {cookie_path}")
+
+    target_path = None
+    if username:
+        target_path = _cookie_path_for(username)
+    else:
+        active = _read_active_username()
+        if active:
+            target_path = _cookie_path_for(active)
+        else:
+            target_path = Path(cookie_path)
+
+    # legacy migration: root cookies.json -> target_path
+    try:
+        legacy_path = Path("cookies.json")
+        if legacy_path.exists() and not target_path.exists():
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(str(legacy_path), str(target_path))
+    except Exception as e:
+        print("[load_cookies] legacy cookie migration failed:", e)
+
+    if target_path.exists():
+        with open(target_path, "r") as f:
             return json.load(f)
 
-    print(f"login.py: 쿠키 못 찾음")
+    print("login.py: cookie not found")
     return None
 
 
-def save_cookies(cookie_dict):
+def save_cookies(cookie_dict, username: str | None = None):
     cookie_dict["timestamp"] = datetime.now().isoformat()
-    with open(COOKIE_PATH, "w") as f:
+    if username:
+        target_path = _cookie_path_for(username)
+    else:
+        target_path = Path(COOKIE_PATH)
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(target_path, "w") as f:
         json.dump(cookie_dict, f)
 
 
@@ -78,7 +162,9 @@ def selenium_login(username, password):
     driver.quit()
 
     cookie_dict = {cookie["name"]: cookie["value"] for cookie in cookies}
-    save_cookies(cookie_dict)
+    save_cookies(cookie_dict, username)
+    if username:
+        set_active_username(username)
 
     return cookie_dict
 
@@ -125,36 +211,56 @@ def is_data_stale(file_path):
     return (current_time - modified_time) > MAX_DATA_AGE_SECONDS
 
 
-def do_login(username=None, password=None):
-    print(f"do_login의 BASE_URL : {BASE_URL }")
+
+
+def _session_username(session):
     try:
-        cookies = load_cookies(COOKIE_PATH)
+        res = session.get(f"{BASE_URL}/api/profile", timeout=10)
+        data = res.json()
+        return (data.get("data", {}).get("user", {}) or {}).get("username")
+    except Exception:
+        return None
+
+
+def do_login(username=None, password=None):
+    print(f"do_login? BASE_URL : {BASE_URL }")
+    try:
+        cookies = load_cookies(COOKIE_PATH, username)
 
         if cookies:
-            print("✅ 저장된 쿠키 로드")
+            print("?? ??? ?? ??")
             session = get_authenticated_session(cookies)
             print(f"session: {session}")
             if not is_cookie_valid(session):
-                print("❌ 쿠키 만료됨. 재로그인 필요")
+                print("?? ?? ??, ???? ??")
                 cookies = selenium_login(username, password)
                 session = get_authenticated_session(cookies)
+            else:
+                if username:
+                    current_user = _session_username(session)
+                    if current_user and current_user != username:
+                        print(
+                            f"?? ???({current_user})? ?? ???({username})? ?? ???????."
+                        )
+                        cookies = selenium_login(username, password)
+                        session = get_authenticated_session(cookies)
         else:
-            print("⚠️ 쿠키 없음. 로그인 필요")
+            print("??? ?? ??. ??? ??")
             cookies = selenium_login(username, password)
             session = get_authenticated_session(cookies)
 
-        # session = get_authenticated_session(cookies)
-
-        # 유저 데이터 파일 경로 설정
+        if username:
+            set_active_username(username)
+        # ?? ??? ?? ?? ??
         user_id = username or "unknown_user"
         filename = f"{user_id}.json"
         user_path = os.path.join(USER_DATA_DIR, filename)
 
-        # 유저 디렉토리 없으면 생성
+        # ?? ??? ?? ??? ??
         os.makedirs(USER_DATA_DIR, exist_ok=True)
 
         if is_data_stale(user_path):
-            print("🔄 사용자 데이터 갱신 중...")
+            print("??? ??? ?? ?..")
             res = session.get(f"{BASE_URL}/api/profile?username={username}")
             data = json.loads(res.text)
             print()
@@ -165,12 +271,12 @@ def do_login(username=None, password=None):
                     ensure_ascii=False,
                     indent=2,
                 )
-            print(f"✅ 사용자 데이터 저장됨: {filename}")
+            print(f"?? ??? ?? ??: {filename}")
         else:
-            print("📁 사용자 데이터가 최신 상태입니다.")
+            print("?? ???? ?? ?????.")
 
         return True, session
 
     except Exception as e:
-        print("❌ 로그인 실패:", e)
+        print("??? ??:", e)
         return False, str(e)

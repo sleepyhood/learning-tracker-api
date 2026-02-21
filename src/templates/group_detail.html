@@ -181,17 +181,25 @@
           📋
         </div>
 
-        <div id="assignModeControls" class="hidden fab-options">
-          <button class="assign-btn" onclick="selectUnsolved()">
-            안 푼 것만
-          </button>
-          <button class="assign-btn" onclick="toggleAll(true)">
-            전체 선택
-          </button>
-          <button class="assign-btn" onclick="toggleAll(false)">
-            전체 해제
-          </button>
-        </div>
+<!-- templates/group_detail.html -->
+<!-- 기존 assignModeControls 블록을 아래로 교체 -->
+<div id="assignModeControls" class="hidden fab-options">
+  <label class="assign-btn" style="display: flex; align-items: center; gap: 6px">
+    <input type="checkbox" id="includeGreeting" checked />
+    인사말 포함
+  </label>
+  <button class="assign-btn" onclick="selectUnsolved()">안 푼 것만</button>
+
+  <!-- ✅ UX: 5개가 1열로 서지 않게 '홀수/짝수'를 한 줄로 묶음 -->
+  <div class="assign-btn-row" aria-label="안 푼 문제 홀짝 선택">
+    <button class="assign-btn" onclick="selectUnsolvedOdd()">홀수만</button>
+    <button class="assign-btn" onclick="selectUnsolvedEven()">짝수만</button>
+  </div>
+
+  <button class="assign-btn" onclick="toggleAll(true)">전체 선택</button>
+  <button class="assign-btn" onclick="toggleAll(false)">전체 해제</button>
+</div>
+
 
         <div
           id="fab-toggle"
@@ -308,98 +316,6 @@
         }
       }
 
-      function showToast(message) {
-        const toast = document.createElement("div");
-        toast.className = "toast";
-        toast.innerText = message;
-        document.body.appendChild(toast);
-
-        // 보여주기
-        setTimeout(() => toast.classList.add("show"), 100);
-
-        // 2초 후 제거
-        setTimeout(() => {
-          toast.classList.remove("show");
-          setTimeout(() => document.body.removeChild(toast), 400);
-        }, 2000);
-      }
-      //
-      document.querySelectorAll(".copy-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const title = btn.dataset.title;
-          const url = btn.dataset.url;
-          const text = `${title}\n${url}`;
-
-          try {
-            await navigator.clipboard.writeText(text);
-
-            // ✅ 복사 성공 후 서버에 로그 저장
-            await postHomeworkLog({
-              title,
-              url,
-              problems: [], // 단순 복사 버튼은 문제 리스트가 없으므로 비워 둠
-              message: text,
-            });
-
-            btn.disabled = true;
-            showToast(`${text}\n\n📋 복사되었습니다!`);
-            setTimeout(() => (btn.disabled = false), 1000);
-          } catch (err) {
-            showToast("❌ 복사에 실패했습니다.");
-          }
-        });
-      });
-
-      document.getElementById("fab-toggle").addEventListener("click", () => {
-        assignMode = !assignMode;
-
-        // 체크박스 토글
-        const checkboxes = document.querySelectorAll(
-          ".assign-checkbox-wrapper"
-        );
-        checkboxes.forEach((checkbox) => {
-          checkbox.style.display = assignMode ? "inline-flex" : "none";
-        });
-
-        // 복사 버튼 토글
-        const copyFab = document.getElementById("copyFab");
-        if (copyFab) {
-          copyFab.style.display = assignMode ? "flex" : "none";
-        }
-
-        // 버튼 그룹 보이기/숨기기
-        const assignControls = document.getElementById("assignModeControls");
-        assignControls.classList.toggle("hidden");
-
-        // ✅ 링크 활성/비활성 처리
-        // 링크 비활성화용 CSS 토글
-        document.querySelectorAll(".problem-link").forEach((link) => {
-          link.classList.toggle("disabled", assignMode);
-        });
-      });
-      document.querySelectorAll(".assign-checkbox").forEach((checkbox) => {
-        checkbox.addEventListener("click", function (e) {
-          if (!lastChecked) {
-            lastChecked = this;
-            return;
-          }
-
-          if (e.shiftKey) {
-            const checkboxes = Array.from(
-              document.querySelectorAll(".assign-checkbox")
-            );
-            const start = checkboxes.indexOf(this);
-            const end = checkboxes.indexOf(lastChecked);
-            const [min, max] = [Math.min(start, end), Math.max(start, end)];
-
-            for (let i = min; i <= max; i++) {
-              checkboxes[i].checked = true;
-            }
-          }
-
-          lastChecked = this;
-        });
-      });
-    </script>
+      </script>
   </body>
 </html>

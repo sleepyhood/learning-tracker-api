@@ -256,3 +256,15 @@ padding: 20px 10px;
         margin: 0;
         padding: 0;
       }
+
+/* static/css/fab.css */
+/* '홀수만/짝수만'을 한 줄에 배치 (1열 5행 UX 방지) */
+.assign-btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.assign-btn-row .assign-btn {
+  margin-right: 0; /* 기존 assign-btn의 margin-right(6px) 중복 방지 */
+  flex: 1;         /* 두 버튼 폭 동일 */
+}

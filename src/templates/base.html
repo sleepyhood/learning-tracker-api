@@ -1,80 +1,80 @@
-<!-- templates/base.html -->
-<!--
-<!DOCTYPE html>
-<html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <title>{% block title %}Doing Coding{% endblock %}</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='style.css') }}"
-    />
-    {% block head_extra %}{% endblock %}
-  </head>
-
-  <body>
-    <style>
-      .toast {
-        position: fixed;
-        bottom: 40px;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: #444;
-        color: white;
-        padding: 10px 16px;
-        border-radius: 8px;
-        font-size: 14px;
-        opacity: 0;
-        transition: opacity 0.4s ease;
-        z-index: 9999;
-      }
-      .toast.show {
-        opacity: 1;
-      }
-    </style>
-
-    <div id="toast" class="toast"></div>
-
-    {% block content %}
-    {% endblock %}
-
-    <script>
-      function showToast(message, duration = 3000) {
-        const toast = document.getElementById("toast");
-        toast.textContent = message;
-        toast.classList.add("show");
-        document.body.appendChild(toast); // ✅ DOM에 추가
-
-        setTimeout(() => {
-          toast.classList.remove("show");
-          toast.addEventListener("transitionend", () => {
-            toast.remove(); // ✅ 사라진 후 DOM에서 제거
-          });
-        }, duration);
-      }
-
-      function refreshUserProgress(username) {
-        fetch(`/refresh_user/${username}`)
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.success) {
-              showToast(`${username} 님\n✅ 풀이 데이터 갱신 완료!`);
-              setTimeout(() => {
-                location.reload();
-              }, 1500);
-            } else {
-              showToast("❌ 풀이 데이터 갱신에 실패했습니다.");
-              console.error("Error:", data.error);
-            }
-          })
-          .catch((err) => {
-            showToast("⚠️ 네트워크 오류: 서버에 연결할 수 없습니다.");
-            console.error("Fetch error:", err);
-          });
-      }
-    </script>
-
-    {% block script_extra %}{% endblock %}
-  </body>
-</html>
--->
+<!-- templates/base.html -->
+<!--
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}Doing Coding{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    {% block head_extra %}{% endblock %}
+  </head>
+
+  <body>
+    <style>
+      .toast {
+        position: fixed;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #444;
+        color: white;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        z-index: 9999;
+      }
+      .toast.show {
+        opacity: 1;
+      }
+    </style>
+
+    <div id="toast" class="toast"></div>
+
+    {% block content %}
+    {% endblock %}
+
+    <script>
+      function showToast(message, duration = 3000) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.classList.add("show");
+        document.body.appendChild(toast); // ✅ DOM에 추가
+
+        setTimeout(() => {
+          toast.classList.remove("show");
+          toast.addEventListener("transitionend", () => {
+            toast.remove(); // ✅ 사라진 후 DOM에서 제거
+          });
+        }, duration);
+      }
+
+      function refreshUserProgress(username) {
+        fetch(`/refresh_user/${username}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              showToast(`${username} 님\n✅ 풀이 데이터 갱신 완료!`);
+              setTimeout(() => {
+                location.reload();
+              }, 1500);
+            } else {
+              showToast("❌ 풀이 데이터 갱신에 실패했습니다.");
+              console.error("Error:", data.error);
+            }
+          })
+          .catch((err) => {
+            showToast("⚠️ 네트워크 오류: 서버에 연결할 수 없습니다.");
+            console.error("Fetch error:", err);
+          });
+      }
+    </script>
+
+    {% block script_extra %}{% endblock %}
+  </body>
+</html>
+-->

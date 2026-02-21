@@ -30,7 +30,7 @@ def get_text(btns, result):
 def crawl_questions(select):
     driver = webdriver.Chrome()
 
-    time.sleep(0.5)
+    time.sleep(1)
 
     tmpTags = []  # 문제 태그(제목)
 
@@ -81,7 +81,7 @@ def crawl_questions(select):
         encoded_url = urllib.parse.quote(url, safe=":/?=")  # safe 문자들은 인코딩 제외
 
         driver.get(encoded_url)
-        time.sleep(0.5)
+        time.sleep(1)
 
         # tbody 안의 모든 tr 가져오기
         # 이는 각 레벨별 문제 개수
@@ -141,7 +141,7 @@ def crawl_questions(select):
 
         print(f"{tmpTags[i]}의 총 row 개수: {len(rows)} 와 문제 형식: {_format}")
         print(problem_dict)
-        # time.sleep(0.5)
+        time.sleep(1)
     driver.quit()
     return validTags, validRows, validFormats, validProblemNames
 
