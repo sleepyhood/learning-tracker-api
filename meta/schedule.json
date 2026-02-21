@@ -8,10 +8,12 @@
       "students": [
         "2f47956a-3deb-4e28-bddc-1abb49dfd9d3",
         "32b1b6c3-b399-4089-bdd3-691d20727afb",
-        "c0c837c9-c00e-4db1-8696-6fc49bedc4fc",
         "decdb0ae-7617-4527-b9f3-6bcf30a8aeef",
         "b93ab96d-0fea-4950-a56b-8bf8af9b6738",
-        "a2f7d8b8-9efa-4bd6-bd9a-46057a86d53e"
+        "a2f7d8b8-9efa-4bd6-bd9a-46057a86d53e",
+        "f478ee25-e92b-4bfc-8c8b-a7828c1326e6",
+        "c0c837c9-c00e-4db1-8696-6fc49bedc4fc",
+        "418f9786-0210-463b-80af-595daf0b1c8d"
       ]
     },
     {
@@ -102,7 +104,6 @@
       "order": 0,
       "students": [
         "94e8b6de-5090-4b02-ab4e-4b9e112692f8",
-        "8837de4c-2042-4806-a7fe-4acc5ccdb326",
         "eab7d995-99d6-44cd-91e7-53ab3bc07231"
       ]
     },
@@ -112,8 +113,7 @@
       "label": "Python",
       "order": 0,
       "students": [
-        "eab7d995-99d6-44cd-91e7-53ab3bc07231",
-        "9ed6b912-911e-48dc-a2eb-3c54104bff20"
+        "eab7d995-99d6-44cd-91e7-53ab3bc07231"
       ]
     },
     {
@@ -132,6 +132,13 @@
       "id": "6437872b-4023-45f5-8f53-db68c84582b2",
       "weekday": 6,
       "label": "일정불확실",
+      "order": 0,
+      "students": []
+    },
+    {
+      "id": "c748a46a-441c-4f2e-88d7-a39aee5a11fb",
+      "weekday": -1,
+      "label": "임시/변동",
       "order": 0,
       "students": [
         "14864f79-806f-432d-902d-acab9359ec8d",

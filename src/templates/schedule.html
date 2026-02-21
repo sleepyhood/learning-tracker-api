@@ -126,6 +126,22 @@
 
         flex-wrap: wrap;
 
+        justify-content: flex-end;
+
+        align-items: center;
+
+      }
+
+      .sync-meta {
+
+        width: 100%;
+
+        text-align: right;
+
+        font-size: 0.78rem;
+
+        color: var(--muted);
+
       }
 
 
@@ -200,6 +216,14 @@
 
       }
 
+      .header-actions .btn-secondary:disabled {
+
+        opacity: 0.6;
+
+        cursor: not-allowed;
+
+      }
+
 
 
       .btn-ghost {
@@ -226,7 +250,7 @@
 
         display: grid;
 
-        grid-template-columns: repeat(7, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
 
         gap: 10px;
 
@@ -354,6 +378,92 @@
 
       }
 
+      .today-solved-panel {
+
+        margin: 6px 0 14px;
+
+        padding: 10px 12px;
+
+        border-radius: 14px;
+
+        border: 1px solid rgba(56, 189, 248, 0.35);
+
+        background: rgba(2, 132, 199, 0.12);
+
+      }
+
+      .today-solved-title {
+
+        font-size: 0.88rem;
+
+        font-weight: 700;
+
+        margin-bottom: 8px;
+
+        color: rgba(186, 230, 253, 0.98);
+
+      }
+
+      .today-solved-grid {
+
+        display: grid;
+
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+
+        gap: 8px;
+
+      }
+
+      .today-solved-item {
+
+        border-radius: 10px;
+
+        border: 1px solid rgba(34, 211, 238, 0.35);
+
+        background: rgba(8, 47, 73, 0.65);
+
+        padding: 7px 8px;
+
+      }
+
+      .today-solved-item a {
+
+        color: inherit;
+
+        text-decoration: none;
+
+      }
+
+      .today-solved-name {
+
+        font-size: 0.84rem;
+
+        font-weight: 700;
+
+        color: rgba(236, 254, 255, 0.98);
+
+        line-height: 1.2;
+
+      }
+
+      .today-solved-id {
+
+        font-size: 0.73rem;
+
+        color: rgba(186, 230, 253, 0.88);
+
+      }
+
+      .today-solved-empty {
+
+        font-size: 0.8rem;
+
+        color: rgba(148, 163, 184, 0.95);
+
+        margin: 0;
+
+      }
+
 
 
       .slot {
@@ -440,7 +550,17 @@
 
         flex-direction: column;
 
-        gap: 4px;
+        gap: 6px;
+
+      }
+
+      .day-column.is-uncertain {
+
+        border-color: rgba(125, 211, 252, 0.5);
+
+        box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.2), 0 14px 35px rgba(15, 23, 42, 0.5);
+
+        margin-left: 10px;
 
       }
 
@@ -450,7 +570,7 @@
 
         border-radius: 10px;
 
-        padding: 6px 7px;
+        padding: 8px 9px;
 
         background: radial-gradient(circle at top left, #1f2937 0, #020617 70%);
 
@@ -460,7 +580,15 @@
 
         flex-direction: column;
 
-        gap: 4px;
+        gap: 6px;
+
+      }
+
+      .slot-student.is-same-student {
+
+        border-color: rgba(56, 189, 248, 0.95);
+
+        box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.3), 0 6px 16px rgba(2, 132, 199, 0.28);
 
       }
 
@@ -494,9 +622,11 @@
 
       .student-name {
 
-        font-weight: 600;
+        font-weight: 700;
 
-        font-size: 0.9rem;
+        font-size: 0.95rem;
+
+        line-height: 1.2;
 
       }
 
@@ -510,6 +640,56 @@
 
       }
 
+      .weekly-badge {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        margin-left: 4px;
+
+        padding: 1px 7px;
+
+        border-radius: 999px;
+
+        font-size: 0.66rem;
+
+        font-weight: 700;
+
+        line-height: 1.25;
+
+        letter-spacing: 0.01em;
+
+        border: 1px solid rgba(125, 211, 252, 0.45);
+
+        color: rgba(186, 230, 253, 0.98);
+
+        background: rgba(12, 74, 110, 0.45);
+
+      }
+
+      .weekly-badge {
+
+        opacity: 0.7;
+
+        transform: translateY(0);
+
+        transition: opacity 0.15s ease, transform 0.15s ease;
+
+        pointer-events: none;
+
+      }
+
+      .slot-student:hover .weekly-badge,
+      .slot-student:focus-within .weekly-badge,
+      .slot-student.is-same-student .weekly-badge {
+
+        opacity: 1;
+
+        transform: translateY(0);
+
+      }
+
 
 
       .student-meta {
@@ -520,7 +700,7 @@
 
         align-items: flex-start;
 
-        gap: 8px;
+        gap: 10px;
 
       }
 
@@ -534,7 +714,11 @@
 
         align-items: flex-start;
 
-        gap: 4px;
+        min-width: 0;
+
+        flex: 1;
+
+        gap: 5px;
 
         font-size: 0.78rem;
 
@@ -588,6 +772,28 @@
 
         line-height: 1.25;
 
+        font-size: 0.8rem;
+
+        color: rgba(226, 232, 240, 0.95);
+
+      }
+
+      .hw-score {
+
+        display: none;
+
+        margin-left: 4px;
+
+        color: rgba(148, 163, 184, 0.9);
+
+      }
+
+      .slot-student:hover .hw-score,
+      .slot-student:focus-within .hw-score,
+      .slot-student.is-same-student .hw-score {
+
+        display: inline;
+
       }
 
       .hw-main {
@@ -597,6 +803,28 @@
         align-items: center;
 
         gap: 6px;
+
+        width: 100%;
+
+      }
+
+      .hw-row {
+
+        display: block;
+
+        width: 100%;
+
+      }
+
+      .hw-row-status {
+
+        margin: 0;
+
+      }
+
+      .hw-row-activity {
+
+        margin: 0;
 
       }
 
@@ -608,49 +836,79 @@
 
         border-radius: 999px;
 
-        padding: 2px 8px;
+        padding: 3px 9px;
 
-        font-size: 0.66rem;
+        font-size: 0.69rem;
 
         font-weight: 700;
 
         letter-spacing: 0.01em;
 
-        border: 1px solid rgba(148, 163, 184, 0.35);
+        line-height: 1.2;
 
-        color: rgba(226, 232, 240, 0.95);
+        align-self: flex-start;
 
-        background: rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(148, 163, 184, 0.55);
+
+        color: rgba(248, 250, 252, 0.98);
+
+        background: rgba(15, 23, 42, 0.9);
+
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 
       }
 
       .today-pill.is-solved {
 
-        border-color: rgba(16, 185, 129, 0.55);
+        border-color: rgba(16, 185, 129, 0.95);
 
-        color: rgba(167, 243, 208, 0.98);
+        color: rgba(209, 250, 229, 1);
 
-        background: rgba(6, 95, 70, 0.45);
+        background: rgba(6, 95, 70, 0.85);
+
+        box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.25), 0 2px 8px rgba(16, 185, 129, 0.25);
 
       }
 
       .today-pill.is-login {
 
-        border-color: rgba(245, 158, 11, 0.55);
+        border-color: rgba(245, 158, 11, 0.95);
 
-        color: rgba(254, 240, 138, 0.98);
+        color: rgba(254, 249, 195, 1);
 
-        background: rgba(120, 53, 15, 0.45);
+        background: rgba(120, 53, 15, 0.88);
+
+        box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.25), 0 2px 8px rgba(245, 158, 11, 0.22);
 
       }
 
       .today-pill.is-none {
 
-        border-color: rgba(71, 85, 105, 0.55);
+        border-color: rgba(100, 116, 139, 0.75);
 
-        color: rgba(148, 163, 184, 0.95);
+        color: rgba(203, 213, 225, 0.98);
 
-        background: rgba(15, 23, 42, 0.62);
+        background: rgba(15, 23, 42, 0.82);
+
+      }
+
+      .today-pill.is-error {
+
+        border-color: rgba(244, 114, 182, 0.95);
+
+        color: rgba(251, 207, 232, 1);
+
+        background: rgba(131, 24, 67, 0.85);
+
+        box-shadow: 0 0 0 1px rgba(244, 114, 182, 0.25), 0 2px 8px rgba(244, 114, 182, 0.22);
+
+        cursor: pointer;
+
+      }
+
+      .remove-student {
+
+        flex-shrink: 0;
 
       }
 
@@ -794,11 +1052,11 @@
 
 .hw-dot.hw-done {
 
-  border-color: rgba(52, 211, 153, 0.8);
+  border-color: rgba(16, 185, 129, 0.98);
 
-  background: rgba(52, 211, 153, 0.9);
+  background: rgba(16, 185, 129, 1);
 
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.8);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.95);
 
 }
 
@@ -806,11 +1064,11 @@
 
 .hw-dot.hw-today {
 
-  border-color: rgba(251, 191, 36, 0.9);
+  border-color: rgba(250, 204, 21, 0.98);
 
-  background: rgba(251, 191, 36, 0.9);
+  background: rgba(250, 204, 21, 1);
 
-  box-shadow: 0 0 6px rgba(251, 191, 36, 0.7);
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.9);
 
 }
 
@@ -828,21 +1086,41 @@
 
 .hw-dot.hw-progress {
 
-  border-color: rgba(249, 115, 22, 0.9);
+  border-color: rgba(249, 115, 22, 0.98);
 
-  background: rgba(249, 115, 22, 0.9);
+  background: rgba(249, 115, 22, 1);
 
-  box-shadow: 0 0 6px rgba(249, 115, 22, 0.7);
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.9);
 
 }
 
 .hw-dot.hw-unattempted {
 
-  border-color: rgba(239, 68, 68, 0.95);
+  border-color: rgba(239, 68, 68, 1);
 
-  background: rgba(239, 68, 68, 0.95);
+  background: rgba(239, 68, 68, 1);
 
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.75);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.95);
+
+}
+
+.hw-dot.hw-assigned {
+
+  border-color: rgba(59, 130, 246, 1);
+
+  background: rgba(59, 130, 246, 1);
+
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.95);
+
+}
+
+.hw-dot.hw-error {
+
+  border-color: rgba(244, 114, 182, 1);
+
+  background: rgba(244, 114, 182, 1);
+
+  box-shadow: 0 0 10px rgba(244, 114, 182, 0.95);
 
 }
 
@@ -877,28 +1155,38 @@
         <div class="header-actions">
 
           <a href="/" class="btn-secondary">← 내 대시보드</a>
+          <button id="refresh-hw-btn" type="button" class="btn-secondary">
+            숙제 상태 새로고침
+          </button>
+          <div id="hw-sync-meta" class="sync-meta">마지막 갱신: 아직 없음</div>
 
         </div>
 
       </header>
 
+      <section class="today-solved-panel">
+        <div class="today-solved-title">오늘 풀이 학생</div>
+        <div id="today-solved-grid" class="today-solved-grid"></div>
+        <p id="today-solved-empty" class="today-solved-empty">오늘 풀이 학생이 없습니다.</p>
+      </section>
+
 
 
       <main class="week-grid">
 
-        {% for w in range(7) %}
+        {% for w in display_weekdays %}
 
         <section
 
-          class="day-column {% if w == today_w %}is-today{% endif %}"
+          class="day-column {% if w == today_w %}is-today{% endif %} {% if w == uncertain_weekday %}is-uncertain{% endif %}"
 
         >
 
           <header class="day-header">
 
-            <span class="day-name">{{ weekday_labels[w] }}요일</span>
+            <span class="day-name">{{ weekday_label_map[w] }}</span>
 
-            {% if w == today_w %}
+            {% if w == today_w and w != uncertain_weekday %}
 
             <span class="day-badge">오늘</span>
 
@@ -914,7 +1202,7 @@
 
             slot in slots %}
 
-            <article class="slot" data-slot-id="{{ slot.id }}">
+            <article class="slot" data-slot-id="{{ slot.id }}" data-weekday="{{ w }}">
 
               <div class="slot-header">
 
@@ -964,7 +1252,10 @@
 
                     <span class="student-name">{{ s.name }}</span>
 
-                    <span class="student-id">@{{ s.student_id }}</span>
+                    <span class="student-id">
+                      @{{ s.student_id }}
+                      <span class="weekly-badge" title="주간 출석 요일">주 1회</span>
+                    </span>
 
                   </a>
 
@@ -980,11 +1271,15 @@
 
                     >
 
-                      <span class="hw-main">
-                        <span class="hw-dot" aria-hidden="true"></span>
-                        <span class="hw-text">숙제 확인</span>
+                      <span class="hw-row hw-row-status">
+                        <span class="hw-main">
+                          <span class="hw-dot" aria-hidden="true"></span>
+                          <span class="hw-text">숙제 확인</span><span class="hw-score"></span>
+                        </span>
                       </span>
-                      <span class="today-pill is-none">오늘 미접속</span>
+                      <span class="hw-row hw-row-activity">
+                        <span class="today-pill is-none">오늘 미접속</span>
+                      </span>
 
                     </a>
 
@@ -1198,18 +1493,25 @@
 
                 <span class="student-name">${s.name}</span>
 
-                <span class="student-id">@${s.student_id}</span>
+                <span class="student-id">
+                  @${s.student_id}
+                  <span class="weekly-badge" title="주간 출석 요일">주 1회</span>
+                </span>
 
               </a>
 
               <div class="student-meta">
 
                 <a class="hw-link" href="/students/${s.user_uuid}/homework" title="숙제 기록 보기">
-                  <span class="hw-main">
-                    <span class="hw-dot" aria-hidden="true"></span>
-                    <span class="hw-text">숙제 확인</span>
+                  <span class="hw-row hw-row-status">
+                    <span class="hw-main">
+                      <span class="hw-dot" aria-hidden="true"></span>
+                      <span class="hw-text">숙제 확인</span><span class="hw-score"></span>
+                    </span>
                   </span>
-                  <span class="today-pill is-none">오늘 미접속</span>
+                  <span class="hw-row hw-row-activity">
+                    <span class="today-pill is-none">오늘 미접속</span>
+                  </span>
 
                 </a>
 
@@ -1249,108 +1551,275 @@
 
         // 각 학생에 대해 최신 숙제 기록이 있는지 + 상태 표시
 
-async function attachHomeworkBadges() {
+async function attachHomeworkBadges(targetUuids = null) {
 
-  const nodes = Array.from(document.querySelectorAll(".slot-student"));
-  const uniqueUuids = Array.from(
-    new Set(nodes.map((n) => n.dataset.userUuid).filter(Boolean))
-  );
+  let uniqueUuids = [];
+  if (Array.isArray(targetUuids) && targetUuids.length) {
+    uniqueUuids = Array.from(new Set(targetUuids.map((x) => String(x || "").trim()).filter(Boolean)));
+  } else {
+    const nodes = Array.from(document.querySelectorAll(".slot-student"));
+    uniqueUuids = Array.from(
+      new Set(nodes.map((n) => n.dataset.userUuid).filter(Boolean))
+    );
+  }
+  const syncMetaEl = document.getElementById("hw-sync-meta");
+  const formatTime = (d) => {
+    const p = (n) => String(n).padStart(2, "0");
+    return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  };
+  const updateSyncMeta = (okCount, failCount, note = "") => {
+    if (!syncMetaEl) return;
+    const base = `마지막 갱신: ${formatTime(new Date())}`;
+    if (note) {
+      syncMetaEl.textContent = `${base} (${note})`;
+      return;
+    }
+    syncMetaEl.textContent = `${base} (정상 ${okCount}, 실패 ${failCount})`;
+  };
 
-  const applyBadge = (uuid, log) => {
+  const resolveHomeworkState = (log, hasError = false) => {
+    const LABEL = {
+      none: "숙제 없음",
+      error: "조회 실패",
+      todayDone: "오늘 완료",
+      todayProgress: "오늘 진행",
+      todayUnattempted: "오늘 숙제냄",
+      recentDone: "최근 완료",
+      recentProgress: "최근 진행",
+      recentUnattempted: "최근 미시도",
+    };
+
+    if (hasError) {
+      return { dotClasses: ["hw-error"], text: LABEL.error, score: "" };
+    }
+
+    if (!log) {
+      return { dotClasses: [], text: LABEL.none, score: "" };
+    }
+
+    const flags = log.flags || {};
+    const counts = log.counts || {};
+    const total = counts.total || 0;
+    const passed = counts.passed || 0;
+    const wrong = counts.wrong || 0;
+    const partial = counts.partial || 0;
+    const attempted = passed + wrong + partial;
+    const scoreText = total > 0 ? `(${passed}/${total})` : "";
+
+    if (flags.is_given_today) {
+      if (flags.all_passed) {
+        return {
+          dotClasses: ["hw-today", "hw-done"],
+          text: LABEL.todayDone,
+          score: scoreText,
+        };
+      }
+      if (attempted > 0) {
+        return {
+          dotClasses: ["hw-today", "hw-progress"],
+          text: LABEL.todayProgress,
+          score: scoreText,
+        };
+      }
+      return {
+        dotClasses: ["hw-today", "hw-assigned"],
+        text: LABEL.todayUnattempted,
+        score: scoreText,
+      };
+    }
+
+    if (flags.all_passed) {
+      return { dotClasses: ["hw-done"], text: LABEL.recentDone, score: scoreText };
+    }
+
+    if (flags.has_any && flags.has_unresolved) {
+      return attempted > 0
+        ? { dotClasses: ["hw-progress"], text: LABEL.recentProgress, score: scoreText }
+        : {
+            dotClasses: ["hw-unattempted"],
+            text: LABEL.recentUnattempted,
+            score: scoreText,
+          };
+    }
+
+    if (total > 0) {
+      return attempted > 0
+        ? { dotClasses: ["hw-progress"], text: LABEL.recentProgress, score: scoreText }
+        : {
+            dotClasses: ["hw-unattempted"],
+            text: LABEL.recentUnattempted,
+            score: scoreText,
+          };
+    }
+
+    return { dotClasses: [], text: LABEL.none, score: "" };
+  };
+
+  const applyTodayActivity = (el, activity, hasError = false) => {
+    if (hasError) {
+      el.className = "today-pill is-error";
+      el.textContent = "동기화 실패";
+      el.title = "클릭하여 해당 학생 상태 재시도";
+      return;
+    }
+    el.className = "today-pill is-none";
+    el.textContent = "오늘 미접속";
+    el.title = "";
+    if (activity && activity.has_submission_today) {
+      el.className = "today-pill is-solved";
+      el.textContent = "오늘 풀이";
+    } else if (activity && activity.has_login_today) {
+      el.className = "today-pill is-login";
+      el.textContent = "오늘 접속";
+    }
+  };
+
+  const applyBadge = (uuid, log, hasError = false) => {
     document
       .querySelectorAll(`.slot-student[data-user-uuid="${uuid}"]`)
       .forEach((el) => {
         const dot = el.querySelector(".hw-dot");
         const text = el.querySelector(".hw-text");
+        const score = el.querySelector(".hw-score");
         const today = el.querySelector(".today-pill");
-        if (!dot || !text || !today) return;
+        if (!dot || !text || !today || !score) return;
 
-        // 기본 상태 초기화
+        const state = resolveHomeworkState(log || null, hasError);
         dot.className = "hw-dot";
-        today.className = "today-pill is-none";
-        today.textContent = "오늘 미접속";
-
-        if (!log) {
-          text.textContent = "숙제 X";
-          return;
+        if (state.dotClasses.length) {
+          dot.classList.add(...state.dotClasses);
         }
-
-        const flags = log.flags || {};
-        const activity = log.today_activity || {};
-        const counts = log.counts || {};
-        const total = counts.total || 0;
-        const passed = counts.passed || 0;
-        const wrong = counts.wrong || 0;
-        const partial = counts.partial || 0;
-        const attempted = passed + wrong + partial;
-        const scoreText = total > 0 ? ` (${passed}/${total})` : "";
-
-        if (flags.is_given_today) {
-          if (flags.all_passed) {
-            dot.classList.add("hw-today", "hw-done");
-            text.textContent = `오늘 숙제 완료${scoreText}`;
-          } else {
-            if (attempted > 0) {
-              dot.classList.add("hw-today", "hw-progress");
-              text.textContent = `오늘 숙제 진행중${scoreText}`;
-            } else {
-              dot.classList.add("hw-today", "hw-unattempted");
-              text.textContent = `오늘 숙제 미시도${scoreText}`;
-            }
-          }
-        } else {
-          if (flags.all_passed) {
-            dot.classList.add("hw-done");
-            text.textContent = `최근 숙제 완료${scoreText}`;
-          } else if (flags.has_any && flags.has_unresolved) {
-            if (attempted > 0) {
-              dot.classList.add("hw-progress");
-              text.textContent = `최근 숙제 진행중${scoreText}`;
-            } else {
-              dot.classList.add("hw-unattempted");
-              text.textContent = `최근 숙제 미시도${scoreText}`;
-            }
-          } else if (total > 0) {
-            // 혹시라도 카운트만 있고 플래그가 비어 있는 경우 대비
-            if (attempted > 0) {
-              dot.classList.add("hw-progress");
-              text.textContent = `최근 숙제 진행중${scoreText}`;
-            } else {
-              dot.classList.add("hw-unattempted");
-              text.textContent = `최근 숙제 미시도${scoreText}`;
-            }
-          } else {
-            text.textContent = "숙제 X";
-          }
-        }
-
-        if (activity.has_submission_today) {
-          today.className = "today-pill is-solved";
-          today.textContent = "오늘 풀이";
-        } else if (activity.has_login_today) {
-          today.className = "today-pill is-login";
-          today.textContent = "오늘 접속";
-        }
+        text.textContent = state.text;
+        score.textContent = state.score || "";
+        applyTodayActivity(today, (log && log.today_activity) || null, hasError);
       });
   };
 
-  if (!uniqueUuids.length) return;
+  if (!uniqueUuids.length) {
+    updateSyncMeta(0, 0, "대상 없음");
+    renderTodaySolvedStudents();
+    return { okCount: 0, failCount: 0, total: 0 };
+  }
 
   try {
     const byUuid = await fetchHomeworkLatestBatchFresh(uniqueUuids);
+    let okCount = 0;
+    let failCount = 0;
     uniqueUuids.forEach((uuid) => {
       const data = byUuid[uuid];
       const log = data && data.ok && data.log;
       if (!data || data.ok === false) {
         console.warn("homework_latest_batch failed for", uuid, data && data.error);
+        applyBadge(uuid, null, true);
+        failCount += 1;
+        return;
       }
-      applyBadge(uuid, log || null);
+      applyBadge(uuid, log || null, false);
+      okCount += 1;
     });
+    updateSyncMeta(okCount, failCount);
+    renderTodaySolvedStudents();
+    return { okCount, failCount, total: uniqueUuids.length };
   } catch (e) {
     console.warn("homework_latest_batch request failed", e);
-    uniqueUuids.forEach((uuid) => applyBadge(uuid, null));
+    uniqueUuids.forEach((uuid) => applyBadge(uuid, null, true));
+    updateSyncMeta(0, uniqueUuids.length);
+    renderTodaySolvedStudents();
+    return { okCount: 0, failCount: uniqueUuids.length, total: uniqueUuids.length };
   }
 
+}
+
+async function refreshHomeworkBadges() {
+  const btn = document.getElementById("refresh-hw-btn");
+  if (btn && btn.disabled) return;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "동기화 중...";
+  }
+  try {
+    await attachHomeworkBadges();
+    toast("숙제 상태를 새로고침했습니다.");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "숙제 상태 새로고침";
+    }
+  }
+}
+
+function renderTodaySolvedStudents() {
+  const grid = document.getElementById("today-solved-grid");
+  const empty = document.getElementById("today-solved-empty");
+  if (!grid || !empty) return;
+
+  const byUuid = new Map();
+  document.querySelectorAll(".slot-student").forEach((studentEl) => {
+    const uuid = studentEl.dataset.userUuid;
+    const studentId = studentEl.dataset.studentId;
+    const pill = studentEl.querySelector(".today-pill");
+    const nameEl = studentEl.querySelector(".student-name");
+    if (!uuid || !studentId || !pill || !pill.classList.contains("is-solved")) return;
+    if (byUuid.has(uuid)) return;
+    byUuid.set(uuid, {
+      uuid,
+      studentId,
+      name: (nameEl && nameEl.textContent && nameEl.textContent.trim()) || studentId,
+    });
+  });
+
+  grid.innerHTML = "";
+  const list = Array.from(byUuid.values());
+  if (!list.length) {
+    empty.style.display = "";
+    return;
+  }
+
+  empty.style.display = "none";
+  list
+    .sort((a, b) => a.name.localeCompare(b.name, "ko"))
+    .forEach((s) => {
+      const card = document.createElement("article");
+      card.className = "today-solved-item";
+      card.innerHTML = `
+        <a href="/user/${encodeURIComponent(s.studentId)}" title="학생 대시보드 열기">
+          <div class="today-solved-name">${s.name}</div>
+          <div class="today-solved-id">@${s.studentId}</div>
+        </a>
+      `;
+      grid.appendChild(card);
+    });
+}
+
+function renderWeeklyAttendanceBadges() {
+  const weekdayLabel = ["월", "화", "수", "목", "금", "토", "일"];
+  const byStudent = new Map();
+
+  document.querySelectorAll(".slot").forEach((slotEl) => {
+    const w = Number(slotEl.dataset.weekday);
+    if (!Number.isInteger(w) || w < 0 || w > 6) return;
+    slotEl.querySelectorAll(".slot-student").forEach((studentEl) => {
+      const uuid = studentEl.dataset.userUuid;
+      if (!uuid) return;
+      if (!byStudent.has(uuid)) byStudent.set(uuid, new Set());
+      byStudent.get(uuid).add(w);
+    });
+  });
+
+  document.querySelectorAll(".slot-student").forEach((studentEl) => {
+    const uuid = studentEl.dataset.userUuid;
+    const badge = studentEl.querySelector(".weekly-badge");
+    if (!uuid || !badge) return;
+    const days = Array.from(byStudent.get(uuid) || []).sort((a, b) => a - b);
+    const count = days.length;
+    if (!count) {
+      badge.textContent = "주 0회";
+      badge.title = "주간 출석 요일 정보 없음";
+      return;
+    }
+    badge.textContent = `주 ${count}회`;
+    badge.title = `주간 출석: ${days.map((d) => weekdayLabel[d]).join("·")}`;
+  });
 }
 
 
@@ -1360,18 +1829,45 @@ async function attachHomeworkBadges() {
         // 슬롯 생성 버튼
 
         document.addEventListener("click", async (e) => {
+          const retryPill = e.target.closest(".today-pill.is-error");
+          if (retryPill) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const studentEl = retryPill.closest(".slot-student");
+            const uuid = studentEl && studentEl.dataset && studentEl.dataset.userUuid;
+            if (!uuid) return;
+
+            const prevText = retryPill.textContent;
+            retryPill.textContent = "재시도...";
+            try {
+              const result = await attachHomeworkBadges([uuid]);
+              if (result && result.failCount === 0) {
+                toast("해당 학생 동기화 완료");
+              } else {
+                toast("해당 학생 동기화 실패");
+              }
+            } catch (err) {
+              console.warn("single student homework retry failed", err);
+              toast("해당 학생 동기화 실패");
+              retryPill.textContent = prevText || "동기화 실패";
+            }
+            return;
+          }
 
           const addSlotBtn = e.target.closest(".add-slot");
 
           if (addSlotBtn) {
 
             const w = addSlotBtn.dataset.weekday;
+            const isUncertain = Number(w) === -1;
+            const defaultLabel = isUncertain ? "임시/변동" : "";
 
             const label = prompt(
 
               "이 슬롯의 이름을 입력하세요 (예: 16:00 C언어반)"
 
-            );
+            , defaultLabel);
 
             if (!label) return;
 
@@ -1435,6 +1931,8 @@ async function attachHomeworkBadges() {
 
               slotEl.remove();
 
+              renderWeeklyAttendanceBadges();
+              renderTodaySolvedStudents();
               toast("슬롯이 삭제되었습니다.");
 
             } catch (err) {
@@ -1489,6 +1987,8 @@ async function attachHomeworkBadges() {
 
               studentEl.remove();
 
+              renderWeeklyAttendanceBadges();
+              renderTodaySolvedStudents();
               toast("슬롯에서 제거했습니다.");
 
             } catch (err) {
@@ -1558,6 +2058,7 @@ async function attachHomeworkBadges() {
             renderSlotStudents(slotEl, data.slot);
 
             attachHomeworkBadges();
+            renderWeeklyAttendanceBadges();
 
             toast(id + " 추가 완료");
 
@@ -1573,11 +2074,103 @@ async function attachHomeworkBadges() {
 
         });
 
+        const clearSameStudentHighlight = () => {
+          document.querySelectorAll(".slot-student.is-same-student").forEach((el) => {
+            el.classList.remove("is-same-student");
+          });
+        };
+
+        const highlightSameStudent = (userUuid) => {
+          clearSameStudentHighlight();
+          if (!userUuid) return;
+          document
+            .querySelectorAll(`.slot-student[data-user-uuid="${userUuid}"]`)
+            .forEach((el) => el.classList.add("is-same-student"));
+        };
+
+        document.addEventListener("mouseover", (e) => {
+          const studentEl = e.target.closest(".slot-student");
+          if (!studentEl) return;
+          highlightSameStudent(studentEl.dataset.userUuid);
+        });
+
+        document.addEventListener("mouseout", (e) => {
+          const fromStudent = e.target.closest(".slot-student");
+          if (!fromStudent) return;
+          const toStudent = e.relatedTarget && e.relatedTarget.closest
+            ? e.relatedTarget.closest(".slot-student")
+            : null;
+          if (toStudent && toStudent.dataset.userUuid === fromStudent.dataset.userUuid) {
+            return;
+          }
+          clearSameStudentHighlight();
+        });
+
+        document.addEventListener("focusin", (e) => {
+          const studentEl = e.target.closest(".slot-student");
+          if (!studentEl) return;
+          highlightSameStudent(studentEl.dataset.userUuid);
+        });
+
+        document.addEventListener("focusout", (e) => {
+          const fromStudent = e.target.closest(".slot-student");
+          if (!fromStudent) return;
+          const toStudent = e.relatedTarget && e.relatedTarget.closest
+            ? e.relatedTarget.closest(".slot-student")
+            : null;
+          if (toStudent && toStudent.dataset.userUuid === fromStudent.dataset.userUuid) {
+            return;
+          }
+          clearSameStudentHighlight();
+        });
+
 
 
         loadUsernames();
 
+        const refreshHwBtn = document.getElementById("refresh-hw-btn");
+        if (refreshHwBtn) {
+          refreshHwBtn.addEventListener("click", refreshHomeworkBadges);
+        }
         attachHomeworkBadges();
+        renderWeeklyAttendanceBadges();
+
+        const AUTO_REFRESH_MS = 90_000;
+        let autoRefreshTimer = null;
+        let autoRefreshInFlight = false;
+
+        const runAutoRefresh = async () => {
+          if (document.hidden || autoRefreshInFlight) return;
+          autoRefreshInFlight = true;
+          try {
+            await attachHomeworkBadges();
+          } finally {
+            autoRefreshInFlight = false;
+          }
+        };
+
+        const startAutoRefresh = () => {
+          if (autoRefreshTimer) return;
+          autoRefreshTimer = window.setInterval(runAutoRefresh, AUTO_REFRESH_MS);
+        };
+
+        const stopAutoRefresh = () => {
+          if (!autoRefreshTimer) return;
+          window.clearInterval(autoRefreshTimer);
+          autoRefreshTimer = null;
+        };
+
+        document.addEventListener("visibilitychange", () => {
+          if (document.hidden) {
+            stopAutoRefresh();
+            return;
+          }
+          runAutoRefresh();
+          startAutoRefresh();
+        });
+
+        window.addEventListener("beforeunload", stopAutoRefresh);
+        startAutoRefresh();
 
       })();
 

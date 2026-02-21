@@ -19,6 +19,8 @@ from uuid import uuid4
 
 from urllib.parse import quote
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
+import time
 from utils.questions_crawler import do_crawling
 
 from utils.summarizer import (
@@ -85,6 +87,11 @@ if not UUIDS_PATH.exists():
 
 KST = timezone(timedelta(hours=9))
 
+# homework_latest_batch에서 학생별 submissions 조회 결과를 짧게 캐시
+TODAY_ACTIVITY_CACHE: dict[str, dict] = {}
+TODAY_ACTIVITY_CACHE_LOCK = threading.Lock()
+TODAY_ACTIVITY_CACHE_MAX = 5000
+
 
 
 
@@ -93,6 +100,8 @@ SCHEDULE_PATH = Path("meta/schedule.json")
 SCHEDULE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"]
+UNCERTAIN_WEEKDAY = -1
+UNCERTAIN_WEEKDAY_LABEL = "일정 불확실"
 
 
 def load_schedule() -> dict:
@@ -796,6 +805,41 @@ def _fetch_today_activity_for_student(session: requests.Session | None, username
     return activity
 
 
+def _get_cached_today_activity(username: str, ttl_ms: int) -> dict | None:
+    if not username:
+        return None
+    now_ms = int(time.time() * 1000)
+    with TODAY_ACTIVITY_CACHE_LOCK:
+        entry = TODAY_ACTIVITY_CACHE.get(username)
+        if not entry:
+            return None
+        if now_ms - int(entry.get("fetched_at_ms", 0)) > max(0, ttl_ms):
+            TODAY_ACTIVITY_CACHE.pop(username, None)
+            return None
+        data = entry.get("data")
+        return dict(data) if isinstance(data, dict) else None
+
+
+def _set_cached_today_activity(username: str, activity: dict):
+    if not username or not isinstance(activity, dict):
+        return
+    now_ms = int(time.time() * 1000)
+    with TODAY_ACTIVITY_CACHE_LOCK:
+        if len(TODAY_ACTIVITY_CACHE) >= TODAY_ACTIVITY_CACHE_MAX:
+            # 가장 단순한 메모리 상한 보호: 오래된 항목 일부 제거
+            keys = list(TODAY_ACTIVITY_CACHE.keys())[: max(1, TODAY_ACTIVITY_CACHE_MAX // 10)]
+            for k in keys:
+                TODAY_ACTIVITY_CACHE.pop(k, None)
+        TODAY_ACTIVITY_CACHE[username] = {
+            "fetched_at_ms": now_ms,
+            "data": {
+                "has_login_today": bool(activity.get("has_login_today", False)),
+                "has_submission_today": bool(activity.get("has_submission_today", False)),
+                "submission_count_today": int(activity.get("submission_count_today", 0)),
+            },
+        }
+
+
 def build_homework_latest_payload(doc: dict, today_activity: dict | None = None) -> dict:
     logs = doc.get("homework_logs", [])
     if not logs:
@@ -903,6 +947,12 @@ def homework_latest_batch():
     except (TypeError, ValueError):
         max_workers = 6
     max_workers = max(1, min(max_workers, 12))
+    include_today_activity = bool(payload.get("include_today_activity", True))
+    try:
+        today_activity_ttl_ms = int(payload.get("today_activity_ttl_ms", 120_000))
+    except (TypeError, ValueError):
+        today_activity_ttl_ms = 120_000
+    today_activity_ttl_ms = max(0, min(today_activity_ttl_ms, 600_000))
 
     user_uuids = []
     seen = set()
@@ -917,6 +967,16 @@ def homework_latest_batch():
         user_uuids.append(user_uuid)
 
     cookie_dict = load_cookies(COOKIE_PATH)
+    activity_session_local = threading.local()
+
+    def get_activity_session():
+        if not cookie_dict:
+            return None
+        s = getattr(activity_session_local, "session", None)
+        if s is None:
+            s = get_authenticated_session(cookie_dict)
+            activity_session_local.session = s
+        return s
 
     def process_user(user_uuid: str):
         doc = load_doc_by_any(user_uuid)
@@ -926,13 +986,20 @@ def homework_latest_batch():
         username = profile.get("student_id") or profile.get("name")
 
         activity = _today_activity_from_doc(doc)
-        try:
-            session = get_authenticated_session(cookie_dict) if cookie_dict else None
-            fetched = _fetch_today_activity_for_student(session, username)
-            fetched["has_login_today"] = activity["has_login_today"]
-            activity = fetched
-        except Exception:
-            pass
+        if include_today_activity:
+            cached = _get_cached_today_activity(username, today_activity_ttl_ms)
+            if cached:
+                cached["has_login_today"] = activity["has_login_today"]
+                activity = cached
+            else:
+                try:
+                    session = get_activity_session()
+                    fetched = _fetch_today_activity_for_student(session, username)
+                    fetched["has_login_today"] = activity["has_login_today"]
+                    activity = fetched
+                    _set_cached_today_activity(username, fetched)
+                except Exception:
+                    pass
 
         return build_homework_latest_payload(doc, today_activity=activity)
 
@@ -1232,8 +1299,8 @@ def api_schedule_create_slot():
     except (TypeError, ValueError):
         return jsonify({"ok": False, "error": "invalid weekday"}), 400
 
-    if not 0 <= weekday <= 6:
-        return jsonify({"ok": False, "error": "weekday must be 0-6"}), 400
+    if not (-1 <= weekday <= 6):
+        return jsonify({"ok": False, "error": "weekday must be -1~6"}), 400
 
     data = load_schedule()
     slots = data.setdefault("slots", [])
@@ -1341,6 +1408,7 @@ def schedule_page():
     # 로그인 필수
     raw = load_schedule()
     slots_by_wday = {i: [] for i in range(7)}
+    slots_by_wday[UNCERTAIN_WEEKDAY] = []
 
     for slot in raw.get("slots", []):
         try:
@@ -1348,7 +1416,7 @@ def schedule_page():
         except (TypeError, ValueError):
             w = 0
         if w not in slots_by_wday:
-            w = 0
+            w = UNCERTAIN_WEEKDAY
         slots_by_wday[w].append(slot)
 
     # order → label 순으로 정렬
@@ -1362,12 +1430,19 @@ def schedule_page():
     }
 
     today_w = datetime.now(tz=KST).weekday()  # 월=0
+    # 화면 표시 요일: 화~토 + 일정 불확실
+    display_weekdays = [1, 2, 3, 4, 5, UNCERTAIN_WEEKDAY]
+    weekday_label_map = {i: f"{WEEKDAY_LABELS[i]}요일" for i in range(7)}
+    weekday_label_map[UNCERTAIN_WEEKDAY] = UNCERTAIN_WEEKDAY_LABEL
 
     role_ctx = {"role_label": "Admin", "is_admin": True}
     return render_template(
         "schedule.html",
         weekday_labels=WEEKDAY_LABELS,
         slots_by_wday=hydrated_by_wday,
+        display_weekdays=display_weekdays,
+        weekday_label_map=weekday_label_map,
+        uncertain_weekday=UNCERTAIN_WEEKDAY,
         today_w=today_w,
         **role_ctx,
     )
