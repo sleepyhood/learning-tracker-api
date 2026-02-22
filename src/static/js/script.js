@@ -364,65 +364,163 @@ function refreshUserProgress(username) {
 // 헤더에 있는 기능
 
 document.addEventListener("DOMContentLoaded", () => {
+  const searchInput = document.getElementById("username-input");
+  const searchForm = document.getElementById("search-form");
+  const searchClearBtn = document.getElementById("search-clear-btn");
+  const autocompleteList = document.getElementById("autocomplete-list");
+
+  if (!searchInput || !searchForm || !autocompleteList) return;
+
+  const RECENT_KEY = "learning_tracker_recent_usernames";
+  const MAX_SUGGESTIONS = 8;
+  const MAX_RECENT = 5;
   let usernameList = [];
+  let filteredSuggestions = [];
+  let activeIndex = -1;
+  let debounceTimer = null;
+
+  const getRecentSearches = () => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      console.error("recent parse error:", err);
+      return [];
+    }
+  };
+
+  const saveRecentSearches = (items) => {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(items));
+  };
+
+  const pushRecentSearch = (name) => {
+    const value = (name || "").trim();
+    if (!value) return;
+    const next = [value, ...getRecentSearches().filter((item) => item !== value)].slice(
+      0,
+      MAX_RECENT
+    );
+    saveRecentSearches(next);
+  };
+
+  const closeAutocomplete = () => {
+    autocompleteList.innerHTML = "";
+    filteredSuggestions = [];
+    activeIndex = -1;
+  };
+
+  const renderAutocomplete = (items) => {
+    autocompleteList.innerHTML = "";
+    filteredSuggestions = items;
+    activeIndex = -1;
+
+    items.forEach((name, index) => {
+      const li = document.createElement("li");
+      li.textContent = name;
+      li.dataset.index = String(index);
+      li.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        searchInput.value = name;
+        searchClearBtn?.classList.toggle("hidden", !searchInput.value.trim());
+        pushRecentSearch(name);
+        closeAutocomplete();
+        searchForm.requestSubmit();
+      });
+      autocompleteList.appendChild(li);
+    });
+  };
+
+  const updateSuggestions = () => {
+    const raw = searchInput.value.trim();
+    searchClearBtn?.classList.toggle("hidden", raw.length === 0);
+
+    if (!raw) {
+      renderAutocomplete(getRecentSearches());
+      return;
+    }
+
+    const query = raw.toLowerCase();
+    const matches = usernameList
+      .filter((name) => name.toLowerCase().includes(query))
+      .slice(0, MAX_SUGGESTIONS);
+    renderAutocomplete(matches);
+  };
 
   fetch("/proxy/user_rank")
     .then((res) => res.json())
     .then((data) => {
-      usernameList = data.usernames; // ✅ 누락된 부분
-
-      console.log(usernameList); // ["설재경0216", "다른이름", ...]
+      usernameList = Array.isArray(data.usernames) ? data.usernames : [];
+      updateSuggestions();
     })
     .catch((err) => console.error("Error:", err));
 
-  const searchBtn = document.getElementById("search-btn");
-  const searchInput = document.getElementById("username-input");
-  const searchForm = document.getElementById("search-form");
+  searchInput.addEventListener("input", () => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(updateSuggestions, 120);
+  });
+
+  searchInput.addEventListener("focus", updateSuggestions);
+
+  searchInput.addEventListener("keydown", (e) => {
+    if (!filteredSuggestions.length) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % filteredSuggestions.length;
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIndex =
+        (activeIndex - 1 + filteredSuggestions.length) % filteredSuggestions.length;
+    } else if (e.key === "Enter" && activeIndex >= 0) {
+      e.preventDefault();
+      const selected = filteredSuggestions[activeIndex];
+      if (selected) {
+        searchInput.value = selected;
+        pushRecentSearch(selected);
+        closeAutocomplete();
+        searchForm.requestSubmit();
+      }
+      return;
+    } else if (e.key === "Escape") {
+      closeAutocomplete();
+      return;
+    } else {
+      return;
+    }
+
+    const items = autocompleteList.querySelectorAll("li");
+    items.forEach((item, idx) => {
+      item.classList.toggle("active", idx === activeIndex);
+      if (idx === activeIndex) item.scrollIntoView({ block: "nearest" });
+    });
+  });
+
+  searchForm.addEventListener("submit", (e) => {
+    const value = searchInput.value.trim();
+    if (!value) {
+      e.preventDefault();
+      return;
+    }
+    searchInput.value = value;
+    pushRecentSearch(value);
+    closeAutocomplete();
+  });
+
+  searchClearBtn?.addEventListener("click", () => {
+    searchInput.value = "";
+    searchInput.focus();
+    updateSuggestions();
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!searchForm.contains(e.target)) closeAutocomplete();
+  });
 
   const urlParams = new URLSearchParams(window.location.search);
   const usernameParam = urlParams.get("username");
 
-  // 유저명 자동안성
-  searchInput.addEventListener("input", () => {
-    const inputValue = searchInput.value.toLowerCase();
-
-    // usernameList에서 필터링
-    const matches = usernameList.filter((name) =>
-      name.toLowerCase().includes(inputValue)
-    );
-
-    showAutocomplete(matches, searchInput, searchForm); // 자동완성 박스 띄우기 (아래 함수 구현)
-  });
-
-  // URL 파라미터로 자동 submit될 경우
   if (usernameParam) {
-    searchInput.classList.add("show");
     searchInput.value = decodeURIComponent(usernameParam);
-    searchForm.submit();
+    searchClearBtn?.classList.toggle("hidden", false);
   }
-
-  // 버튼 클릭 시 input 슬라이드 토글
-  searchBtn.addEventListener("click", (e) => {
-    if (!searchInput.classList.contains("show")) {
-      e.preventDefault(); // 처음 클릭 시 검색 막고 input만 보여주기
-      searchInput.classList.add("show");
-      searchInput.focus();
-    }
-  });
 });
-
-function showAutocomplete(matches, searchInput, searchForm) {
-  const list = document.getElementById("autocomplete-list");
-  list.innerHTML = ""; // 초기화
-
-  matches.slice(0, 5).forEach((name) => {
-    const li = document.createElement("li");
-    li.textContent = name;
-    li.addEventListener("click", () => {
-      searchInput.value = name;
-      list.innerHTML = "";
-      searchForm.submit();
-    });
-    list.appendChild(li);
-  });
-}

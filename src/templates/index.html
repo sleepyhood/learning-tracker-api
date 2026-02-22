@@ -11,12 +11,11 @@
 
 
     <title>진도율 시각화</title>
-
-
-
-
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script><style>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+    />
+    <style>
 
 
   
@@ -43,48 +42,48 @@
     --g: 20px;
 
 
-    --bg: #f7f9fc;
+    --bg: #eef3fb;
 
 
-    --bg-gradient: radial-gradient(1200px 600px at 10% 10%, #e0edff 0%, transparent 60%),
-      radial-gradient(900px 600px at 90% 20%, #e6fff1 0%, transparent 55%),
-      linear-gradient(160deg, #f7f9fc 0%, #f2f6fb 55%, #edf2f8 100%);
+    --bg-gradient: radial-gradient(1100px 540px at 8% 6%, #dbe9ff 0%, transparent 62%),
+      radial-gradient(900px 560px at 92% 12%, #dcf6ef 0%, transparent 58%),
+      linear-gradient(160deg, #eef3fb 0%, #eaf1fb 52%, #e6edf8 100%);
 
 
     --surface: #ffffff;
 
 
-    --surface-soft: #f8fafc;
+    --surface-soft: #f4f8ff;
 
 
-    --surface-subtle: #eef2ff;
+    --surface-subtle: #eaf2ff;
 
 
-    --border: #e2e8f0;
+    --border: #d7e1ef;
 
 
-    --border-strong: #cbd5e1;
+    --border-strong: #b8c7dd;
 
 
-    --text: #0f172a;
+    --text: #0d1b34;
 
 
-    --muted: #64748b;
+    --muted: #5f708a;
 
 
-    --accent: #2563eb;
+    --accent: #0b74ff;
 
 
       --radius: 16px;
 
 
-    --accent-strong: #2563eb;
+    --accent-strong: #085fd4;
 
 
-    --accent-soft: #eff6ff;
+    --accent-soft: #e8f1ff;
 
 
-    --danger: #ef4444;
+    --danger: #d94b63;
 
 
     --radius-md: 12px;
@@ -110,7 +109,10 @@
     --motion-fast: 120ms;
     --motion-base: 180ms;
     --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
-    --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.22);
+    --focus-ring: 0 0 0 3px rgba(11, 116, 255, 0.22);
+    --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    --font-display: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    --font-numeric: "Space Grotesk", "IBM Plex Sans KR", sans-serif;
 
 
   }
@@ -146,10 +148,7 @@
     min-height: 100vh;
 
 
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-
-
-      "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    font-family: var(--font-body);
 
 
     background: var(--bg-gradient);
@@ -266,20 +265,9 @@
     margin-top: var(--space-4);
     margin-bottom: var(--space-3);
     padding: var(--space-3);
-
-
-    display: flex;
-
-
-    flex-wrap: wrap;
-
-
-    align-items: flex-end;
-
-
-    justify-content: space-between;
-
-
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) minmax(320px, 460px) auto;
+    align-items: start;
     gap: var(--space-3);
 
 
@@ -300,17 +288,9 @@
 
 
   .header-left {
-
-
     display: flex;
-
-
     flex-direction: column;
-
-
     gap: 6px;
-
-
   }
 
 
@@ -342,6 +322,7 @@
 
 
     font-weight: 800;
+    font-family: var(--font-display);
 
 
     letter-spacing: -0.02em;
@@ -367,6 +348,7 @@
     margin: 0;
     font-size: 1.05rem;
     font-weight: 700;
+    font-family: var(--font-display);
     color: var(--text);
   }
   .section-head {
@@ -427,249 +409,128 @@
 
 
 
-  .header-actions {
-
-
-    display: flex;
-
-
-    flex-direction: column;
-
-
-    align-items: flex-end;
-
-
-    gap: var(--space-1);
-
-
+  .header-search {
+    width: min(460px, 100%);
+    margin-left: auto;
+    margin-right: auto;
   }
-
-
-
-
 
   #search-form {
-
-
+    position: relative;
     margin: 0;
-
-
   }
-
-
-
-
 
   .search-wrapper {
-
-
-    display: flex;
-
-
+    display: grid;
+    grid-template-columns: 1fr auto auto;
     align-items: center;
-
-
     gap: 8px;
-
-
-    padding: 4px;
-
-
+    padding: 4px 6px 4px 10px;
     border-radius: 999px;
-
-
-    background: var(--surface);
-
-
+    background: color-mix(in srgb, var(--surface) 84%, #f0f6ff 16%);
     border: 1px solid var(--border);
-
-
     box-shadow: var(--shadow-sm);
-
-
   }
-
-
-
-
 
   #username-input {
-
-
-    flex: 1;
-
-
     min-width: 0;
-
-
     border: none;
-
-
     background: transparent;
-
-
-    padding: 8px 10px;
-
-
+    padding: 9px 4px;
     outline: none;
-
-
-    font-size: 0.9rem;
-
-
+    font-size: 0.92rem;
+    color: var(--text);
   }
-
-
-
-
 
   #username-input::placeholder {
-
-
-    color: var(--muted);
-
-
+    color: color-mix(in srgb, var(--muted) 88%, #7a8ca8 12%);
   }
 
+  .search-clear {
+    appearance: none;
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 999px;
+    width: 30px;
+    height: 30px;
+    color: var(--muted);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
 
-
-
+  .search-clear:hover {
+    background: var(--accent-soft);
+    color: var(--text);
+  }
 
   #search-btn {
-
-
     border: none;
-
-
     border-radius: 999px;
-
-
     padding: 8px 10px;
-
-
-    background: var(--accent);
-
-
+    background: linear-gradient(140deg, #0b74ff 0%, #1a8af8 100%);
     display: inline-flex;
-
-
     align-items: center;
-
-
     justify-content: center;
-
-
     cursor: pointer;
-
-
   }
-
-
-
-
 
   #search-btn img {
-
-
     display: block;
-
-
     width: 20px;
-
-
     height: 20px;
-
-
     filter: brightness(0) invert(1);
-
-
   }
-
-
-
-
 
   #search-btn:hover {
-
-
-    background: var(--accent-strong);
-
-
+    background: linear-gradient(140deg, #0968e1 0%, #1279e0 100%);
   }
-
-
-
-
 
   .autocomplete-box {
-
-
     position: absolute;
-
-
-    margin-top: 36px;
-
-
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
     list-style: none;
-
-
-    padding: 4px 0;
-
-
-    border-radius: 12px;
-
-
+    padding: 6px;
+    margin: 0;
+    border-radius: var(--radius-md);
     background: var(--surface);
-
-
     border: 1px solid var(--border);
-
-
     box-shadow: var(--shadow-md);
-
-
-    max-height: 220px;
-
-
+    max-height: 280px;
     overflow-y: auto;
-
-
-    width: 220px;
-
-
     z-index: 20;
-
-
+    display: none;
   }
 
-
-
-
+  .autocomplete-box:not(:empty) {
+    display: block;
+  }
 
   .autocomplete-box li {
-
-
-    padding: 6px 10px;
-
-
-    font-size: 0.85rem;
-
-
+    padding: 9px 12px;
+    border-radius: 10px;
+    font-size: 0.88rem;
     cursor: pointer;
-
-
+    color: var(--text);
   }
 
-
-
-
-
-  .autocomplete-box li:hover {
-
-
+  .autocomplete-box li:hover,
+  .autocomplete-box li.active {
     background: var(--accent-soft);
+  }
 
+  .header-tools {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
 
+  .header-tool {
+    min-height: 34px;
   }
 
 
@@ -866,59 +727,58 @@
 
 
   #profile-container {
-
-
-    padding: 18px 18px 20px;
-
-
+    padding: var(--space-3);
+    display: grid;
+    grid-template-rows: auto auto auto;
+    gap: var(--space-3);
+    align-self: stretch;
+  }
+  .profile-head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+  .profile-identity {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+  .profile-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
   }
   .profile-avatar {
     border-radius: 50%;
-    margin-bottom: 12px;
+    width: 68px;
+    height: 68px;
+    margin-bottom: 0;
+    border: 1px solid var(--border);
+    background: var(--surface-soft);
   }
   .profile-name {
-    margin: 8px 0 4px;
+    margin: 0;
+    font-size: clamp(1.22rem, 1.95vw, 1.5rem);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    font-family: var(--font-display);
+  }
+  .profile-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    flex-wrap: wrap;
   }
   .profile-actions {
-    margin: 8px 0;
+    margin: 0;
   }
   .profile-last-login {
-    margin: 2px 0;
+    margin: 0;
+    font-size: 0.84rem;
     font-weight: 600;
-    color: var(--text);
-  }
-
-
-
-
-
-  #profile-container h2 {
-
-
-    margin: 8px 0 4px;
-
-
-    font-size: 1.1rem;
-
-
-  }
-
-
-
-
-
-  #profile-container p {
-
-
-    margin: 2px 0;
-
-
-    font-size: 0.85rem;
-
-
     color: var(--muted);
-
-
   }
 
 
@@ -993,93 +853,57 @@
 
 
 .chip-action {
-
-
-  background: var(--accent);
-
-
+  background: linear-gradient(140deg, #0b74ff 0%, #1a8af8 100%);
   color: #fff;
-
-
-  padding: 6px 12px;
-
-
-  border-radius: 16px;
-
-
+  padding: 7px 12px;
+  border-radius: 999px;
   text-decoration: none;
-
-
-  font-size: 12px;
-
-
+  font-size: 0.78rem;
+  font-weight: 600;
   display: inline-flex;
-
-
   align-items: center;
-
-
   gap: 4px;
-
-
+  border: 1px solid transparent;
 }
 
 
 .chip-action:hover {
-
-
-  filter: brightness(1.05);
-
-
+  filter: brightness(1.04);
 }
 
 
 
 
 
-  #profile-stats {
-
-
+#profile-stats {
     display: grid;
-
-
     grid-template-columns: repeat(3, minmax(0, 1fr));
-
-
-    gap: 12px;
-
-
-    margin-top: 16px;
-
-
+    gap: var(--space-2);
+    margin-top: 0;
+  }
+  #profile-stats > div {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface-soft);
+    padding: 10px 10px 11px;
   }
 
 
   .stat-value {
-
-
-  font-size: 20px;
-
-
-  font-weight: 700;
-
-
-  color: var(--accent); 
-
-
-}
+    font-size: clamp(1.2rem, 1.65vw, 1.45rem);
+    font-weight: 700;
+    line-height: 1.1;
+    font-family: var(--font-numeric);
+    color: var(--accent);
+  }
 
 
 .stat-label {
-
-
-  font-size: 12px;
-
-
-  color: var(--muted);
-
-
-}
+    margin-top: 6px;
+    font-size: 0.74rem;
+    letter-spacing: 0.01em;
+    color: var(--muted);
+  }
 
 
   
@@ -1101,11 +925,10 @@
 
 
   #latest-homework .card {
-
-
-    padding: 16px 18px 18px;
-
-
+    padding: var(--space-3);
+    display: grid;
+    gap: var(--space-2);
+    height: 100%;
   }
 
 
@@ -1113,23 +936,11 @@
 
 
   #latest-homework .card-head {
-
-
     display: flex;
-
-
     justify-content: space-between;
-
-
-    align-items: flex-start;
-
-
-    gap: 8px;
-
-
-    margin-bottom: 10px;
-
-
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: 0;
   }
 
 
@@ -1137,14 +948,10 @@
 
 
   #latest-homework .card-title {
-
-
-    font-weight: 600;
-
-
-    font-size: 0.98rem;
-
-
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.25;
+    font-family: var(--font-display);
   }
 
 
@@ -1152,23 +959,12 @@
 
 
   #latest-homework .badge {
-
-
-    font-size: 0.7rem;
-
-
+    font-size: 0.72rem;
     border-radius: 999px;
-
-
-    padding: 2px 8px;
-
-
+    padding: 3px 9px;
     background: var(--accent-soft);
-
-
     color: var(--accent-strong);
-
-
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border) 78%);
   }
 
 
@@ -1176,26 +972,12 @@
 
 
   #latest-homework .progress {
-
-
     position: relative;
-
-
-    margin-top: 10px;
-
-
-    height: 8px;
-
-
+    margin-top: 0;
+    height: 10px;
     border-radius: 999px;
-
-
-    background: #e5e7eb;
-
-
+    background: color-mix(in srgb, var(--border) 65%, #eef3fb 35%);
     overflow: hidden;
-
-
   }
   #latest-homework .progress-track {
     position: relative;
@@ -1208,23 +990,11 @@
 
 
   #latest-homework .progress-fill {
-
-
     position: absolute;
-
-
     inset: 0;
-
-
     width: 0%;
-
-
-    background: linear-gradient(90deg, #60a5fa, #22c55e);
-
-
+    background: linear-gradient(90deg, #4f8ff7, #0b74ff);
     transition: width 0.3s ease;
-
-
   }
 
 
@@ -1232,30 +1002,23 @@
 
 
   #latest-homework .progress-text {
-
-
-    margin-top: 4px;
-
-
-    font-size: 0.78rem;
-
-
+    margin-top: 0;
+    font-size: 0.8rem;
+    letter-spacing: 0.005em;
     color: var(--muted);
-
-
   }
 
 
 
 
 
-  #latest-homework ul {
+  #latest-homework .problems {
 
 
     list-style: none;
 
 
-    margin: 10px 0 0;
+    margin: 2px 0 0;
 
 
     padding: 0;
@@ -1268,26 +1031,12 @@
 
 
   #latest-homework .problem-row {
-
-
     display: flex;
-
-
     align-items: flex-start;
-
-
-    gap: 8px;
-
-
-    padding: 6px 0;
-
-
-    border-bottom: 1px dashed #e5e7eb;
-
-
-    font-size: 0.85rem;
-
-
+    gap: 9px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 0.84rem;
   }
 
 
@@ -1307,14 +1056,9 @@
 
 
   #latest-homework .problem-row .mark {
-
-
     width: 18px;
-
-
     text-align: center;
-
-
+    opacity: 0.86;
   }
 
 
@@ -1322,11 +1066,8 @@
 
 
   #latest-homework .problem-row .title {
-
-
     flex: 1;
-
-
+    line-height: 1.35;
   }
 
 
@@ -1334,14 +1075,9 @@
 
 
   #latest-homework .problem-row code {
-
-
-    font-size: 0.75rem;
-
-
+    font-size: 0.73rem;
     color: var(--muted);
-
-
+    font-family: var(--font-numeric);
   }
 
 
@@ -1349,11 +1085,7 @@
 
 
   #latest-homework .problem-row.passed {
-
-
-    background: rgba(34, 197, 94, 0.06);
-
-
+    background: color-mix(in srgb, #23b26d 12%, transparent 88%);
   }
 
 
@@ -1361,11 +1093,7 @@
 
 
   #latest-homework .problem-row.passed .title {
-
-
-    color: #166534;
-
-
+    color: #137f53;
   }
 
 
@@ -1373,11 +1101,7 @@
 
 
   #latest-homework .problem-row.wrong {
-
-
-    background: rgba(248, 113, 113, 0.06);
-
-
+    background: color-mix(in srgb, #d94b63 11%, transparent 89%);
   }
 
 
@@ -1385,11 +1109,7 @@
 
 
   #latest-homework .problem-row.wrong .title {
-
-
-    color: #b91c1c;
-
-
+    color: #9f1f40;
   }
 
 
@@ -1409,20 +1129,21 @@
 
 
   #latest-homework .meta {
-
-
-    margin-top: 8px;
-
-
-    font-size: 0.82rem;
-
-
+    margin-top: 0;
+    font-size: 0.8rem;
     color: var(--muted);
     display: flex;
-    gap: 12px;
+    gap: var(--space-2);
     flex-wrap: wrap;
-
-
+  }
+  #latest-homework .meta > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-soft);
   }
 
 
@@ -1433,6 +1154,7 @@
 
 
     color: var(--accent-strong);
+    word-break: break-all;
 
 
   }
@@ -1442,20 +1164,10 @@
 
 
   #latest-homework .actions {
-
-
-    margin-top: 10px;
-
-
+    margin-top: 0;
     display: flex;
-
-
-    gap: 8px;
-
-
+    gap: var(--space-1);
     flex-wrap: wrap;
-
-
   }
   #latest-homework .empty-actions {
     margin-top: 10px;
@@ -1466,26 +1178,15 @@
 
 
   #latest-homework .btn {
-
-
     border-radius: 999px;
-
-
     border: 1px solid var(--border);
-
-
     background: var(--surface-soft);
-
-
-    padding: 6px 10px;
-
-
+    padding: 7px 12px;
     font-size: 0.8rem;
-
-
+    font-weight: 600;
+    color: var(--text);
     cursor: pointer;
-
-
+    text-decoration: none;
   }
 
 
@@ -1493,17 +1194,9 @@
 
 
   #latest-homework .btn.primary {
-
-
     border-color: var(--accent);
-
-
     background: var(--accent);
-
-
     color: #fff;
-
-
   }
 
 
@@ -1511,11 +1204,7 @@
 
 
   #latest-homework .btn:hover {
-
-
-    background: var(--accent-soft);
-
-
+    background: color-mix(in srgb, var(--accent-soft) 86%, #fff 14%);
   }
 
 
@@ -1632,6 +1321,47 @@
 
 
   }
+  .streak-head-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .streak-summary-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .streak-summary {
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .streak-compare {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    font-size: 0.75rem;
+    font-family: var(--font-numeric);
+    background: var(--surface);
+    color: var(--muted);
+  }
+  .streak-compare.positive {
+    border-color: #8ad6c9;
+    background: #ecfbf8;
+    color: #0f766e;
+  }
+  .streak-compare.negative {
+    border-color: #e9b1bd;
+    background: #fff3f6;
+    color: #a61b3a;
+  }
+  .streak-compare.neutral {
+    border-color: var(--border);
+    background: var(--surface-soft);
+    color: var(--muted);
+  }
 
 
 
@@ -1664,6 +1394,15 @@
     gap: 6px;
 
 
+  }
+  .streak-filter-toggle {
+    font-size: 0.78rem;
+    padding: 5px 10px;
+  }
+  .streak-filter-toggle[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-strong);
   }
 
 
@@ -1773,6 +1512,15 @@
   justify-items: stretch;
 
 
+}
+.streak-empty {
+  grid-column: 1 / -1;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--surface);
 }
 @media (max-width: 960px) {
 
@@ -1893,23 +1641,15 @@
 
 
   .date-info {
-
-
     display: flex;
-
-
-    justify-content: space-between;
-
-
-    align-items: baseline;
-
-
+    justify-content: center;
+    align-items: center;
     font-size: 0.74rem;
-
-
     color: var(--muted);
-
-
+  }
+  .date-full {
+    font-weight: 600;
+    letter-spacing: 0.01em;
   }
 
 
@@ -1950,6 +1690,7 @@
 
 
     font-size: 0.95rem;
+    font-family: var(--font-numeric);
 
 
   }
@@ -1961,10 +1702,10 @@
   .streak-cell[data-tier="1"] {
 
 
-    background: #e5f3ff;
+    background: #edf5ff;
 
 
-    border-color: #dbeafe;
+    border-color: #dce9fb;
 
 
   }
@@ -1973,10 +1714,10 @@
   .streak-cell[data-tier="2"] {
 
 
-    background: #dbeafe;
+    background: #e3efff;
 
 
-    border-color: #bfdbfe;
+    border-color: #cbdcf8;
 
 
   }
@@ -1985,10 +1726,10 @@
   .streak-cell[data-tier="3"] {
 
 
-    background: #bfdbfe;
+    background: #d5e6ff;
 
 
-    border-color: #a5b4fc;
+    border-color: #b7cdf5;
 
 
   }
@@ -1997,10 +1738,10 @@
   .streak-cell[data-tier="4"] {
 
 
-    background: #a5b4fc;
+    background: #c4dcff;
 
 
-    border-color: #818cf8;
+    border-color: #95bdf2;
 
 
     color: #111827;
@@ -2012,13 +1753,13 @@
   .streak-cell[data-tier="5"] {
 
 
-    background: #818cf8;
+    background: #9ec6ff;
 
 
-    border-color: #4f46e5;
+    border-color: #6ca2ef;
 
 
-    color: #f9fafb;
+    color: #0c1b33;
 
 
   }
@@ -2030,7 +1771,7 @@
   .streak-cell[data-today="1"] {
 
 
-    box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.6);
+    box-shadow: 0 0 0 1px rgba(11, 116, 255, 0.45);
 
 
   }
@@ -2148,6 +1889,13 @@
 
 
 }
+.streak-cell.weekend {
+  background: #eaf2ff;
+  border-color: #c7d9f7;
+}
+.streak-cell.weekend .date-full {
+  color: #2a4f88;
+}
 .hidden {
   display: none;
 }
@@ -2179,7 +1927,7 @@
 
 }
 #charts-container .chart-card {
-  grid-column: span 3;
+  grid-column: span 4;
 }
 
 @media (max-width: 1024px) {
@@ -2208,7 +1956,7 @@
 
 
   padding: 14px 14px 16px;
-  min-height: 254px;
+  min-height: 160px;
 
 
   border-radius: var(--radius-lg);
@@ -2241,15 +1989,115 @@
   flex-direction: column;
 
 
-  align-items: center;
+  align-items: stretch;
 
 
-  text-align: center;
+  text-align: left;
 
 
   cursor: pointer;
 
 
+}
+.chapter-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.count-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.count-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.streak-state-badge {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface-soft);
+}
+.streak-state-badge.today {
+  border-color: #93c5fd;
+  background: #e9f2ff;
+  color: #1d4ed8;
+}
+.streak-state-badge.inactive {
+  border-color: #d6dbe7;
+  background: #f4f6fb;
+  color: #6b7280;
+}
+.streak-state-badge.peak {
+  border-color: #8ad6c9;
+  background: #ecfbf8;
+  color: #0f766e;
+}
+.streak-state-badge.drop {
+  border-color: #e9b1bd;
+  background: #fff3f6;
+  color: #a61b3a;
+}
+.chapter-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.75rem;
+  font-family: var(--font-numeric);
+  font-weight: 700;
+}
+.chapter-percent {
+  font-family: var(--font-numeric);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.chapter-track {
+  margin-top: 10px;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #dde6f4;
+  overflow: hidden;
+}
+.chapter-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6ab6ff, #0b74ff);
+}
+.chart-card.tone-high .chapter-fill {
+  background: linear-gradient(90deg, #42cdbf, #0b74ff);
+}
+.chart-card.tone-mid .chapter-fill {
+  background: linear-gradient(90deg, #8fc9ff, #2f8af3);
+}
+.chart-card.tone-low .chapter-fill {
+  background: linear-gradient(90deg, #ccd8ea, #92a7c7);
+}
+.chapter-meta {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 
@@ -2300,8 +2148,10 @@
 
   }
   .chapter-name {
-    margin-top: 12px;
+    margin: 10px 0 0;
     font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.35;
   }
 
 
@@ -2406,34 +2256,49 @@
       scroll-behavior: auto !important;
     }
   }
-  @media (max-width: 640px) {
-
-
+  @media (max-width: 1100px) {
     header.page-header {
-
-
-      align-items: flex-start;
-
-
+      grid-template-columns: 1fr;
+      gap: var(--space-2);
     }
-
-
-    .header-actions {
-
-
-      align-items: flex-start;
-
-
+    .header-search {
+      width: 100%;
+      margin: 0;
     }
-
-
-    .fab-container {
+    .header-tools {
       justify-content: flex-start;
-
-
+    }
   }
 
-
+  @media (max-width: 640px) {
+    #profile-container {
+      padding: var(--space-2);
+      gap: var(--space-2);
+    }
+    #profile-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    #profile-stats > div:last-child {
+      grid-column: span 2;
+    }
+    #latest-homework .card {
+      padding: var(--space-2);
+    }
+    #latest-homework .meta {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .header-tools {
+      width: 100%;
+    }
+    .header-tool {
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+    .fab-container {
+      justify-content: flex-start;
+    }
   }
 
 
@@ -2478,46 +2343,58 @@
         <p class="page-subtitle">
           학생 진도와 숙제 현황을 하나의 대시보드에서 관리합니다.
         </p>
-        <a href="/schedule" class="btn-secondary">수업 스케줄 보기</a>
       </div>
 
-      <div class="header-actions">
-        <form id="search-form" method="POST" action="/">
+      <div class="header-search">
+        <form id="search-form" method="POST" action="/" autocomplete="off">
           <div class="search-wrapper">
             <input
               type="text"
               id="username-input"
               name="username"
-              placeholder="학생 이름으로 검색"
-              required
+              placeholder="학생 이름 또는 ID 검색"
+              aria-label="학생 검색"
+              autocomplete="off"
             />
-            <ul id="autocomplete-list" class="autocomplete-box"></ul>
-            <button type="submit" id="search-btn">
+            <button
+              type="button"
+              id="search-clear-btn"
+              class="search-clear hidden"
+              aria-label="검색어 지우기"
+            >
+              ×
+            </button>
+            <button type="submit" id="search-btn" aria-label="검색 실행">
               <img
                 src="/static/search-icon.png"
                 alt="검색"
-                width="30"
-                height="auto"
+                width="20"
+                height="20"
               />
             </button>
           </div>
+          <ul id="autocomplete-list" class="autocomplete-box"></ul>
         </form>
-        <div class="fab-container">
-          <div
-            class="fab fab-refresh"
-            title="진도 새로고침"
-            onclick="refreshUserProgress('{{ username }}')"
-          >
-            🔃
-          </div>
-          <div
-            class="fab fab-back"
-            title="목록으로 이동"
-            onclick="goToParentPage()"
-          >
-            🔙
-          </div>
-        </div>
+      </div>
+
+      <div class="header-tools">
+        <a href="/schedule" class="btn-secondary header-tool">수업 스케줄</a>
+        <button
+          type="button"
+          class="btn-secondary header-tool"
+          title="진도 새로고침"
+          onclick="refreshUserProgress('{{ username }}')"
+        >
+          새로고침
+        </button>
+        <button
+          type="button"
+          class="btn-secondary header-tool"
+          title="목록으로 이동"
+          onclick="goToParentPage()"
+        >
+          목록으로
+        </button>
       </div>
     </header>
 
@@ -2525,64 +2402,29 @@
 
 
       <aside id="profile-container" class="chart-card">
-
-
-        <img
-
-
-          src="{{ avatar_path }}"
-
-
-          alt="사용자 아바타"
-
-
-          width="100"
-
-
-          height="100"
-
-
-          class="profile-avatar"
-
-
-        />
-
-
-        <h2 class="profile-name">
-
-
-          {{ username }}
-
-
-          <br />
-
-
-          <span class="chip chip-role {{ 'admin' if is_admin else 'user' }}"
-
-
-            >{{ role_label }}</span
-
-
-          >
-
-
-          {% if primary_lang %}
-
-
-          <span
-
-
-            class="chip chip-lang"
-
-
-            title="상위 언어: {% for l,c in primary_lang_top3 %}{{ l }} {{ c }}{% if not loop.last %}, {% endif %}{% endfor %}"
-          >주사용 언어: {{ primary_lang }}</span>
-
-
-          {% endif %}
-
-
-        </h2>
+        <div class="profile-head">
+          <img
+            src="{{ avatar_path }}"
+            alt="사용자 아바타"
+            width="100"
+            height="100"
+            class="profile-avatar"
+          />
+          <div class="profile-identity">
+            <h2 class="profile-name">{{ username }}</h2>
+            <div class="profile-badges">
+              <span class="chip chip-role {{ 'admin' if is_admin else 'user' }}"
+                >{{ role_label }}</span
+              >
+              {% if primary_lang %}
+              <span
+                class="chip chip-lang"
+                title="상위 언어: {% for l,c in primary_lang_top3 %}{{ l }} {{ c }}{% if not loop.last %}, {% endif %}{% endfor %}"
+              >주사용 언어: {{ primary_lang }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
 
 
 
@@ -2591,31 +2433,15 @@
         
 
 
-        <div class="profile-actions">
-
-
-          <a
-
-
-            href="{{ url_for('view_homework_logs', user_uuid=user_uuid) }}"
-
-
-            class="chip chip-action"
-
-
-          >숙제 기록 보기</a>
-
-
+        <div class="profile-meta-row">
+          <div class="profile-actions">
+            <a
+              href="{{ url_for('view_homework_logs', user_uuid=user_uuid) }}"
+              class="chip chip-action"
+            >숙제 기록 보기</a>
+          </div>
+          <p class="profile-last-login">최근 접속: {{ last_login }}</p>
         </div>
-
-
-
-
-
-
-
-
-        <p class="profile-last-login">최근 접속: {{ last_login }}</p>
 
 
 
@@ -2705,13 +2531,11 @@
           <div class="progress">
 
 
-            <div class="progress-fill"></div>
-
-
-            <div class="progress-text">-</div>
+            <div class="progress-track"><div class="progress-fill"></div></div>
 
 
           </div>
+          <div class="progress-text">-</div>
 
 
         </div>
@@ -2728,12 +2552,24 @@
 
     <section class="streak-section">
     <div class="streak-header">
-
-
-      <div class="streak-title">최근 학습 스트릭</div>
+      <div class="streak-head-left">
+        <div class="streak-title">최근 학습 스트릭</div>
+        <div class="streak-summary-row">
+          <span id="streak-summary" class="streak-summary">일별 제출 수 기준</span>
+          <span id="streak-compare" class="streak-compare neutral">비교 준비 중</span>
+        </div>
+      </div>
 
 
       <div class="streak-controls">
+        <button
+          id="streak-active-only-toggle"
+          type="button"
+          class="btn-secondary streak-filter-toggle"
+          aria-pressed="false"
+        >
+          활동일만
+        </button>
 
 
         <button class="streak-btn" data-days="7">7일</button>
@@ -2766,7 +2602,7 @@
         <div
 
 
-          class="streak-cell"
+          class="streak-cell{% if day.weekday in ['토', '일'] %} weekend{% endif %}"
 
 
           data-count="{{ day.count }}"
@@ -2802,16 +2638,16 @@
           <div class="date-info">
 
 
-            <div class="weekday">{{ day.weekday }}</div>
-
-
-            <div class="date">{{ day.date }}</div>
+            <div class="date-full">{{ day.date.replace('-', '/') if day.date else '-' }} ({{ day.weekday }})</div>
 
 
           </div>
 
 
-          <span class="count">{{ day.count }}</span>
+          <div class="count-wrap">
+            <span class="count">{{ day.count }}</span>
+            <span class="count-label">제출</span>
+          </div>
 
 
 
@@ -3194,6 +3030,10 @@
 
 
       const streakGrid = document.getElementById("streak-grid");
+      const streakSummaryEl = document.getElementById("streak-summary");
+      const streakCompareEl = document.getElementById("streak-compare");
+      const streakActiveOnlyToggle = document.getElementById("streak-active-only-toggle");
+      const INITIAL_STREAK_DATA = {{ streak_data | tojson }};
 
 
 
@@ -3225,22 +3065,56 @@
 
 
 
-      document.addEventListener("DOMContentLoaded", () => {
+      function normalizeStreakData(data) {
+        return Array.isArray(data)
+          ? data.map((d) => ({
+              weekday: d?.weekday ?? "",
+              date: d?.date ?? "",
+              count: Number(d?.count || 0),
+              details: Array.isArray(d?.details) ? d.details : [],
+            }))
+          : [];
+      }
 
+      function setStreakSummary(days, currentData, prevData = []) {
+        const total = currentData.reduce((s, d) => s + Number(d.count || 0), 0);
+        const activeDays = currentData.filter((d) => Number(d.count || 0) > 0).length;
+        const maxDaily = currentData.reduce((m, d) => Math.max(m, Number(d.count || 0)), 0);
+        if (streakSummaryEl) {
+          streakSummaryEl.textContent = `일별 제출 수 기준 · 최근 ${days}일 총 ${total}회 · 활동 ${activeDays}일 · 최고 ${maxDaily}회`;
+        }
 
-        const initialDays = Number("{{ streak_days|default(7) }}");
+        if (!streakCompareEl) return;
+        const prevTotal = prevData.reduce((s, d) => s + Number(d.count || 0), 0);
+        streakCompareEl.className = "streak-compare neutral";
+        if (!prevData.length || prevTotal <= 0) {
+          streakCompareEl.textContent = "이전 기간 비교 없음";
+          return;
+        }
+        const deltaPct = Math.round(((total - prevTotal) / prevTotal) * 100);
+        if (deltaPct > 0) {
+          streakCompareEl.className = "streak-compare positive";
+          streakCompareEl.textContent = `이전 ${days}일 대비 +${deltaPct}%`;
+        } else if (deltaPct < 0) {
+          streakCompareEl.className = "streak-compare negative";
+          streakCompareEl.textContent = `이전 ${days}일 대비 ${deltaPct}%`;
+        } else {
+          streakCompareEl.className = "streak-compare neutral";
+          streakCompareEl.textContent = `이전 ${days}일 대비 0%`;
+        }
+      }
 
+      function parseMonthDay(mmdd) {
+        const m = /^(\d{2})-(\d{2})$/.exec(String(mmdd || ""));
+        if (!m) return { month: 0, day: 0 };
+        return { month: Number(m[1]), day: Number(m[2]) };
+      }
 
-        document.querySelectorAll(".streak-btn").forEach((b) => {
-
-
-          if (Number(b.dataset.days) === initialDays) b.classList.add("active");
-
-
-        });
-
-
-      });
+      function formatDateLabel(day) {
+        const { month, day: d } = parseMonthDay(day.date);
+        if (!month || !d) return `${day.date || "-"} (${day.weekday || "-"})`;
+        return `${month}/${d} (${day.weekday || "-"})`;
+      }
 
 
 
@@ -3259,6 +3133,7 @@
 
 
           if (!box) return;
+          const list = [];
 
 
 
@@ -3334,47 +3209,34 @@
 
           }
 
+          const totalCount = list.length;
+          const scored = list
+            .map((p) => Number(p.score))
+            .filter((n) => Number.isFinite(n));
+          const avgScore = scored.length
+            ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length)
+            : null;
 
-
-
-
-          popover.innerHTML = list.length
-
-
-            ? list
-
-
-                .map(
-
-
-                  (p) => `
-
-
-      <div class="prob-item">
-
-
-        <a href="http://edu.doingcoding.com/status/${p.server_sub_id}" target="_blank" rel="noopener">
-
-
-          ${p.title}
-
-
-        </a><br/>(${p.language}, ${p.score}?? ${p.time})
-
-
+          popover.innerHTML = `
+      <div class="prob-item" style="font-weight:700; border-bottom:1px solid #e5e7eb; padding-bottom:6px; margin-bottom:4px;">
+        제출 ${totalCount}회${avgScore !== null ? ` · 평균점수 ${avgScore}` : ""}
       </div>
-
-
+      ${
+        list.length
+          ? list
+              .map(
+                (p) => `
+      <div class="prob-item">
+        <a href="http://edu.doingcoding.com/status/${p.server_sub_id}" target="_blank" rel="noopener">
+          ${p.title}
+        </a><br/>(${p.language}, ${p.score}점, ${p.time})
+      </div>
     `
-
-
-                )
-
-
-                .join("")
-
-
-            : `<div class="empty-inline">제출 내역 없음</div>`;
+              )
+              .join("")
+          : `<div class="empty-inline">제출 내역 없음</div>`
+      }
+    `;
 
 
 
@@ -3446,164 +3308,141 @@
 
 
 
-      (function primeInitialGrid() {
-
-
-        const cells = document.querySelectorAll(".streak-cell");
-
-
-        if (!cells.length) return;
-
-
-
-
-
-        cells.forEach((cell) => {
-
-
-          const c = Number(cell.dataset.count || 0);
-
-
-          let tier = calcTier(c);
-
-
-
-
-
-          if (tier) cell.dataset.tier = String(tier);
-
-
-          if (c >= 10) cell.dataset.milestone = "1";
-
-
-        });
-
-
-        const kst = new Date().toLocaleString("en-US", {
-
-
-          timeZone: "Asia/Seoul",
-
-
-        });
-
-
-        const d = new Date(kst);
-
-
-
-
-
-        document.querySelectorAll(".streak-cell .date").forEach((el) => {
-
-
-          if (el.textContent.trim() === TODAY_MMDD) {
-
-
-            el.closest(".streak-cell")?.setAttribute("data-today", "1");
-
-
-          }
-
-
-        });
-
-
-      })();
-
-
-
-      function renderStreakGrid(streakData) {
-
-
-
-        const frag = document.createDocumentFragment();
-
-
-
-
-
-        for (const day of streakData) {
-
-
-          const c = Number(day.count || 0);
-
-
-
-          let tier = calcTier(c);
-
-
-          const milestone = c >= 10 ? "1" : "";
-
-
-
-
-
-          const cell = document.createElement("div");
-
-
-          cell.className = "streak-cell";
-
-
-          cell.dataset.count = String(c);
-
-
-          if (tier) cell.dataset.tier = String(tier);
-
-
-          if (milestone) cell.dataset.milestone = "1";
-
-
-          if (day.date === TODAY_MMDD) cell.dataset.today = "1";
-
-
-
-          cell.innerHTML = `
-
-
-      <div class="date-info">
-
-
-        <div class="weekday">${day.weekday}</div>
-
-
-        <div class="date">${day.date}</div>
-
-
-      </div>
-
-
-      <span class="count">${c}</span>
-
-
-    `;
-
-
-          if (day.details && day.details.length) {
-
-
-            cell.dataset.details = JSON.stringify(day.details);
-
-
-          }
-
-
-
-
-
-          frag.appendChild(cell);
-
-
-        }
-
-
-
-        streakGrid.replaceChildren(frag);
-
-
+            function getStreakState(day, c, prevCount, maxDaily) {
+        if (day.date === TODAY_MMDD) return { key: "today", label: "오늘" };
+        if (c === 0) return { key: "inactive", label: "미접속" };
+        if (maxDaily > 0 && c === maxDaily) return { key: "peak", label: "최고치" };
+        if (prevCount > 0 && c <= prevCount * 0.4) return { key: "drop", label: "급감" };
+        return null;
       }
 
+      function renderStreakGrid(
+        streakData,
+        { days = 7, prevData = [], summaryData = null } = {}
+      ) {
+        const data = normalizeStreakData(streakData);
+        const frag = document.createDocumentFragment();
+        const maxDaily = data.reduce((m, d) => Math.max(m, Number(d.count || 0)), 0);
 
+        if (!data.length) {
+          streakGrid.innerHTML = `<div class="streak-empty">조건에 맞는 활동일이 없습니다.</div>`;
+          setStreakSummary(days, summaryData || data, prevData);
+          return;
+        }
+
+        data.forEach((day, idx) => {
+          const c = Number(day.count || 0);
+          const tier = calcTier(c);
+          const prevCount = idx > 0 ? Number(data[idx - 1].count || 0) : 0;
+          const state = getStreakState(day, c, prevCount, maxDaily);
+          const isWeekend = day.weekday === "토" || day.weekday === "일";
+          const dateLabel = formatDateLabel(day);
+
+          const cell = document.createElement("div");
+          cell.className = "streak-cell";
+          if (isWeekend) cell.classList.add("weekend");
+          cell.dataset.count = String(c);
+          if (tier) cell.dataset.tier = String(tier);
+          if (day.date === TODAY_MMDD) cell.dataset.today = "1";
+          if (state) cell.dataset.state = state.key;
+
+          cell.innerHTML = `
+      <div class="date-info">
+        <div class="date-full">${dateLabel}</div>
+      </div>
+      <div class="count-wrap">
+        <span class="count">${c}</span>
+        <span class="count-label">제출</span>
+      </div>
+      ${state ? `<span class="streak-state-badge ${state.key}">${state.label}</span>` : ""}
+    `;
+
+          if (day.details && day.details.length) {
+            cell.dataset.details = JSON.stringify(day.details);
+          }
+
+          frag.appendChild(cell);
+        });
+
+        streakGrid.replaceChildren(frag);
+        setStreakSummary(days, summaryData || data, prevData);
+      }
+
+      async function fetchStreakData(days) {
+        const url = `/api/streak?viewMode=${viewMode}&viewUsername=${encodeURIComponent(
+          viewUsername
+        )}&days=${days}`;
+        const res = await fetch(url, { headers: { Accept: "application/json" } });
+        if (!res.ok) {
+          const txt = await res.text();
+          console.error("streak api error:", res.status, txt);
+          throw new Error(`API request failed (${res.status})`);
+        }
+        const payload = await res.json();
+        return normalizeStreakData(payload.streak_data || []);
+      }
+
+      async function refreshStreak(days) {
+        const windowDays = Math.max(days * 2, 14);
+        const full = await fetchStreakData(windowDays);
+        const current = full.slice(-days);
+        const prev = full.slice(Math.max(0, full.length - days * 2), full.length - days);
+        streakCurrentDays = days;
+        streakLatestCurrent = current;
+        streakLatestPrev = prev;
+        renderStreakByFilter();
+      }
+
+      const SERVER_VIEW_MODE = "{{ view_mode|default('') }}";
+      const SERVER_VIEW_USERNAME = "{{ view_username|default('') }}";
+      const m = location.pathname.match(/^\/user\/([^\/]+)/);
+      const PATH_VIEW_MODE = m ? "user" : "me";
+      const PATH_VIEW_USERNAME = m ? decodeURIComponent(m[1]) : "";
+      const viewMode = SERVER_VIEW_MODE || PATH_VIEW_MODE;
+      const viewUsername = SERVER_VIEW_USERNAME || PATH_VIEW_USERNAME;
+      let streakCurrentDays = Number("{{ streak_days|default(7) }}");
+      let streakLatestCurrent = normalizeStreakData(INITIAL_STREAK_DATA);
+      let streakLatestPrev = [];
+      let streakActiveOnly = false;
+
+      function renderStreakByFilter() {
+        const visible = streakActiveOnly
+          ? streakLatestCurrent.filter((d) => Number(d.count || 0) > 0)
+          : streakLatestCurrent;
+        renderStreakGrid(visible, {
+          days: streakCurrentDays,
+          prevData: streakLatestPrev,
+          summaryData: streakLatestCurrent,
+        });
+      }
+
+      function setActiveOnlyFilter(next) {
+        streakActiveOnly = Boolean(next);
+        if (streakActiveOnlyToggle) {
+          streakActiveOnlyToggle.setAttribute(
+            "aria-pressed",
+            streakActiveOnly ? "true" : "false"
+          );
+          streakActiveOnlyToggle.textContent = streakActiveOnly
+            ? "전체 보기"
+            : "활동일만";
+        }
+        renderStreakByFilter();
+      }
+
+      (function primeInitialGrid() {
+        const initialDays = streakCurrentDays;
+        document.querySelectorAll(".streak-btn").forEach((b) => {
+          if (Number(b.dataset.days) === initialDays) b.classList.add("active");
+        });
+        setActiveOnlyFilter(false);
+        streakActiveOnlyToggle?.addEventListener("click", () => {
+          setActiveOnlyFilter(!streakActiveOnly);
+        });
+        refreshStreak(initialDays).catch((err) => {
+          console.error("initial streak compare failed:", err);
+        });
+      })();
 
       function updateProblems() {
         const btn = document.getElementById("update-btn");
@@ -3682,159 +3521,26 @@ overlayEl.addEventListener("click", () => {
 
 
 
-      const SERVER_VIEW_MODE = "{{ view_mode|default('') }}";
-
-
-      const SERVER_VIEW_USERNAME = "{{ view_username|default('') }}";
-
-
-
-      const m = location.pathname.match(/^\/user\/([^\/]+)/);
-
-
-      const PATH_VIEW_MODE = m ? "user" : "me";
-
-
-      const PATH_VIEW_USERNAME = m ? decodeURIComponent(m[1]) : "";
-
-
-      const viewMode = SERVER_VIEW_MODE || PATH_VIEW_MODE;
-
-
-      const viewUsername = SERVER_VIEW_USERNAME || PATH_VIEW_USERNAME;
-
-
-
-
-
       console.log("viewMode=", viewMode);
-
-
-
-
-
       document.addEventListener("click", async (e) => {
-
-
         const btn = e.target.closest(".streak-btn");
-
-
         if (!btn) return;
 
-
-
-
-
         e.preventDefault();
-
-
         document
-
-
           .querySelectorAll(".streak-btn")
-
-
           .forEach((b) => b.classList.remove("active"));
-
-
         btn.classList.add("active");
 
-
-
-
-
-        const days = btn.dataset.days;
-
-
-        console.log("viewUsername=", viewUsername, "days=", days);
-
-
-
-
+        const days = Number(btn.dataset.days || 7);
 
         try {
-
-
-          const url = `/api/streak?viewMode=${viewMode}&viewUsername=${encodeURIComponent(
-
-
-            viewUsername
-
-
-          )}&days=${days}`;
-
-
-          console.log("viewMode: ", viewMode);
-
-
-          console.log("[streak] fetching:", url);
-
-
-
-
-
-          const res = await fetch(url, {
-
-
-            headers: { Accept: "application/json" },
-
-
-          });
-
-
-          if (!res.ok) {
-
-
-            const txt = await res.text();
-
-
-            console.error("streak api error:", res.status, txt);
-
-
-            alert(`API request failed (${res.status})`);
-
-
-            return;
-
-
-          }
-
-
-          const data = await res.json();
-
-
-          if (data.streak_data) {
-
-
-            renderStreakGrid(data.streak_data);
-
-
-          } else {
-
-
-            console.error("payload:", data);
-
-
-            alert("Failed to load streak data.");
-
-
-          }
-
-
+          await refreshStreak(days);
         } catch (err) {
-
-
           console.error("fetch failed:", err);
-
-
-          alert("Streak request failed.");
-
-
+          alert("스트릭 데이터를 불러오지 못했습니다.");
         }
-
-
       });
-
 
       window.addEventListener("scroll", repositionPopover, { passive: true });
 
@@ -3870,81 +3576,6 @@ overlayEl.addEventListener("click", () => {
 
 
 
-      function centerTextPlugin(text) {
-
-
-        return {
-
-
-          id: "centerText",
-
-
-          beforeDraw(chart) {
-
-
-            const { ctx, chartArea, width, height } = chart;
-
-
-
-
-
-            if (!chartArea) return;
-
-
-
-
-
-            ctx.save();
-
-
-
-
-
-            const fontSize = Math.min(width / 10, 20);
-
-
-            ctx.font = `bold ${fontSize}px sans-serif`;
-
-
-            ctx.textBaseline = "middle";
-
-
-            ctx.textAlign = "center";
-
-
-            ctx.fillStyle = "#444";
-
-
-
-
-
-            const centerX = (chartArea.left + chartArea.right) / 2;
-
-
-            const centerY = (chartArea.top + chartArea.bottom) / 2;
-
-
-
-
-
-            ctx.fillText(text, centerX, centerY);
-
-
-            ctx.restore();
-
-
-          },
-
-
-        };
-
-
-      }
-
-
-
-
-
       let progressData = JSON.parse(`{{ progress_data | tojson  }}`);
 
 
@@ -3973,19 +3604,57 @@ overlayEl.addEventListener("click", () => {
         progressData = [];
       }
 
+      function toneByPercent(percent) {
+        if (percent >= 75) return "tone-high";
+        if (percent >= 30) return "tone-mid";
+        return "tone-low";
+      }
+
+      function statusByPercent(percent) {
+        if (percent >= 80) return "완료 단계";
+        if (percent >= 30) return "진행 중";
+        return "시작 필요";
+      }
+
+      function chapterOrderValue(chapter) {
+        const text = String(chapter || "").trim();
+        const match = text.match(/^(\d+)/);
+        if (match) return Number(match[1]);
+        return Number.POSITIVE_INFINITY;
+      }
+
       if (!progressData.length) {
         container.innerHTML = `<div class="chart-card empty-state"><div class="empty-title">진도 데이터가 없습니다</div><div class="empty-desc">학생을 검색하거나 숙제 상태를 확인해 주세요.</div></div>`;
       } else {
+        progressData = [...progressData].sort((a, b) => {
+          const aOrder = chapterOrderValue(a.chapter);
+          const bOrder = chapterOrderValue(b.chapter);
+          if (aOrder !== bOrder) return aOrder - bOrder;
+          return String(a.chapter || "").localeCompare(String(b.chapter || ""), "ko", {
+            numeric: true,
+            sensitivity: "base",
+          });
+        });
         container.innerHTML = progressData
           .map(
             (item, idx) => `
-            <div class="chart-card" data-href="/user/${encodeURIComponent(
+            <div class="chart-card ${toneByPercent(Number(item.percent || 0))}" data-href="/user/${encodeURIComponent(
               username
             )}/chapter/${encodeURIComponent(item.chapter)}">
-              <canvas id="chart-${idx}" width="160" height="160"></canvas>
+              <div class="chapter-top">
+                <span class="chapter-rank">#${idx + 1}</span>
+                <span class="chapter-percent">${Number(item.percent || 0)}%</span>
+              </div>
               <p class="chapter-name">${
                 item.chapter
-              }</p><span class="card-cta">챕터 열기 →</span>
+              }</p>
+              <div class="chapter-track"><div class="chapter-fill" style="width:${Number(
+                item.percent || 0
+              )}%"></div></div>
+              <div class="chapter-meta">
+                <span>${statusByPercent(Number(item.percent || 0))}</span>
+                <span class="card-cta">챕터 열기 →</span>
+              </div>
             </div>
           `
           )
@@ -4012,70 +3681,6 @@ overlayEl.addEventListener("click", () => {
 
 
       });
-
-
-
-
-
-      if (progressData.length) {
-        progressData.forEach((item, idx) => {
-          const canvas = document.getElementById(`chart-${idx}`);
-          const ctx = canvas.getContext("2d");
-
-          const gradient = ctx.createLinearGradient(0, 0, 200, 200);
-          if (item.percent === 100) {
-            gradient.addColorStop(0, "rgb(142,234,220)");
-            gradient.addColorStop(1, "rgb(46,147,248)");
-          } else if (item.percent >= 80) {
-            gradient.addColorStop(0, "rgb(128,240,131)");
-            gradient.addColorStop(1, "rgb(44,206,190)");
-          } else if (item.percent >= 51) {
-            gradient.addColorStop(0, "rgb(219,234,134)");
-            gradient.addColorStop(1, "rgb(50,214,58)");
-          } else if (item.percent >= 21) {
-            gradient.addColorStop(0, "rgb(236,219,135)");
-            gradient.addColorStop(1, "rgb(245,151,35)");
-          } else if (item.percent >= 1) {
-            gradient.addColorStop(0, "rgb(236,167,184)");
-            gradient.addColorStop(1, "rgb(241,53,35)");
-          } else {
-            gradient.addColorStop(0, "#ddd");
-            gradient.addColorStop(1, "#ddd");
-          }
-
-          new Chart(ctx, {
-            type: "doughnut",
-            data: {
-              labels: ["Completed", "Remaining"],
-              datasets: [
-                {
-                  data: [item.percent, 100 - item.percent],
-                  backgroundColor: [gradient, "#f0f0f0"],
-                  borderWidth: 0,
-                  borderRadius: 100,
-                },
-              ],
-            },
-            options: {
-              cutout: "85%",
-              responsive: true,
-              rotation: -Math.PI * 0.75,
-              plugins: {
-                legend: { display: false },
-                tooltip: { enabled: false },
-                title: {
-                  display: true,
-                  text: `${item.percent}%`,
-                  color: "#444",
-                  font: { size: 20, weight: "bold" },
-                  position: "center",
-                },
-              },
-            },
-            plugins: [centerTextPlugin(`${item.percent}%`)],
-          });
-        });
-      }
     </script>
 
 
@@ -4083,6 +3688,15 @@ overlayEl.addEventListener("click", () => {
 
 
 </html>
+
+
+
+
+
+
+
+
+
 
 
 
