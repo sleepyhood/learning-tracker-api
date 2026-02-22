@@ -2,14 +2,17 @@
 from datetime import datetime, timedelta
 from collections import defaultdict
 from zoneinfo import ZoneInfo
+from urllib.parse import quote
 import json, os
 
 from config import (
     PROBLEM_FILE,
+    BASE_URL,
 )  # 필요 시 조정
 
 # 문제 제목 매핑 (lazy load)
 _problem_title_map = None
+_problem_meta_map = None
 
 
 def _load_title_map():
@@ -26,6 +29,25 @@ def _load_title_map():
     return _problem_title_map
 
 
+def _load_problem_meta_map():
+    global _problem_meta_map
+    if _problem_meta_map is None:
+        with open(PROBLEM_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        m = {}
+        for _, category_data in data.items():
+            for _, chapter_data in category_data.items():
+                chapter_id = chapter_data.get("chapter_id")
+                chapter_title = chapter_data.get("title")
+                for pid in chapter_data.get("problem_names", {}).keys():
+                    m[str(pid)] = {
+                        "chapter_id": chapter_id,
+                        "chapter_title": chapter_title,
+                    }
+        _problem_meta_map = m
+    return _problem_meta_map
+
+
 def generate_streak_data(submissions, days: int = 7):
     """
     submissions: /api/submissions 결과 리스트 (필터링 OK)
@@ -33,6 +55,7 @@ def generate_streak_data(submissions, days: int = 7):
     """
     kst = ZoneInfo("Asia/Seoul")
     title_map = _load_title_map()
+    problem_meta_map = _load_problem_meta_map()
 
     # 문제별 '최초 정답'만 카운트 (기존 로직 유지)
     first_corrects = dict()  # problem_id(str) -> info
@@ -51,6 +74,21 @@ def generate_streak_data(submissions, days: int = 7):
         date_str = dt_kst.strftime("%Y-%m-%d")
 
         if pid not in first_corrects:
+            meta = problem_meta_map.get(pid, {})
+            chapter_id = meta.get("chapter_id")
+            chapter_title = meta.get("chapter_title")
+            chapter_url = None
+            if chapter_id:
+                tag = quote(str(chapter_title or "").replace(".", ""))
+                chapter_url = f"{BASE_URL}/{chapter_id}"
+                if tag:
+                    chapter_url = f"{chapter_url}?tag={tag}"
+
+            problem_url = None
+            if pid:
+                # 실 문제 페이지 링크(환경별 라우팅 차이 가능성을 고려한 best-effort)
+                problem_url = f"{BASE_URL}/problem/{quote(pid)}"
+
             first_corrects[pid] = {
                 "date": date_str,
                 "time": dt_kst.strftime("%H:%M:%S"),
@@ -59,6 +97,8 @@ def generate_streak_data(submissions, days: int = 7):
                 "problem": pid,
                 "title": title_map.get(pid, pid),
                 "server_sub_id": rec.get("id"),
+                "problem_url": problem_url,
+                "chapter_url": chapter_url,
             }
 
     # 날짜별 묶기
@@ -72,6 +112,8 @@ def generate_streak_data(submissions, days: int = 7):
                 "language": info["language"],
                 "time": info["time"],
                 "server_sub_id": info["server_sub_id"],
+                "problem_url": info.get("problem_url"),
+                "chapter_url": info.get("chapter_url"),
             }
         )
 

@@ -42,45 +42,47 @@
     --g: 20px;
 
 
-    --bg: #eef3fb;
-
-
-    --bg-gradient: radial-gradient(1100px 540px at 8% 6%, #dbe9ff 0%, transparent 62%),
-      radial-gradient(900px 560px at 92% 12%, #dcf6ef 0%, transparent 58%),
-      linear-gradient(160deg, #eef3fb 0%, #eaf1fb 52%, #e6edf8 100%);
+    --bg: #e9eff8;
+    --bg-gradient: radial-gradient(1100px 540px at 8% 6%, #d5e4fb 0%, transparent 62%),
+      radial-gradient(900px 560px at 92% 12%, #dff4eb 0%, transparent 58%),
+      linear-gradient(160deg, #e9eff8 0%, #e7eef9 52%, #e3ebf7 100%);
 
 
     --surface: #ffffff;
 
 
-    --surface-soft: #f4f8ff;
+    --surface-soft: #f2f6fd;
 
 
-    --surface-subtle: #eaf2ff;
+    --surface-subtle: #e6efff;
 
 
-    --border: #d7e1ef;
+    --border: #c9d6ea;
 
 
-    --border-strong: #b8c7dd;
+    --border-strong: #aebed8;
 
 
-    --text: #0d1b34;
+    --text: #0f1f3a;
 
 
-    --muted: #5f708a;
+    --muted: #5e6f8c;
 
 
-    --accent: #0b74ff;
+    --accent: #1663e8;
 
 
       --radius: 16px;
 
 
-    --accent-strong: #085fd4;
+    --accent-strong: #0f4fbf;
 
 
-    --accent-soft: #e8f1ff;
+    --accent-soft: #e7efff;
+    --section-bg: #f3f7ff;
+    --status-done: #1d8a5a;
+    --status-mid: #1b5fcc;
+    --status-low: #c58a1a;
 
 
     --danger: #d94b63;
@@ -95,13 +97,9 @@
     --radius-xl: 20px;
 
 
-    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
-
-
-    --shadow-md: 0 4px 10px rgba(15, 23, 42, 0.12);
-
-
-    --shadow-lg: 0 12px 30px rgba(15, 23, 42, 0.16);
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.1);
+    --shadow-md: 0 6px 16px rgba(15, 23, 42, 0.13);
+    --shadow-lg: 0 16px 36px rgba(15, 23, 42, 0.17);
     --space-1: 8px;
     --space-2: 12px;
     --space-3: 16px;
@@ -215,7 +213,9 @@
 
   #username-input:focus-visible,
   #search-btn:focus-visible,
+  .btn-primary:focus-visible,
   .btn-secondary:focus-visible,
+  .btn-quiet:focus-visible,
   .fab:focus-visible,
   .chip-action:focus-visible,
   #latest-homework .btn:focus-visible,
@@ -228,7 +228,9 @@
   }
 
   #search-btn,
+  .btn-primary,
   .btn-secondary,
+  .btn-quiet,
   .fab,
   .chip-action,
   #latest-homework .btn,
@@ -363,7 +365,7 @@
     margin: 0 auto var(--space-4);
     padding: var(--space-3) 16px;
     border-radius: var(--radius-lg);
-    background: var(--surface-soft);
+    background: var(--section-bg);
     border: 1px solid var(--border);
   }
   .streak-section {
@@ -371,7 +373,7 @@
     margin: 0 auto var(--space-4);
     padding: var(--space-3) 16px;
     border-radius: var(--radius-lg);
-    background: var(--surface-soft);
+    background: var(--section-bg);
     border: 1px solid var(--border);
   }
   .section-toggle {
@@ -537,61 +539,53 @@
 
 
 
-  .btn-secondary {
-
-
+  .btn-primary,
+  .btn-secondary,
+  .btn-quiet {
     appearance: none;
-
-
     border-radius: 999px;
-
-
-    border: 1px solid var(--border);
-
-
-    background: var(--surface-soft);
-
-
-    padding: 6px 12px;
-
-
-    font-size: 0.85rem;
-
-
-    font-weight: 500;
-
-
-    color: var(--text);
-    line-height: 1.35;
-
-
+    padding: 7px 12px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.3;
     display: inline-flex;
-
-
     align-items: center;
-
-
+    justify-content: center;
     gap: 6px;
-
-
     cursor: pointer;
-
-
     text-decoration: none;
-
-
+    border: 1px solid transparent;
   }
 
+  .btn-primary {
+    color: #fff;
+    background: linear-gradient(140deg, #1663e8 0%, #2d7cf5 100%);
+    border-color: color-mix(in srgb, var(--accent) 80%, #0a44aa 20%);
+    box-shadow: 0 8px 18px rgba(22, 99, 232, 0.2);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.03);
+    box-shadow: 0 10px 22px rgba(22, 99, 232, 0.24);
+  }
 
-
-
-
+  .btn-secondary {
+    border-color: var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+  }
   .btn-secondary:hover {
+    border-color: color-mix(in srgb, var(--accent) 26%, var(--border-strong) 74%);
+    background: var(--surface-soft);
+  }
 
-
+  .btn-quiet {
+    border-color: transparent;
+    background: color-mix(in srgb, var(--surface-soft) 74%, #f7faff 26%);
+    color: var(--muted);
+  }
+  .btn-quiet:hover {
     background: var(--surface-subtle);
-
-
+    color: var(--text);
   }
 
 
@@ -853,22 +847,18 @@
 
 
 .chip-action {
-  background: linear-gradient(140deg, #0b74ff 0%, #1a8af8 100%);
-  color: #fff;
-  padding: 7px 12px;
   border-radius: 999px;
   text-decoration: none;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  border: 1px solid transparent;
 }
 
 
 .chip-action:hover {
-  filter: brightness(1.04);
+  text-decoration: none;
 }
 
 
@@ -1179,12 +1169,9 @@
 
   #latest-homework .btn {
     border-radius: 999px;
-    border: 1px solid var(--border);
-    background: var(--surface-soft);
     padding: 7px 12px;
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--text);
     cursor: pointer;
     text-decoration: none;
   }
@@ -1193,18 +1180,8 @@
 
 
 
-  #latest-homework .btn.primary {
-    border-color: var(--accent);
-    background: var(--accent);
+  #latest-homework .btn.btn-primary {
     color: #fff;
-  }
-
-
-
-
-
-  #latest-homework .btn:hover {
-    background: color-mix(in srgb, var(--accent-soft) 86%, #fff 14%);
   }
 
 
@@ -1333,7 +1310,7 @@
     flex-wrap: wrap;
   }
   .streak-summary {
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     color: var(--muted);
   }
   .streak-compare {
@@ -1368,17 +1345,10 @@
 
 
   .streak-title {
-
-
     font-weight: 700;
-
-
-    font-size: 1rem;
-
-
+    font-size: 1.08rem;
+    letter-spacing: -0.01em;
     color: var(--text);
-
-
   }
 
 
@@ -1410,26 +1380,11 @@
 
 
   .streak-btn {
-
-
     border-radius: 999px;
-
-
-    border: 1px solid var(--border);
-
-
-    background: var(--surface);
-
-
     padding: 6px 10px;
-
-
     font-size: 0.82rem;
-
-
     cursor: pointer;
-
-
+    color: var(--muted);
   }
 
 
@@ -1440,14 +1395,10 @@
 
 
   .streak-btn:focus-visible {
-
-
-    border-color: var(--accent);
-
-
+    border-color: color-mix(in srgb, var(--accent) 48%, var(--border-strong) 52%);
     background: var(--accent-soft);
-
-
+    color: var(--accent-strong);
+    font-weight: 700;
   }
 
 
@@ -1557,59 +1508,22 @@
 
 
 .streak-cell {
-
-
-  
-
-
-  min-height: 116px;
-
-
-  padding: 10px 10px;
-
-
+  min-height: 122px;
+  padding: 12px 10px 11px;
   border-radius: var(--radius-md);
-
-
-  border: 1px solid var(--border);
-
-
-  background: var(--bg-0);
-
-
+  border: 1px solid var(--border-strong);
+  background: #f8fbff;
   position: relative;
-
-
   outline: 0 solid transparent;
-
-
   transition: transform var(--motion-fast) var(--ease-standard), box-shadow var(--motion-base) var(--ease-standard),
-
-
-    outline-color 0.2s ease;
-
-
-
-
-
+    outline-color 0.2s ease, border-color var(--motion-base) var(--ease-standard);
   display: flex;
-
-
-  flex-direction: column;    
-
-
+  flex-direction: column;
   justify-content: space-between;
-
-
   align-items: center;
-
-
   text-align: center;
-
-
   box-sizing: border-box;
-
-
+  cursor: default;
 }
 
 
@@ -1619,15 +1533,18 @@
 
 
 
-.streak-cell:hover {
+.streak-cell.has-details {
+  cursor: pointer;
+}
 
+.streak-cell.no-details {
+  cursor: not-allowed;
+}
 
+.streak-cell.has-details:hover {
   transform: translateY(-1px);
-
-
   box-shadow: var(--shadow-md);
-
-
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border-strong) 70%);
 }
 
 
@@ -1644,11 +1561,11 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 0.74rem;
+    font-size: 0.77rem;
     color: var(--muted);
   }
   .date-full {
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.01em;
   }
 
@@ -1681,87 +1598,42 @@
 
 
   .count {
-
-
     margin-top: 4px;
-
-
     font-weight: 700;
-
-
-    font-size: 0.95rem;
+    font-size: 2rem;
+    line-height: 1;
     font-family: var(--font-numeric);
-
-
   }
 
-
-
-
-
   .streak-cell[data-tier="1"] {
-
-
-    background: #edf5ff;
-
-
-    border-color: #dce9fb;
-
-
+    background: #f3f8ff;
+    border-color: #cfe0f9;
   }
 
 
   .streak-cell[data-tier="2"] {
-
-
-    background: #e3efff;
-
-
-    border-color: #cbdcf8;
-
-
+    background: #ebf3ff;
+    border-color: #c0d7f8;
   }
 
 
   .streak-cell[data-tier="3"] {
-
-
-    background: #d5e6ff;
-
-
-    border-color: #b7cdf5;
-
-
+    background: #dfeeff;
+    border-color: #a8c9f7;
   }
 
 
   .streak-cell[data-tier="4"] {
-
-
-    background: #c4dcff;
-
-
-    border-color: #95bdf2;
-
-
+    background: #d4e7ff;
+    border-color: #8eb8f2;
     color: #111827;
-
-
   }
 
 
   .streak-cell[data-tier="5"] {
-
-
-    background: #9ec6ff;
-
-
-    border-color: #6ca2ef;
-
-
+    background: #c6deff;
+    border-color: #72a5ef;
     color: #0c1b33;
-
-
   }
 
 
@@ -1769,11 +1641,8 @@
 
 
   .streak-cell[data-today="1"] {
-
-
-    box-shadow: 0 0 0 1px rgba(11, 116, 255, 0.45);
-
-
+    box-shadow: 0 0 0 2px rgba(22, 99, 232, 0.35), var(--shadow-sm);
+    border-color: #79a9f2;
   }
 
 
@@ -1802,73 +1671,104 @@
 
 
   }
-
-
-
-
-
   .details {
-
-
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(640px, calc(100vw - 28px));
+    max-height: min(76vh, 680px);
+    overflow: auto;
     background: var(--surface);
-
-
-    border-radius: var(--radius-md);
-
-
-    border: 1px solid var(--border);
-
-
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-strong);
     box-shadow: var(--shadow-lg);
+    padding: 14px;
+    font-size: 0.86rem;
+    z-index: 10000;
+  }
 
-
-    padding: 10px 12px;
-
-
-    max-width: 320px;
-
-
+  .streak-popover-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .streak-popover-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .streak-popover-sub {
+    margin-top: 4px;
     font-size: 0.8rem;
-
-
+    color: var(--muted);
+  }
+  .streak-popover-list {
+    display: grid;
+    gap: 8px;
+  }
+  .streak-popover-item {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: #f8fbff;
+    padding: 10px;
+  }
+  .streak-item-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .streak-item-title {
+    margin: 0;
+    line-height: 1.35;
+    font-weight: 700;
+    color: var(--text);
+    word-break: break-word;
+  }
+  .streak-item-meta {
+    margin-top: 4px;
+    font-size: 0.77rem;
+    color: var(--muted);
+  }
+  .streak-item-actions {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .streak-inline-btn {
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: 0.74rem;
+    line-height: 1.2;
+    text-decoration: none;
+  }
+  .streak-cell.is-open {
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--border-strong) 45%);
+    box-shadow: 0 0 0 2px rgba(22, 99, 232, 0.2), var(--shadow-sm);
   }
 
-
-
-
-
-  .prob-item {
-
-
-    padding: 4px 0;
-
-
-    border-bottom: 1px dashed #e5e7eb;
-
-
+  @media (max-width: 640px) {
+    .details {
+      left: 0;
+      right: 0;
+      bottom: 0;
+      top: auto;
+      transform: none;
+      width: 100vw;
+      max-width: none;
+      max-height: 80vh;
+      border-radius: 16px 16px 0 0;
+      padding: 14px 14px 18px;
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+    }
   }
-
-
-
-
-
-  .prob-item:last-child {
-
-
-    border-bottom: none;
-
-
-  }
-
-
-
-
-
-
-
-
-
-
 
 #result-title {
 
@@ -2009,43 +1909,63 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
 }
 .count-label {
-  font-size: 0.72rem;
-  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #5a6d8f;
+}
+.streak-mini-track {
+  width: 84%;
+  height: 6px;
+  border-radius: 999px;
+  background: #d5e2f5;
+  overflow: hidden;
+}
+.streak-mini-fill {
+  height: 100%;
+  width: var(--streak-ratio, 0%);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #91bcff, #1663e8);
 }
 .streak-state-badge {
-  margin-top: 4px;
+  margin-top: 3px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 0.7rem;
+  padding: 2px 9px;
+  font-size: 0.72rem;
+  font-weight: 600;
   border: 1px solid var(--border);
   color: var(--muted);
-  background: var(--surface-soft);
+  background: #f7f9fe;
 }
 .streak-state-badge.today {
-  border-color: #93c5fd;
+  border-color: #7daff3;
   background: #e9f2ff;
   color: #1d4ed8;
 }
 .streak-state-badge.inactive {
-  border-color: #d6dbe7;
-  background: #f4f6fb;
-  color: #6b7280;
+  border-color: #d2d9e8;
+  background: #f5f7fb;
+  color: #667892;
+}
+.streak-state-badge.active {
+  border-color: #bfd2ee;
+  background: #eff5ff;
+  color: #365a8e;
 }
 .streak-state-badge.peak {
-  border-color: #8ad6c9;
-  background: #ecfbf8;
-  color: #0f766e;
+  border-color: #7bcaa7;
+  background: #ebfaf2;
+  color: #157a4f;
 }
 .streak-state-badge.drop {
-  border-color: #e9b1bd;
-  background: #fff3f6;
-  color: #a61b3a;
+  border-color: #ecc2ca;
+  background: #fff4f7;
+  color: #aa3551;
 }
 .chapter-rank {
   display: inline-flex;
@@ -2072,23 +1992,23 @@
   width: 100%;
   height: 10px;
   border-radius: 999px;
-  background: #dde6f4;
+  background: #d8e2f1;
   overflow: hidden;
 }
 .chapter-fill {
   height: 100%;
   width: 0;
   border-radius: 999px;
-  background: linear-gradient(90deg, #6ab6ff, #0b74ff);
+  background: linear-gradient(90deg, #82b8ff, #1663e8);
 }
 .chart-card.tone-high .chapter-fill {
-  background: linear-gradient(90deg, #42cdbf, #0b74ff);
+  background: linear-gradient(90deg, #7adf9b, #1d8a5a);
 }
 .chart-card.tone-mid .chapter-fill {
-  background: linear-gradient(90deg, #8fc9ff, #2f8af3);
+  background: linear-gradient(90deg, #8bb9ff, #2c73e8);
 }
 .chart-card.tone-low .chapter-fill {
-  background: linear-gradient(90deg, #ccd8ea, #92a7c7);
+  background: linear-gradient(90deg, #f3d48f, #c58a1a);
 }
 .chapter-meta {
   margin-top: 12px;
@@ -2098,6 +2018,18 @@
   gap: var(--space-2);
   color: var(--muted);
   font-size: 0.78rem;
+}
+.chart-card.tone-high .chapter-meta span:first-child {
+  color: var(--status-done);
+  font-weight: 600;
+}
+.chart-card.tone-mid .chapter-meta span:first-child {
+  color: var(--status-mid);
+  font-weight: 600;
+}
+.chart-card.tone-low .chapter-meta span:first-child {
+  color: var(--status-low);
+  font-weight: 600;
 }
 
 
@@ -2192,44 +2124,21 @@
 
 
   .footer-btn {
-
-
     margin: 4px 6px;
-
-
     border-radius: 999px;
-
-
-    border: 1px solid var(--border);
-
-
-    background: var(--surface);
-
-
     padding: 8px 14px;
-
-
     font-size: 0.85rem;
-
-
     cursor: pointer;
-
-
   }
 
 
 
 
 
-  .footer-btn:hover {
-
-
-    background: var(--accent-soft);
-
-
-  }
   #search-btn:hover,
+  .btn-primary:hover,
   .btn-secondary:hover,
+  .btn-quiet:hover,
   .chip-action:hover,
   #latest-homework .btn:hover,
   .streak-btn:hover,
@@ -2238,7 +2147,9 @@
   }
 
   #search-btn:active,
+  .btn-primary:active,
   .btn-secondary:active,
+  .btn-quiet:active,
   .chip-action:active,
   #latest-homework .btn:active,
   .streak-btn:active,
@@ -2381,7 +2292,7 @@
         <a href="/schedule" class="btn-secondary header-tool">수업 스케줄</a>
         <button
           type="button"
-          class="btn-secondary header-tool"
+          class="btn-primary header-tool"
           title="진도 새로고침"
           onclick="refreshUserProgress('{{ username }}')"
         >
@@ -2389,7 +2300,7 @@
         </button>
         <button
           type="button"
-          class="btn-secondary header-tool"
+          class="btn-quiet header-tool"
           title="목록으로 이동"
           onclick="goToParentPage()"
         >
@@ -2437,7 +2348,7 @@
           <div class="profile-actions">
             <a
               href="{{ url_for('view_homework_logs', user_uuid=user_uuid) }}"
-              class="chip chip-action"
+              class="chip chip-action btn-primary"
             >숙제 기록 보기</a>
           </div>
           <p class="profile-last-login">최근 접속: {{ last_login }}</p>
@@ -2572,13 +2483,13 @@
         </button>
 
 
-        <button class="streak-btn" data-days="7">7일</button>
+        <button class="streak-btn btn-quiet" data-days="7">7일</button>
 
 
-        <button class="streak-btn" data-days="30">30일</button>
+        <button class="streak-btn btn-quiet" data-days="30">30일</button>
 
 
-        <button class="streak-btn" data-days="90">90일</button>
+        <button class="streak-btn btn-quiet" data-days="90">90일</button>
 
 
       </div>
@@ -2679,7 +2590,7 @@
         <button
           id="toggle-charts-btn"
           type="button"
-          class="btn-secondary section-toggle"
+          class="btn-quiet section-toggle"
           aria-expanded="true"
         >
           차트 접기
@@ -2695,7 +2606,7 @@
     <footer class="page-footer">
 
 
-      <button id="update-btn" class="footer-btn" onclick="updateProblems()">문제 목록 새로고침</button>
+      <button id="update-btn" class="footer-btn btn-primary" onclick="updateProblems()">문제 목록 새로고침</button>
 
 
       
@@ -2716,9 +2627,9 @@
 
 
 
-      <a class="footer-btn" href="/logout">로그아웃</a>
+      <a class="footer-btn btn-quiet" href="/logout">로그아웃</a>
 
-      <button class="footer-btn" onclick="fetch('/clear_data').then(() => alert('로컬 데이터가 삭제되었습니다.'))">로컬 데이터 삭제</button>
+      <button class="footer-btn btn-quiet" onclick="fetch('/clear_data').then(() => alert('로컬 데이터가 삭제되었습니다.'))">로컬 데이터 삭제</button>
 
 
     </footer>
@@ -2798,7 +2709,7 @@
 
 
         if (!data || !data.ok || !data.log) {
-          host.innerHTML = `<div class="card empty-state"><div class="empty-title">숙제 데이터가 없습니다</div><div class="empty-desc">목록을 새로고침하거나 수업 일정을 확인해 주세요.</div><div class="empty-actions"><button class="btn primary" id="refresh-homework">숙제 새로고침</button></div></div>`;
+          host.innerHTML = `<div class="card empty-state"><div class="empty-title">숙제 데이터가 없습니다</div><div class="empty-desc">목록을 새로고침하거나 수업 일정을 확인해 주세요.</div><div class="empty-actions"><button class="btn btn-primary" id="refresh-homework">숙제 새로고침</button></div></div>`;
           document.getElementById("refresh-homework")?.addEventListener("click", updateProblems);
           return;
         }
@@ -2948,10 +2859,10 @@
       <div class="actions">
         ${
           log.url
-            ? `<a class="btn" href="${log.url}" target="_blank" rel="noopener">숙제 링크 열기</a>`
+            ? `<a class="btn btn-secondary" href="${log.url}" target="_blank" rel="noopener">숙제 링크 열기</a>`
             : ""
         }
-        <button class="btn" id="reopen-homework">숙제 전체 보기</button>
+        <button class="btn btn-quiet" id="reopen-homework">숙제 전체 보기</button>
       </div>
     </article>
   `;
@@ -3020,7 +2931,7 @@
         className: "details",
 
 
-        style: "display:none; position:absolute;",
+        style: "display:none;",
 
 
       });
@@ -3156,152 +3067,210 @@
 
 
 
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function closeStreakPopover() {
+        if (popover.__ownerCell) {
+          popover.__ownerCell.classList.remove("is-open");
+        }
+        popover.style.display = "none";
+        overlayEl.style.display = "none";
+        popover.__ownerCell = null;
+      }
+
+      function positionPopoverForCell(cell) {
+        if (!cell) return;
+      }
+
+      async function copyTextSafe(text) {
+        const value = String(text ?? "");
+        if (!value) return false;
+
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(value);
+            return true;
+          } catch {}
+        }
+
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = value;
+          ta.setAttribute("readonly", "");
+          ta.style.position = "fixed";
+          ta.style.top = "-9999px";
+          ta.style.left = "-9999px";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          const ok = document.execCommand("copy");
+          ta.remove();
+          return !!ok;
+        } catch {
+          return false;
+        }
+      }
+
       if (!streakGrid.__bound) {
-
-
         streakGrid.addEventListener("click", (e) => {
-
-
           const cell = e.target.closest(".streak-cell");
-
-
           if (!cell) return;
-
-
-
-
+          if (!cell.classList.contains("has-details")) return;
 
           const raw = cell.dataset.details;
-
-
           if (!raw) return;
 
-
-
-
-
-          const list = JSON.parse(raw);
-
-
-          const same =
-
-
-            popover.__ownerCell === cell && popover.style.display === "block";
-
-
-          document.body.appendChild(popover);
-
-
-          if (same) {
-
-
-            popover.style.display = "none";
-
-
-            overlayEl.style.display = "none";
-
-
-            popover.__ownerCell = null;
-
-
-            return;
-
-
+          let list = [];
+          try {
+            list = JSON.parse(raw);
+          } catch {
+            list = [];
           }
 
-          const totalCount = list.length;
-          const scored = list
+          const same = popover.__ownerCell === cell && popover.style.display === "block";
+          document.querySelectorAll(".streak-cell.is-open").forEach((c) => c.classList.remove("is-open"));
+          document.body.appendChild(popover);
+          if (same) {
+            closeStreakPopover();
+            return;
+          }
+
+          const normalized = Array.isArray(list)
+            ? [...list]
+                .map((p) => ({
+                  title: p?.title || p?.problem || "제목 없음",
+                  language: p?.language || "-",
+                  score: p?.score ?? "-",
+                  time: p?.time || "-",
+                  serverSubId: p?.server_sub_id,
+                  problem: p?.problem,
+                  problemUrl:
+                    p?.problem_url ||
+                    (p?.problem
+                      ? `https://edu.doingcoding.com/problem/${encodeURIComponent(String(p.problem))}`
+                      : ""),
+                  chapterUrl: p?.chapter_url || "",
+                }))
+                .sort((a, b) => String(b.time).localeCompare(String(a.time)))
+            : [];
+
+          const totalCount = normalized.length;
+          const scored = normalized
             .map((p) => Number(p.score))
             .filter((n) => Number.isFinite(n));
           const avgScore = scored.length
             ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length)
             : null;
+          const latestTitle = normalized[0]?.title || "";
 
           popover.innerHTML = `
-      <div class="prob-item" style="font-weight:700; border-bottom:1px solid #e5e7eb; padding-bottom:6px; margin-bottom:4px;">
-        제출 ${totalCount}회${avgScore !== null ? ` · 평균점수 ${avgScore}` : ""}
+      <div class="streak-popover-head">
+        <div>
+          <h4 class="streak-popover-title">제출 ${totalCount}회${avgScore !== null ? ` · 평균 ${avgScore}점` : ""}</h4>
+          <div class="streak-popover-sub">최근 풀이 제목을 빠르게 복사할 수 있습니다.</div>
+        </div>
+        ${
+          latestTitle
+            ? `<button type="button" class="btn-primary streak-inline-btn" data-copy-title="${escapeHtml(
+                latestTitle
+              )}">최근 제목 복사</button>`
+            : ""
+        }
       </div>
+      <div class="streak-popover-list">
       ${
-        list.length
-          ? list
+        normalized.length
+          ? normalized
               .map(
                 (p) => `
-      <div class="prob-item">
-        <a href="http://edu.doingcoding.com/status/${p.server_sub_id}" target="_blank" rel="noopener">
-          ${p.title}
-        </a><br/>(${p.language}, ${p.score}점, ${p.time})
-      </div>
-    `
+        <article class="streak-popover-item">
+          <div class="streak-item-top">
+            <h5 class="streak-item-title">${escapeHtml(p.title)}</h5>
+            <button type="button" class="btn-quiet streak-inline-btn" data-copy-title="${escapeHtml(
+              p.title
+            )}">제목 복사</button>
+          </div>
+          <div class="streak-item-meta">${escapeHtml(p.language)} · ${escapeHtml(
+                  p.score
+                )}점 · ${escapeHtml(p.time)}</div>
+          <div class="streak-item-actions">
+            ${
+              p.serverSubId
+                ? `<a class="btn-secondary streak-inline-btn" href="https://edu.doingcoding.com/status/${encodeURIComponent(
+                    String(p.serverSubId)
+                  )}" target="_blank" rel="noopener">제출 내역</a>`
+                : ""
+            }
+            ${
+              p.problemUrl
+                ? `<a class="btn-primary streak-inline-btn" href="${escapeHtml(
+                    p.problemUrl
+                  )}" target="_blank" rel="noopener">문제 본문</a>`
+                : ""
+            }
+            ${
+              p.chapterUrl
+                ? `<a class="btn-quiet streak-inline-btn" href="${escapeHtml(
+                    p.chapterUrl
+                  )}" target="_blank" rel="noopener">챕터 열기</a>`
+                : ""
+            }
+          </div>
+        </article>
+      `
               )
               .join("")
           : `<div class="empty-inline">제출 내역 없음</div>`
       }
+      </div>
     `;
 
-
-
-
-
-          const rect = cell.getBoundingClientRect();
-
-
-          popover.style.top = `${
-
-
-            rect.top + window.scrollY + cell.offsetHeight + 8
-
-
-          }px`;
-
-
-          popover.style.left = `${rect.left + rect.width / 2}px`;
-
-
-          popover.style.transform = "translateX(-50%)";
-
+          const focusTarget =
+            popover.querySelector("[data-copy-title]") ||
+            popover.querySelector(".streak-item-actions a, .streak-item-actions button");
 
           popover.style.display = "block";
-
-
-          popover.style.zIndex = "10000";
-
-
-          popover.style.position = "absolute";
-
-
           overlayEl.style.display = "block";
-
-
+          cell.classList.add("is-open");
           popover.__ownerCell = cell;
 
-
+          requestAnimationFrame(() => {
+            focusTarget?.focus?.();
+          });
         });
 
-
-
-
-
-        overlayEl.addEventListener("click", () => {
-
-
-          popover.style.display = "none";
-
-
-          overlayEl.style.display = "none";
-
-
-          popover.__ownerCell = null;
-
-
+        popover.addEventListener("click", async (e) => {
+          const copyBtn = e.target.closest("[data-copy-title]");
+          if (!copyBtn) return;
+          e.preventDefault();
+          const titleToCopy = copyBtn.dataset.copyTitle || "";
+          if (!titleToCopy) return;
+          const ok = await copyTextSafe(titleToCopy);
+          if (ok) {
+            if (typeof showToast === "function") {
+              showToast(`복사됨: ${titleToCopy}`);
+            }
+          } else {
+            alert("제목 복사에 실패했습니다.");
+          }
         });
 
-
-
-
+        overlayEl.addEventListener("click", closeStreakPopover);
+        document.addEventListener("keydown", (e) => {
+          if (e.key !== "Escape") return;
+          if (popover.style.display !== "block") return;
+          e.preventDefault();
+          closeStreakPopover();
+        });
 
         streakGrid.__bound = true;
-
-
       }
 
 
@@ -3313,7 +3282,7 @@
         if (c === 0) return { key: "inactive", label: "미접속" };
         if (maxDaily > 0 && c === maxDaily) return { key: "peak", label: "최고치" };
         if (prevCount > 0 && c <= prevCount * 0.4) return { key: "drop", label: "급감" };
-        return null;
+        return { key: "active", label: "접속" };
       }
 
       function renderStreakGrid(
@@ -3335,16 +3304,24 @@
           const tier = calcTier(c);
           const prevCount = idx > 0 ? Number(data[idx - 1].count || 0) : 0;
           const state = getStreakState(day, c, prevCount, maxDaily);
+          const ratio = maxDaily > 0 ? Math.max(0, Math.min(100, Math.round((c / maxDaily) * 100))) : 0;
+          const ratioForUI = c === 0 ? 0 : Math.max(10, ratio);
           const isWeekend = day.weekday === "토" || day.weekday === "일";
           const dateLabel = formatDateLabel(day);
 
           const cell = document.createElement("div");
           cell.className = "streak-cell";
           if (isWeekend) cell.classList.add("weekend");
+          if (day.details && day.details.length) {
+            cell.classList.add("has-details");
+          } else {
+            cell.classList.add("no-details");
+          }
           cell.dataset.count = String(c);
           if (tier) cell.dataset.tier = String(tier);
           if (day.date === TODAY_MMDD) cell.dataset.today = "1";
-          if (state) cell.dataset.state = state.key;
+          cell.dataset.state = state.key;
+          cell.style.setProperty("--streak-ratio", `${ratioForUI}%`);
 
           cell.innerHTML = `
       <div class="date-info">
@@ -3353,8 +3330,9 @@
       <div class="count-wrap">
         <span class="count">${c}</span>
         <span class="count-label">제출</span>
+        <span class="streak-mini-track" aria-hidden="true"><span class="streak-mini-fill"></span></span>
       </div>
-      ${state ? `<span class="streak-state-badge ${state.key}">${state.label}</span>` : ""}
+      <span class="streak-state-badge ${state.key}">${state.label}</span>
     `;
 
           if (day.details && day.details.length) {
@@ -3552,24 +3530,6 @@ overlayEl.addEventListener("click", () => {
 
 
         if (popover.style.display !== "block" || !popover.__ownerCell) return;
-
-
-        const cell = popover.__ownerCell;
-
-
-        const rect = cell.getBoundingClientRect();
-
-
-        popover.style.top = `${
-
-
-          rect.top + window.scrollY + cell.offsetHeight + 8
-
-
-        }px`;
-
-
-        popover.style.left = `${rect.left + rect.width / 2}px`;
 
 
       }
