@@ -148,9 +148,21 @@
       </form>
     </header>
 
-    <h2>{{ username }} 님의 {{ chapter_name }} 진도 현황</h2>
-
-    <div class="progress-grid">
+    <h2>{{ username }} 님의 {{ chapter_name }} 진도 현황</h2>
+
+    <div style="display:flex; justify-content:center; margin:0 auto 20px auto;">
+      <a
+        href="/user/{{ username|urlencode }}/chapter/{{ chapter|urlencode }}/workspace"
+        style="display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; background:#1976d2; color:#fff; font-weight:700; text-decoration:none;"
+      >
+        통합 숙제 워크스페이스 열기
+        {% if workspace_beta_enabled %}
+        <span style="background:rgba(255,255,255,0.25); border-radius:999px; padding:2px 8px; font-size:12px;">BETA ON</span>
+        {% endif %}
+      </a>
+    </div>
+
+    <div class="progress-grid">
       {% for item in progress_data %}
       <div
         class="progress-container"

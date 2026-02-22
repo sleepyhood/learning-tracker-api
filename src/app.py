@@ -283,6 +283,27 @@ if not cors_origins:
 
 CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=True)
 
+CHAPTER_WORKSPACE_BETA_ENABLED = (
+    os.environ.get("CHAPTER_WORKSPACE_BETA_ENABLED", "0").strip().lower()
+    in ("1", "true", "yes", "on")
+)
+CHAPTER_WORKSPACE_BETA_USERS = {
+    x.strip()
+    for x in os.environ.get("CHAPTER_WORKSPACE_BETA_USERS", "").split(",")
+    if x.strip()
+}
+CHAPTER_WORKSPACE_DEFAULT_ENABLED = (
+    os.environ.get("CHAPTER_WORKSPACE_DEFAULT_ENABLED", "0").strip().lower()
+    in ("1", "true", "yes", "on")
+)
+CHAPTER_WORKSPACE_DEFAULT_USERS = {
+    x.strip()
+    for x in os.environ.get("CHAPTER_WORKSPACE_DEFAULT_USERS", "").split(",")
+    if x.strip()
+}
+CHAPTER_WORKSPACE_EVENTS_PATH = Path("meta/chapter_workspace_events.jsonl")
+CHAPTER_WORKSPACE_EVENTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+
 # --- imports 상단 ---
 from flask import session as fsession
 from urllib.parse import quote
@@ -320,6 +341,278 @@ def _is_student_route(path: str) -> bool:
     return path in STUDENT_ONLY_PREFIXES or any(
         path.startswith(p + "/") for p in STUDENT_ONLY_PREFIXES
     )
+
+
+def _workspace_beta_enabled_for(username: str) -> bool:
+    if CHAPTER_WORKSPACE_BETA_ENABLED:
+        return True
+    return bool(username and username in CHAPTER_WORKSPACE_BETA_USERS)
+
+
+def _workspace_default_enabled_for(username: str) -> bool:
+    if CHAPTER_WORKSPACE_DEFAULT_ENABLED:
+        return True
+    return bool(username and username in CHAPTER_WORKSPACE_DEFAULT_USERS)
+
+
+def _workspace_route_enabled_for(username: str) -> bool:
+    return _workspace_default_enabled_for(username) or _workspace_beta_enabled_for(username)
+
+
+def _append_workspace_event(event: dict):
+    line = json.dumps(event, ensure_ascii=False)
+    with CHAPTER_WORKSPACE_EVENTS_PATH.open("a", encoding="utf-8") as f:
+        f.write(line + "\n")
+
+
+def _read_workspace_events(limit_days: int = 14) -> list[dict]:
+    if limit_days <= 0:
+        limit_days = 1
+    cutoff = datetime.now(tz=KST) - timedelta(days=limit_days)
+    events: list[dict] = []
+    if not CHAPTER_WORKSPACE_EVENTS_PATH.exists():
+        return events
+
+    with CHAPTER_WORKSPACE_EVENTS_PATH.open("r", encoding="utf-8") as f:
+        for raw in f:
+            line = raw.strip()
+            if not line:
+                continue
+            try:
+                ev = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            ts = _parse_iso_datetime(ev.get("ts"))
+            if not ts:
+                continue
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=KST)
+            ts = ts.astimezone(KST)
+            if ts < cutoff:
+                continue
+            ev["_ts"] = ts
+            ev["_date"] = ts.date().isoformat()
+            events.append(ev)
+    return events
+
+
+def _build_workspace_event_summary(events: list[dict]) -> dict:
+    daily: dict[str, dict] = {}
+    sessions_with_group_switch = set()
+    sessions_with_save_success = set()
+    group_switch_by_group: dict[str, int] = {}
+    save_success_by_group: dict[str, int] = {}
+    totals = {
+        "workspace_load_succeeded": 0,
+        "workspace_load_failed": 0,
+        "workspace_save_succeeded": 0,
+        "workspace_save_failed": 0,
+        "workspace_copy_selected": 0,
+        "group_switch": 0,
+    }
+
+    for ev in events:
+        name = ev.get("event_name") or ""
+        date_key = ev.get("_date")
+        group_id = (ev.get("group") or "").strip() or "(none)"
+        session_id = (ev.get("session_id") or "").strip()
+
+        if date_key not in daily:
+            daily[date_key] = {
+                "date": date_key,
+                "workspace_load_succeeded": 0,
+                "workspace_load_failed": 0,
+                "workspace_save_succeeded": 0,
+                "workspace_save_failed": 0,
+                "workspace_copy_selected": 0,
+                "group_switch": 0,
+            }
+
+        if name in totals:
+            totals[name] += 1
+            daily[date_key][name] += 1
+
+        if name == "group_switch":
+            group_switch_by_group[group_id] = group_switch_by_group.get(group_id, 0) + 1
+            if session_id:
+                sessions_with_group_switch.add(session_id)
+        elif name == "workspace_save_succeeded":
+            save_success_by_group[group_id] = save_success_by_group.get(group_id, 0) + 1
+            if session_id:
+                sessions_with_save_success.add(session_id)
+
+    daily_rows = []
+    for _, row in sorted(daily.items(), key=lambda kv: kv[0]):
+        save_attempts = row["workspace_save_succeeded"] + row["workspace_save_failed"]
+        row["save_attempts"] = save_attempts
+        row["save_failure_rate"] = round(
+            (row["workspace_save_failed"] / save_attempts) * 100, 2
+        ) if save_attempts else 0.0
+        daily_rows.append(row)
+
+    total_save_attempts = totals["workspace_save_succeeded"] + totals["workspace_save_failed"]
+    total_save_failure_rate = round(
+        (totals["workspace_save_failed"] / total_save_attempts) * 100, 2
+    ) if total_save_attempts else 0.0
+
+    conversion_den = len(sessions_with_group_switch)
+    conversion_num = len(sessions_with_group_switch & sessions_with_save_success)
+    conversion_rate = round((conversion_num / conversion_den) * 100, 2) if conversion_den else 0.0
+
+    group_rows = []
+    for group_id in sorted(set(group_switch_by_group.keys()) | set(save_success_by_group.keys())):
+        switches = group_switch_by_group.get(group_id, 0)
+        saves = save_success_by_group.get(group_id, 0)
+        group_rows.append(
+            {
+                "group": group_id,
+                "group_switch": switches,
+                "workspace_save_succeeded": saves,
+                "save_per_switch": round((saves / switches) * 100, 2) if switches else 0.0,
+            }
+        )
+
+    return {
+        "totals": {
+            **totals,
+            "save_attempts": total_save_attempts,
+            "save_failure_rate": total_save_failure_rate,
+        },
+        "funnel": {
+            "group_switch_sessions": conversion_den,
+            "save_success_sessions_after_switch": conversion_num,
+            "group_switch_to_save_conversion_rate": conversion_rate,
+        },
+        "daily": daily_rows,
+        "groups": group_rows,
+    }
+
+
+def _status_label_from_raw(raw_status):
+    if raw_status == 0:
+        return "solved"
+    if raw_status == -1:
+        return "wrong"
+    if raw_status is not None:
+        return "partial"
+    return "unsolved"
+
+
+def _build_user_status_map(user_data: dict) -> dict:
+    user_status_map = {}
+    for record_key, rec in (user_data or {}).items():
+        sid = str(record_key).strip()
+        if not sid or not isinstance(rec, dict):
+            continue
+        user_status_map[sid] = rec.get("status")
+    return user_status_map
+
+
+def _build_group_problem_items(group_data: dict, user_status_map: dict, legacy_map: dict) -> list[dict]:
+    problems = []
+    for legacy_code, title in (group_data.get("problem_names") or {}).items():
+        sid = legacy_map.get(legacy_code, legacy_code)
+        raw_status = user_status_map.get(sid)
+        status = _status_label_from_raw(raw_status)
+        problems.append(
+            {
+                "problem_id": legacy_code,
+                "legacy_code": legacy_code,
+                "title": title,
+                "status": status,
+                "link": f"http://edu.doingcoding.com/problem/{legacy_code}",
+            }
+        )
+    return problems
+
+
+def _build_group_counts(problem_items: list[dict]) -> dict:
+    counts = {"total": len(problem_items), "solved": 0, "partial": 0, "wrong": 0, "unsolved": 0}
+    for p in problem_items:
+        st = p.get("status") or "unsolved"
+        if st not in counts:
+            st = "unsolved"
+        counts[st] += 1
+    return counts
+
+
+def _build_chapter_workspace_payload(s, username: str, chapter: str, selected_group: str | None = None):
+    ensure_problem_assets()
+
+    safe_name = sanitize_filename(username)
+    fallback_user_path = os.path.join(USER_DATA_DIR, f"{safe_name}.json")
+    user_path = fallback_user_path
+    try:
+        _, user_path = sync_user_problems_cache(s, username)
+    except Exception as e:
+        print(f"[chapter_workspace] sync failed, fallback cache: {e}")
+
+    missing = ensure_user_cache_or_404(user_path, PROBLEM_FILE, username)
+    if missing:
+        raise FileNotFoundError(str(missing))
+
+    with open(user_path, encoding="utf-8") as f:
+        user_data = json.load(f)
+    with open(PROBLEM_FILE, encoding="utf-8") as f:
+        all_problems = json.load(f)
+
+    legacy_to_server = resolve_legacy_map_dict()
+    user_status_map = _build_user_status_map(user_data)
+
+    chapter_groups = (all_problems or {}).get(chapter)
+    if not chapter_groups:
+        raise KeyError(f"'{chapter}' 챕터를 찾을 수 없습니다.")
+
+    group_ids = list(chapter_groups.keys())
+    if not group_ids:
+        raise KeyError(f"'{chapter}' 챕터에 그룹이 없습니다.")
+
+    if selected_group not in chapter_groups:
+        selected_group = group_ids[0]
+
+    subchapters = []
+    chapter_status_map = {}
+    for gid, gdata in chapter_groups.items():
+        problem_items = _build_group_problem_items(gdata, user_status_map, legacy_to_server)
+        counts = _build_group_counts(problem_items)
+        chapter_id = gdata.get("chapter_id")
+        title = gdata.get("title", "")
+        tag = quote(str(title).replace(".", ""))
+        chapter_url = f"{BASE_URL}/{chapter_id}?tag={tag}" if chapter_id else ""
+        subchapters.append(
+            {
+                "group_id": gid,
+                "title": title,
+                "counts": counts,
+                "chapter_url": chapter_url,
+                "legacy_group_url": f"/user/{quote(username)}/chapter/{quote(chapter)}/group/{quote(gid)}",
+            }
+        )
+        for item in problem_items:
+            chapter_status_map[item["problem_id"]] = item["status"]
+
+    selected_group_data = chapter_groups[selected_group]
+    selected_problems = _build_group_problem_items(
+        selected_group_data,
+        user_status_map,
+        legacy_to_server,
+    )
+
+    user_uuid = resolve_uuid(username)
+    doc = load_doc_by_any(user_uuid)
+    latest_homework = build_homework_latest_payload(doc).get("log")
+
+    return {
+        "ok": True,
+        "user": username,
+        "user_uuid": user_uuid,
+        "chapter": chapter,
+        "subchapters": subchapters,
+        "selected_group": selected_group,
+        "problems": selected_problems,
+        "status_map": chapter_status_map,
+        "latest_homework": latest_homework,
+    }
 
 
 @app.before_request
@@ -1150,8 +1443,167 @@ from flask import render_template, redirect
 from urllib.parse import quote
 
 
+@app.route("/user/<username>/chapter/<chapter>/workspace")
+def chapter_workspace_page(username, chapter):
+    s, redir = ensure_login_or_redirect()
+    if redir:
+        return redir
+
+    selected_group = (request.args.get("group") or "").strip()
+    selected_filter = (request.args.get("filter") or "all").strip() or "all"
+    role_ctx = role_ctx_from_session()
+
+    return render_template(
+        "chapter_workspace.html",
+        username=username,
+        chapter=chapter,
+        selected_group=selected_group,
+        selected_filter=selected_filter,
+        user_uuid=resolve_uuid(username),
+        workspace_beta_enabled=_workspace_beta_enabled_for(username),
+        workspace_default_enabled=_workspace_default_enabled_for(username),
+        **role_ctx,
+    )
+
+
+@app.get("/api/chapter_workspace")
+def api_chapter_workspace():
+    s, redir = ensure_login_or_redirect()
+    if redir:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+
+    username = (request.args.get("user") or "").strip()
+    chapter = (request.args.get("chapter") or "").strip()
+    selected_group = (request.args.get("group") or "").strip() or None
+
+    if not username or not chapter:
+        return jsonify({"ok": False, "error": "user and chapter are required"}), 400
+
+    try:
+        payload = _build_chapter_workspace_payload(s, username, chapter, selected_group)
+        return jsonify(payload)
+    except FileNotFoundError as e:
+        return jsonify({"ok": False, "error": str(e)}), 404
+    except KeyError as e:
+        return jsonify({"ok": False, "error": str(e)}), 404
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.get("/api/chapter_workspace/group/<group_id>")
+def api_chapter_workspace_group(group_id):
+    s, redir = ensure_login_or_redirect()
+    if redir:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+
+    username = (request.args.get("user") or "").strip()
+    chapter = (request.args.get("chapter") or "").strip()
+    if not username or not chapter:
+        return jsonify({"ok": False, "error": "user and chapter are required"}), 400
+
+    try:
+        payload = _build_chapter_workspace_payload(s, username, chapter, selected_group=group_id)
+    except FileNotFoundError as e:
+        return jsonify({"ok": False, "error": str(e)}), 404
+    except KeyError as e:
+        return jsonify({"ok": False, "error": str(e)}), 404
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+    return jsonify(
+        {
+            "ok": True,
+            "user": payload.get("user"),
+            "user_uuid": payload.get("user_uuid"),
+            "chapter": payload.get("chapter"),
+            "selected_group": payload.get("selected_group"),
+            "problems": payload.get("problems"),
+            "status_map": payload.get("status_map"),
+            "latest_homework": payload.get("latest_homework"),
+        }
+    )
+
+
+@app.post("/api/chapter_workspace/events")
+def api_chapter_workspace_events():
+    s, redir = ensure_login_or_redirect()
+    if redir:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+
+    payload = request.get_json(force=True) or {}
+    event_name = (payload.get("event_name") or "").strip()
+    username = (payload.get("user") or "").strip()
+    chapter = (payload.get("chapter") or "").strip()
+    group_id = (payload.get("group") or "").strip()
+    session_id = (payload.get("session_id") or "").strip()
+    detail = payload.get("detail")
+
+    if not event_name:
+        return jsonify({"ok": False, "error": "event_name required"}), 400
+
+    event = {
+        "ts": datetime.now(tz=KST).isoformat(),
+        "event_name": event_name,
+        "user": username,
+        "chapter": chapter,
+        "group": group_id,
+        "session_id": session_id,
+        "detail": detail if isinstance(detail, dict) else {},
+        "ip": request.remote_addr,
+        "ua": request.headers.get("User-Agent", ""),
+    }
+    try:
+        _append_workspace_event(event)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+    return jsonify({"ok": True})
+
+
+@app.get("/api/chapter_workspace/events_summary")
+def api_chapter_workspace_events_summary():
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
+
+    try:
+        days = int(request.args.get("days", 14))
+    except (TypeError, ValueError):
+        days = 14
+    days = max(1, min(days, 90))
+
+    filter_user = (request.args.get("user") or "").strip()
+    filter_chapter = (request.args.get("chapter") or "").strip()
+    filter_group = (request.args.get("group") or "").strip()
+
+    events = _read_workspace_events(limit_days=days)
+    if filter_user:
+        events = [e for e in events if (e.get("user") or "") == filter_user]
+    if filter_chapter:
+        events = [e for e in events if (e.get("chapter") or "") == filter_chapter]
+    if filter_group:
+        events = [e for e in events if (e.get("group") or "") == filter_group]
+
+    summary = _build_workspace_event_summary(events)
+    return jsonify(
+        {
+            "ok": True,
+            "filters": {
+                "days": days,
+                "user": filter_user,
+                "chapter": filter_chapter,
+                "group": filter_group,
+            },
+            "event_count": len(events),
+            **summary,
+        }
+    )
+
+
 @app.route("/user/<username>/chapter/<chapter>")
 def chapter_detail(username, chapter):
+    if _workspace_default_enabled_for(username) and request.args.get("legacy") != "1":
+        return redirect(f"/user/{quote(username)}/chapter/{quote(chapter)}/workspace")
+
     ensure_problem_assets()
 
     # 로그인/세션 보장
@@ -1193,12 +1645,19 @@ def chapter_detail(username, chapter):
         chapter=chapter,
         chapter_name=f"{chapter} 단원",
         progress_data=matched["groups"],
+        workspace_beta_enabled=_workspace_beta_enabled_for(username),
+        workspace_default_enabled=_workspace_default_enabled_for(username),
         **role_ctx,  # role_label, is_admin
     )
 
 
 @app.route("/user/<username>/chapter/<chapter>/group/<group_id>")
 def group_detail(username, chapter, group_id):
+    if _workspace_route_enabled_for(username) and request.args.get("legacy") != "1":
+        return redirect(
+            f"/user/{quote(username)}/chapter/{quote(chapter)}/workspace?group={quote(group_id)}"
+        )
+
     ensure_problem_assets()
 
     # 로그인/세션 보장

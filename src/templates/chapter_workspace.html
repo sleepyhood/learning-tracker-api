@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ username }}님의 {{ chapter }} 워크스페이스</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/unified.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chapter_workspace.css') }}" />
+  </head>
+  <body>
+    <header class="workspace-header">
+      <a href="/" class="brand-link"><h1>풀이현황</h1></a>
+      <div class="top-links">
+        <a href="/user/{{ username|urlencode }}/chapter/{{ chapter|urlencode }}?legacy=1">기존 챕터 화면</a>
+        <a id="legacyGroupLink" href="#">기존 그룹 화면</a>
+      </div>
+    </header>
+
+    <div
+      id="workspaceBootstrap"
+      data-username="{{ username }}"
+      data-user-uuid="{{ user_uuid }}"
+      data-chapter="{{ chapter }}"
+      data-selected-group="{{ selected_group }}"
+      data-selected-filter="{{ selected_filter }}"
+      data-is-admin="{{ 1 if is_admin else 0 }}"
+      data-workspace-default-enabled="{{ 1 if workspace_default_enabled else 0 }}"
+      data-workspace-beta-enabled="{{ 1 if workspace_beta_enabled else 0 }}"
+    ></div>
+
+    <main class="workspace-shell">
+      <section class="workspace-title">
+        <h2>
+          {{ username }} · {{ chapter }} 통합 워크스페이스
+          {% if workspace_default_enabled %}
+          <span class="mode-chip mode-chip-default">DEFAULT</span>
+          {% elif workspace_beta_enabled %}
+          <span class="mode-chip mode-chip-beta">BETA</span>
+          {% endif %}
+        </h2>
+        <button class="btn-ghost mobile-basket-toggle" id="mobileBasketToggle" aria-expanded="false">숙제 바구니</button>
+      </section>
+
+      <section class="workspace-grid">
+        <article class="panel panel-subchapters">
+          <div class="panel-head"><strong>소챕터</strong><span id="subchapterCount">0</span></div>
+          <div class="panel-body">
+            <div id="subchapterList" class="subchapter-list"></div>
+          </div>
+        </article>
+
+        <article class="panel panel-problems">
+          <div class="panel-head">
+            <strong id="problemPanelTitle">문제 목록</strong>
+            <span id="problemCount">0</span>
+          </div>
+          <div class="panel-body">
+            <div class="problem-toolbar">
+              <button class="btn-ghost" data-filter="all">전체</button>
+              <button class="btn-ghost" data-filter="unsolved">미해결/오답</button>
+              <button class="btn-ghost" data-filter="wrong">오답만</button>
+              <button class="btn-ghost" id="selectVisibleBtn">보이는 항목 선택</button>
+              <button class="btn-ghost" id="clearSelectionBtn">전체 해제</button>
+            </div>
+            <div id="problemList" class="problem-list"></div>
+            <div class="sticky-cta">
+              <strong id="selectedCount">선택 0개</strong>
+              <button id="copySelectedBtn" class="btn-primary">선택 문제 복사</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel panel-basket" id="basketPanel">
+          <div class="panel-head"><strong>숙제 바구니</strong><span id="basketSummary">0개</span></div>
+          <div class="panel-body">
+            <div class="basket-form">
+              <input type="text" id="draftTitle" placeholder="숙제 제목" />
+              <input type="datetime-local" id="draftDueAt" />
+              <textarea id="draftMessage" rows="7" placeholder="메시지 초안"></textarea>
+              <div class="basket-actions">
+                <button id="copyMessageBtn" class="btn-ghost">메시지 복사</button>
+                <button id="saveHomeworkBtn" class="btn-primary" {% if not is_admin %}disabled{% endif %}>저장</button>
+              </div>
+              <div id="latestHomework"></div>
+              <div id="selectedPreview" class="selected-preview"></div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/chapter_workspace.js') }}"></script>
+  </body>
+</html>
