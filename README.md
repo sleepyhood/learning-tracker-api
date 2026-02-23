@@ -6,6 +6,24 @@
 
 ---
 
+## 📖 Project Story: 교육 현장의 비효율을 기술로 해결하다
+
+> "강사의 에너지는 행정이 아니라 교육에 집중되어야 합니다."
+
+이 프로젝트는 프로그래밍 학원 현장에서 강사가 겪는 **'수동 데이터 관리의 고통'**에서 시작되었습니다. 매일 수십 명의 학생들의 진도를 여러 사이트에서 일일이 확인하고 기록하는 비효율을 해결하기 위해, 직접 **인하우스 자동화 툴**을 구축했습니다.
+
+### 🎯 주요 성과 (Impact)
+
+- **행정 업무 효율화:** 수동 확인 방식을 API 자동화로 전환하여, 강사진의 학생 관리 소요 시간을 **약 00% 이상 단축**했습니다.
+- **데이터 기반 상담:** 단순한 감이 아닌, 시각화된 대시보드를 통해 학부모 상담 및 학생 진도 관리에 객관적인 지표를 제공합니다.
+
+### 💡 기술적 도전과 해결 (Engineering Note)
+
+- **LLM 협업 및 직접 디버깅:** 초기 프로토타입 개발 시 LLM(Codex 등)을 활용해 속도를 높였으나, 외부 API의 복잡한 비정형 데이터(JSON) 파싱에서 발생하는 예외 상황들은 **직접 디버깅하고 스키마를 설계**하며 정밀도를 높였습니다.
+- **아키텍처 리팩터링:** 초기 '크롤링' 기반의 불안정한 접근을 **'API 중심'**으로 리팩터링하여 데이터 수집의 안정성과 속도를 확보했습니다.
+
+---
+
 ## ✨ 프로젝트 개요
 
 DoingCoding(edu.doingcoding.com)의 **API**를 통해 수강생의 **문제 풀이 이력/진도**를 수집·정제하고, Flask 기반 웹 대시보드로 시각화하는 **Python 도구**입니다.
@@ -121,7 +139,6 @@ USER_PW=your_password
 
 - **PostgreSQL** + **SQLAlchemy & Alembic** 도입(마이그레이션 관리)
 - 핵심 스키마(예시)
-
   - 카탈로그: `chapters`, `groups`, `problems`, `problem_aliases`
   - 계정/수업: `users`, `classes`, `enrollments`, `external_accounts(enc_cookies)`
   - 진행/제출: `submissions`, `user_problem_status`, `progress_snapshots`
@@ -133,20 +150,17 @@ USER_PW=your_password
 ### 2) 애플리케이션 구조
 
 - Flask(또는 FastAPI) **레이어드 구조**
-
   - `adapters/doingcoding` : API 우선 + 크롤링 fallback, 재시도/레이트리밋 표준화
   - `services/` : 집계/동기화/숙제 등 도메인 로직
   - `routes/` : `auth`, `sync`, `progress`, `assignments` 등 블루프린트 분리
 
 - **작업 큐 + 스케줄러**
-
   - RQ/Celery + Redis로 `sync_user`, `sync_class` 잡 구성
   - APScheduler로 야간 동기화(예: 02:00 KST), 주간 리포트 예약
 
 ### 3) 프런트엔드
 
 - **React + Vite**로 경량 SPA
-
   - 상태관리/쿼리 캐싱, 컴포넌트 단위 차트(예: Recharts/Chart.js)
   - 기존 `assignMode`를 **과제 생성 → 배포 → 현황/마감** 플로우와 연결
   - RBAC(관리자/강사/학생) 뷰 분리
@@ -162,16 +176,13 @@ USER_PW=your_password
 ## 🔁 마이그레이션(파일 → DB) 가이드 스케치
 
 1. **문제 메타 이행**
-
    - `server_problems.json` + 내부 카탈로그 매핑을 이용해 `chapters/groups/problems` 업서트
 
 2. **유저 진행/제출 이행**
-
    - `users_data/*.json`에서 문제별 최신 상태·제출 이벤트 파싱
    - `submissions`와 `user_problem_status` 적재 → 요약 뷰 리프레시
 
 3. **검증**
-
    - 미매핑/다중매핑 리포트 출력, 수동 보정 워크플로우
 
 > 실제 스크립트/DDL, 새 디렉터리 구조는 차세대 저장소에서 제공됩니다.
