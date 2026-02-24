@@ -869,7 +869,7 @@ def refresh_user(username):
     try:
         doc = pull_and_store_user(username)
         return jsonify(
-            {
+            {   
                 "success": True,
                 "updated_at": doc["updated_at"],
                 "user_uuid": doc["user_uuid"],
