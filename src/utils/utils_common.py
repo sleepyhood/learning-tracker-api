@@ -43,10 +43,15 @@ from config import (
 from pathlib import Path
 import uuid
 
-UUIDS_PATH = Path("meta/uuids.json")
+UTILS_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = UTILS_DIR.parent.parent
+META_DIR = PROJECT_ROOT / "meta"
+META_DIR.mkdir(parents=True, exist_ok=True)
+
+UUIDS_PATH = META_DIR / "uuids.json"
 UUIDS_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-ADMIN_WHITELIST_PATH = Path("meta/admin_whitelist.json")
+ADMIN_WHITELIST_PATH = META_DIR / "admin_whitelist.json"
 ADMIN_WHITELIST_PATH.parent.mkdir(parents=True, exist_ok=True)
 if not ADMIN_WHITELIST_PATH.exists():
     ADMIN_WHITELIST_PATH.write_text(

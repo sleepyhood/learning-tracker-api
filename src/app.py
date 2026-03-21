@@ -21,7 +21,13 @@ from urllib.parse import quote
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 import time
-from utils.questions_crawler import do_crawling
+import webbrowser
+from utils.questions_crawler import (
+    do_crawling,
+    chapter_name as crawler_chapter_name,
+    resolve_chapter_index,
+    chapter_count as crawler_chapter_count,
+)
 
 from utils.summarizer import (
     summarize_progress,
@@ -79,8 +85,13 @@ from utils.utils_user_doc import (
 )
 import uuid
 
+APP_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = APP_DIR.parent
+META_DIR = PROJECT_ROOT / "meta"
+META_DIR.mkdir(parents=True, exist_ok=True)
+
 # UUID 레지스트리(레거시ID ↔ UUID 매핑) 파일 경로
-UUIDS_PATH = Path("meta/uuids.json")
+UUIDS_PATH = META_DIR / "uuids.json"
 UUIDS_PATH.parent.mkdir(parents=True, exist_ok=True)
 if not UUIDS_PATH.exists():
     UUIDS_PATH.write_text("{}", encoding="utf-8")
@@ -96,7 +107,7 @@ TODAY_ACTIVITY_CACHE_MAX = 5000
 
 
 # ===== 요일별 스케줄 저장용 =====
-SCHEDULE_PATH = Path("meta/schedule.json")
+SCHEDULE_PATH = META_DIR / "schedule.json"
 SCHEDULE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"]
@@ -301,7 +312,7 @@ CHAPTER_WORKSPACE_DEFAULT_USERS = {
     for x in os.environ.get("CHAPTER_WORKSPACE_DEFAULT_USERS", "").split(",")
     if x.strip()
 }
-CHAPTER_WORKSPACE_EVENTS_PATH = Path("meta/chapter_workspace_events.jsonl")
+CHAPTER_WORKSPACE_EVENTS_PATH = META_DIR / "chapter_workspace_events.jsonl"
 CHAPTER_WORKSPACE_EVENTS_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 # --- imports 상단 ---
@@ -498,6 +509,25 @@ def _status_label_from_raw(raw_status):
     return "unsolved"
 
 
+def _group_status_from_homework_status(raw_status: str | None) -> str | None:
+    if raw_status == "passed":
+        return "solved"
+    if raw_status in ("wrong", "partial", "pending"):
+        return raw_status
+    return None
+
+
+def _latest_homework_status_map(doc: dict) -> dict[str, str]:
+    latest = build_homework_latest_payload(doc).get("log") or {}
+    status_map: dict[str, str] = {}
+    for item in latest.get("problem_status") or []:
+        legacy_code = str(item.get("legacy_code") or "").strip()
+        normalized = _group_status_from_homework_status(item.get("status"))
+        if legacy_code and normalized:
+            status_map[legacy_code] = normalized
+    return status_map
+
+
 def _build_user_status_map(user_data: dict) -> dict:
     user_status_map = {}
     for record_key, rec in (user_data or {}).items():
@@ -524,6 +554,20 @@ def _build_group_problem_items(group_data: dict, user_status_map: dict, legacy_m
             }
         )
     return problems
+
+
+def _overlay_homework_statuses(problem_items: list[dict], homework_status_map: dict[str, str]) -> list[dict]:
+    if not homework_status_map:
+        return problem_items
+
+    merged = []
+    for item in problem_items:
+        patched = dict(item)
+        hw_status = homework_status_map.get(item.get("legacy_code"))
+        if hw_status:
+            patched["status"] = hw_status
+        merged.append(patched)
+    return merged
 
 
 def _build_group_counts(problem_items: list[dict]) -> dict:
@@ -655,11 +699,49 @@ def update_problems():
         return err
     os.makedirs(PROBLEM_DIR, exist_ok=True)
 
-    problem_file_path = do_crawling(
-        output_dir=PROBLEM_DIR, filename="all_problems.json"
+    payload = request.get_json(silent=True) or {}
+    chapter_token = (
+        payload.get("chapter")
+        or request.form.get("chapter")
+        or request.args.get("chapter")
+        or ""
     )
+    chapter_token = str(chapter_token).strip()
+    refresh_api = payload.get("refresh_api")
 
-    save_server_problems_json(out_path=SERVER_DUMP_FILE)
+    chapter_label = None
+    if chapter_token and chapter_token.lower() != "all":
+        try:
+            chapter_index = resolve_chapter_index(chapter_token)
+        except ValueError as e:
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": str(e),
+                        "valid_range": f"1-{crawler_chapter_count()}",
+                    }
+                ),
+                400,
+            )
+        chapter_value = chapter_index + 1
+        chapter_label = crawler_chapter_name(chapter_index)
+        problem_file_path = do_crawling(
+            output_dir=PROBLEM_DIR,
+            filename="all_problems.json",
+            chapter=chapter_value,
+        )
+        should_refresh_api = (
+            bool(refresh_api) if refresh_api is not None else not os.path.exists(SERVER_DUMP_FILE)
+        )
+    else:
+        problem_file_path = do_crawling(
+            output_dir=PROBLEM_DIR, filename="all_problems.json"
+        )
+        should_refresh_api = True if refresh_api is None else bool(refresh_api)
+
+    if should_refresh_api:
+        save_server_problems_json(out_path=SERVER_DUMP_FILE)
 
     build_legacy_map(
         problem_file_path,
@@ -670,7 +752,16 @@ def update_problems():
 
     return jsonify(
         {
-            "message": "문제 목록이 갱신되었습니다. (크롤링 + API + 매핑)",
+            "ok": True,
+            "message": (
+                f"{chapter_label} 문제 목록을 갱신했습니다. "
+                f"({'크롤링 + API + 매핑' if should_refresh_api else '크롤링 + 매핑'})"
+                if chapter_label
+                else f"전체 문제 목록을 갱신했습니다. "
+                f"({'크롤링 + API + 매핑' if should_refresh_api else '크롤링 + 매핑'})"
+            ),
+            "chapter": chapter_label,
+            "api_refreshed": should_refresh_api,
             "problem_file": problem_file_path,
             "api_dump": SERVER_DUMP_FILE,
             "server_to_legacy": SERVER_TO_LEGACY_FILE,
@@ -1685,6 +1776,7 @@ def group_detail(username, chapter, group_id):
         with open(PROBLEM_FILE, encoding="utf-8") as f:
             all_problems = json.load(f)
         legacy_to_server = resolve_legacy_map_dict()
+        user_doc = load_doc_by_any(username)
     except FileNotFoundError as e:
         return str(e), 404
     except json.JSONDecodeError as e:
@@ -1709,6 +1801,11 @@ def group_detail(username, chapter, group_id):
         )
     except KeyError as e:
         return f"데이터 오류: {e}", 400
+
+    result["problem_names"] = _overlay_homework_statuses(
+        result["problem_names"],
+        _latest_homework_status_map(user_doc),
+    )
 
     # 외부 링크용 URL 생성
     title_url = quote(str(result["group_title"]).replace(".", ""))
@@ -1911,4 +2008,12 @@ if __name__ == "__main__":
     host = os.environ.get("FLASK_HOST", "0.0.0.0")
     port = int(os.environ.get("FLASK_PORT", "5000"))
     debug = os.environ.get("FLASK_DEBUG", "0").lower() in ("1", "true", "yes")
+    open_browser = os.environ.get("FLASK_OPEN_BROWSER", "1").lower() in ("1", "true", "yes")
+
+    # Werkzeug reloader parent process should not open a duplicate browser tab.
+    should_open_browser = open_browser and (not debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true")
+    if should_open_browser:
+        browser_host = "127.0.0.1" if host in ("0.0.0.0", "::") else host
+        threading.Timer(0.7, lambda: webbrowser.open(f"http://{browser_host}:{port}")).start()
+
     app.run(host=host, port=port, debug=debug)

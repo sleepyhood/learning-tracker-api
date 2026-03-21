@@ -3,9 +3,7 @@ from selenium.webdriver.common.by import By
 import time
 import json
 import os
-from collections import defaultdict
 import urllib.parse
-from collections import deque
 
 # config.py 또는 main.py 상단
 from dotenv import load_dotenv
@@ -15,6 +13,18 @@ load_dotenv()
 
 
 BASE_URL = os.getenv("API_BASE_URL")
+
+DIFFICULTIES = ["p101", "p102", "p201", "p202", "p203", "p206", "p204", "p205"]
+DIFFICULTY_NAMES = [
+    "기초문법1",
+    "기초문법2",
+    "알고리즘 초급",
+    "알고리즘 중급1",
+    "알고리즘 중급2",
+    "알고리즘 중급3",
+    "알고리즘 고급1",
+    "알고리즘 고급2",
+]
 
 
 def get_text(btns, result):
@@ -35,8 +45,8 @@ def crawl_questions(select):
     tmpTags = []  # 문제 태그(제목)
 
     # 기초문법1
-    driver.get(f"{BASE_URL}/{difficultys[select]}")
-    print(f"{BASE_URL}/{difficultys[select]}")
+    driver.get(f"{BASE_URL}/{DIFFICULTIES[select]}")
+    print(f"{BASE_URL}/{DIFFICULTIES[select]}")
 
     # time.sleep(0.5)
 
@@ -76,7 +86,7 @@ def crawl_questions(select):
     # 각 태그별 문제 개수
     for i in range(len(tmpTags)):
         utltag = tmpTags[i].replace(".", "")
-        url = f"{BASE_URL}/{difficultys[select]}?tag={utltag}"
+        url = f"{BASE_URL}/{DIFFICULTIES[select]}?tag={utltag}"
 
         encoded_url = urllib.parse.quote(url, safe=":/?=")  # safe 문자들은 인코딩 제외
 
@@ -146,45 +156,86 @@ def crawl_questions(select):
     return validTags, validRows, validFormats, validProblemNames
 
 
-difficultys = ["p101", "p102", "p201", "p202", "p203", "p206", "p204", "p205"]
-difficultys_names = [
-    "기초문법1",
-    "기초문법2",
-    "알고리즘 초급",
-    "알고리즘 중급1",
-    "알고리즘 중급2",
-    "알고리즘 중급3",
-    "알고리즘 고급1",
-    "알고리즘 고급2",
-]
+def chapter_name(index: int) -> str:
+    return f"{index + 1}. {DIFFICULTY_NAMES[index]}"
+
+
+def chapter_count() -> int:
+    return len(DIFFICULTIES)
+
+
+def resolve_chapter_index(chapter) -> int:
+    if isinstance(chapter, int):
+        index = chapter - 1 if chapter >= 1 else chapter
+    else:
+        raw = str(chapter or "").strip()
+        if not raw:
+            raise ValueError("chapter is required")
+        index = int(raw) - 1
+
+    if index < 0 or index >= chapter_count():
+        raise ValueError(f"chapter must be between 1 and {chapter_count()}")
+    return index
+
+
+def build_chapter_problems(index: int) -> dict:
+    qTags, qRows, qFormats, qProblemNames = crawl_questions(index)
+    chapter_problems = {}
+
+    for pid, title, total, names in zip(qFormats, qTags, qRows, qProblemNames):
+        chapter_problems[pid] = {
+            "chapter_id": DIFFICULTIES[index],
+            "title": title,
+            "total": total,
+            "problem_names": names,
+        }
+
+    return chapter_problems
+
+
+def _default_output_dir(output_dir: str = None) -> str:
+    if output_dir is None:
+        return os.path.join(os.path.dirname(__file__), "..", "problems_data")
+    return output_dir
+
+
+def _load_existing_book(save_path: str) -> dict:
+    if not os.path.exists(save_path):
+        return {}
+    try:
+        with open(save_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _ordered_problem_book(book: dict) -> dict:
+    ordered = {}
+    for i in range(chapter_count()):
+        key = chapter_name(i)
+        ordered[key] = book.get(key, {})
+    return ordered
 
 
 # utils/questions_crawler.py (혹은 현재 파일)
-def do_crawling(output_dir: str = None, filename: str = "all_problems.json") -> str:
-    # 전체 문제를 담을 dict
-    all_problems = {}
-
-    for i in range(len(difficultys)):
-        qTags, qRows, qFormats, qProblemNames = crawl_questions(i)
-
-        chapter_name = f"{i+1}. {difficultys_names[i]}"
-        all_problems[chapter_name] = {}
-
-        for pid, title, total, names in zip(qFormats, qTags, qRows, qProblemNames):
-            all_problems[chapter_name][pid] = {
-                "chapter_id": difficultys[i],
-                "title": title,
-                "total": total,
-                "problem_names": names,
-            }
-
-    # 저장 경로 계산
-    if output_dir is None:
-        # utils/.. → src/problems_data
-        output_dir = os.path.join(os.path.dirname(__file__), "..", "problems_data")
+def do_crawling(
+    output_dir: str = None, filename: str = "all_problems.json", chapter=None
+) -> str:
+    output_dir = _default_output_dir(output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
     save_path = os.path.join(output_dir, filename)
+    if chapter is None:
+        all_problems = {
+            chapter_name(i): build_chapter_problems(i) for i in range(chapter_count())
+        }
+    else:
+        chapter_index = resolve_chapter_index(chapter)
+        all_problems = _load_existing_book(save_path)
+        all_problems[chapter_name(chapter_index)] = build_chapter_problems(chapter_index)
+        all_problems = _ordered_problem_book(all_problems)
+
     with open(save_path, "w", encoding="utf-8") as f:
         json.dump(all_problems, f, ensure_ascii=False, indent=4)
 

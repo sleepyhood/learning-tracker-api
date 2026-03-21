@@ -55,6 +55,11 @@
         color: white;
       }
 
+      .problem.pending {
+        background-color: rgba(100, 149, 237, 0.28);
+        color: #173a72;
+      }
+
       .problem.unsolved {
         background-color: rgba(221, 221, 221, 0.7);
         color: #333;
@@ -253,7 +258,7 @@
     <div class="problem-list">
       {% for problem in problem_names %}
       <div
-        class="problem {% if problem.status == 'solved' %}solved {% elif problem.status == 'partial' %}partial {% elif problem.status == 'wrong' %}wrong {% else %}unsolved {% endif %}"
+        class="problem {% if problem.status == 'solved' %}solved {% elif problem.status == 'partial' %}partial {% elif problem.status == 'wrong' %}wrong {% elif problem.status == 'pending' %}pending {% else %}unsolved {% endif %}"
       >
         <!-- ✅ 커스텀 체크박스: 숙제 출제 모드에서만 보이도록 -->
         <label
