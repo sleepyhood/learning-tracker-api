@@ -212,6 +212,23 @@
 
   }
 
+  .host-warning {
+    margin: 18px auto 0;
+    max-width: var(--page-max-width);
+    padding: 0 16px;
+  }
+
+  .host-warning-inner {
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    background: rgba(251, 191, 36, 0.14);
+    color: #92400e;
+    font-size: 13px;
+    line-height: 1.5;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  }
+
   #username-input:focus-visible,
   #search-btn:focus-visible,
   .btn-primary:focus-visible,
@@ -2250,6 +2267,11 @@
 
   <body>
 
+    {% if relax_host_restriction %}
+    <div class="host-warning">
+      <div class="host-warning-inner">{{ host_access_notice }}</div>
+    </div>
+    {% endif %}
 
     <div id="overlay" aria-hidden="true" style="display: none"></div>
 

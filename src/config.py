@@ -29,6 +29,9 @@ SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "Lax")
 SESSION_COOKIE_SECURE = (
     os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true"
 )
+RELAX_HOST_RESTRICTION = (
+    os.environ.get("RELAX_HOST_RESTRICTION", "false").lower() == "true"
+)
 
 # Comma-separated allowed origins for CORS, e.g. "https://admin.example.com,https://student.example.com"
 CORS_ALLOWED_ORIGINS = [

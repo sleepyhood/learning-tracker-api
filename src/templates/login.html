@@ -129,6 +129,18 @@
         font-size: 13px;
       }
 
+      .host-warning {
+        grid-column: 1 / -1;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        background: rgba(251, 191, 36, 0.12);
+        color: #92400e;
+        font-size: 13px;
+        line-height: 1.5;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+      }
+
       .field {
         display: grid;
         gap: 6px;
@@ -197,6 +209,9 @@
   </head>
   <body>
     <main class="shell">
+      {% if relax_host_restriction %}
+      <div class="host-warning">{{ host_access_notice }}</div>
+      {% endif %}
       <section class="hero">
         <span class="tag">학습 운영 2025</span>
         <h1>매일의 학습 진도를 한눈에 확인하세요</h1>

@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template, redirect, url_for
 import json
+import ipaddress
 
 from flask import jsonify
 import requests
@@ -76,6 +77,8 @@ from config import (
 )  # 필요 시 조정
 
 
+from config import RELAX_HOST_RESTRICTION
+
 #########
 
 from utils.utils_user_doc import (
@@ -145,6 +148,7 @@ def hydrate_slot_students(slots):
     hydrated = []
     for slot in slots:
         students_detail = []
+        notes = slot.get("student_notes") or {}
         for token in slot.get("students", []):
             # token: user_uuid 또는 student_id
             try:
@@ -160,12 +164,21 @@ def hydrate_slot_students(slots):
             )
             name = profile.get("name") or student_id
             user_uuid = doc.get("user_uuid") or resolve_uuid(student_id)
+            note = ""
+            if isinstance(notes, dict):
+                note = (
+                    notes.get(user_uuid)
+                    or notes.get(student_id)
+                    or notes.get(str(token))
+                    or ""
+                )
 
             students_detail.append(
                 {
                     "user_uuid": user_uuid,
                     "student_id": student_id,
                     "name": name,
+                    "note": str(note or "").strip(),
                 }
             )
 
@@ -340,6 +353,14 @@ STUDENT_ONLY_PREFIXES = (
 
 def _is_localhost(host: str) -> bool:
     return host in ("localhost", "127.0.0.1")
+
+
+def _is_private_host(host: str) -> bool:
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return bool(ip.is_private)
 
 
 def _is_admin_route(path: str) -> bool:
@@ -667,6 +688,8 @@ def enforce_subdomain_access():
     host = (request.host or "").split(":")[0].lower()
     if _is_localhost(host):
         return None
+    if RELAX_HOST_RESTRICTION and _is_private_host(host):
+        return None
 
     path = request.path or "/"
     is_admin_route = _is_admin_route(path)
@@ -692,6 +715,21 @@ def enforce_subdomain_access():
 
 
 # 문제 목록 강제 업데이트 기능
+@app.context_processor
+def inject_host_access_notice():
+    return {
+        "relax_host_restriction": RELAX_HOST_RESTRICTION,
+        "host_access_notice": "호스트 제한이 임시 해제되어 있습니다. 내부 네트워크에서 직접 접속이 가능합니다.",
+    }
+
+
+@app.after_request
+def add_host_access_notice_header(response):
+    if RELAX_HOST_RESTRICTION:
+        response.headers["X-Host-Restriction-Relaxed"] = "1"
+    return response
+
+
 @app.route("/update_problems", methods=["POST"])
 def update_problems():
     s, err = ensure_admin_or_403()
@@ -1931,6 +1969,48 @@ def api_schedule_remove_student(slot_id, user_token):
     students[:] = [u for u in students if u != target_uuid]
     if len(students) == before:
         return jsonify({"ok": False, "error": "student not in slot"}), 404
+
+    notes = slot.get("student_notes")
+    if isinstance(notes, dict):
+        notes.pop(target_uuid, None)
+        notes.pop(user_token, None)
+
+    save_schedule(data)
+    hydrated = hydrate_slot_students([slot])[0]
+    return jsonify({"ok": True, "slot": hydrated})
+
+
+@app.patch("/api/schedule/slots/<slot_id>/students/<user_token>/note")
+def api_schedule_update_student_note(slot_id, user_token):
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
+
+    payload = request.get_json(force=True) or {}
+    note = str(payload.get("note") or "").strip()
+    if len(note) > 80:
+        return jsonify({"ok": False, "error": "note too long"}), 400
+
+    data = load_schedule()
+    slots = data.setdefault("slots", [])
+    slot = next((s for s in slots if s.get("id") == slot_id), None)
+    if not slot:
+        return jsonify({"ok": False, "error": "slot not found"}), 404
+
+    students = slot.setdefault("students", [])
+    target_uuid = user_token
+    if "-" not in user_token:
+        target_uuid = resolve_uuid(user_token)
+
+    if not target_uuid or target_uuid not in students:
+        return jsonify({"ok": False, "error": "student not in slot"}), 404
+
+    notes = slot.setdefault("student_notes", {})
+    if note:
+        notes[target_uuid] = note
+    else:
+        notes.pop(target_uuid, None)
+        notes.pop(user_token, None)
 
     save_schedule(data)
     hydrated = hydrate_slot_students([slot])[0]

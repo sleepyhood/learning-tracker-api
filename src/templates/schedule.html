@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Serif+Display&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
 
@@ -143,6 +143,17 @@
 
         color: var(--muted);
 
+      }
+
+      .host-warning {
+        margin: 0 0 14px;
+        padding: 11px 13px;
+        border-radius: 14px;
+        border: 1px solid rgba(251, 191, 36, 0.35);
+        background: rgba(180, 83, 9, 0.18);
+        color: #fde68a;
+        font-size: 0.84rem;
+        line-height: 1.45;
       }
 
 
@@ -311,6 +322,11 @@
 
       }
 
+      .day-column.is-saturday {
+        min-width: 220px;
+        grid-column: span 2;
+      }
+
 
 
       .day-column.is-today {
@@ -465,6 +481,230 @@
 
       }
 
+      .message-bank-panel {
+
+        margin: 0 0 16px;
+
+        padding: 14px;
+
+        border-radius: 16px;
+
+        border: 1px solid rgba(96, 165, 250, 0.28);
+
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.9));
+
+      }
+
+      .message-bank-panel.is-collapsed .message-bank-editor {
+
+        display: none;
+
+      }
+
+      .message-bank-head {
+
+        display: flex;
+
+        justify-content: space-between;
+
+        align-items: flex-start;
+
+        gap: 12px;
+
+        margin-bottom: 10px;
+
+      }
+
+      .message-bank-title {
+
+        font-size: 0.92rem;
+
+        font-weight: 800;
+
+        color: #dbeafe;
+
+      }
+
+      .message-bank-subtitle {
+
+        margin-top: 4px;
+
+        font-size: 0.8rem;
+
+        color: rgba(191, 219, 254, 0.78);
+
+        line-height: 1.45;
+
+      }
+
+      .message-bank-count {
+
+        font-size: 0.78rem;
+
+        color: rgba(148, 163, 184, 0.92);
+
+        white-space: nowrap;
+
+      }
+
+      .message-bank-head-side {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 10px;
+
+      }
+
+      .message-bank-toggle {
+
+        padding: 7px 12px;
+
+        font-size: 0.8rem;
+
+      }
+
+      .message-bank-editor {
+
+        margin-bottom: 12px;
+
+      }
+
+      .message-bank-draft {
+
+        width: 100%;
+
+        min-height: 104px;
+
+        resize: vertical;
+
+        border-radius: 12px;
+
+        border: 1px solid rgba(148, 163, 184, 0.3);
+
+        background: rgba(2, 6, 23, 0.52);
+
+        color: var(--text);
+
+        padding: 12px 13px;
+
+        font: inherit;
+
+        line-height: 1.5;
+
+      }
+
+      .message-bank-draft::placeholder {
+
+        color: rgba(148, 163, 184, 0.75);
+
+      }
+
+      .message-bank-actions {
+
+        display: flex;
+
+        flex-wrap: wrap;
+
+        gap: 8px;
+
+        margin-top: 10px;
+
+      }
+
+      .message-bank-list {
+
+        display: grid;
+
+        gap: 10px;
+
+        margin-top: 12px;
+
+      }
+
+      .message-bank-item {
+
+        border-radius: 12px;
+
+        border: 1px solid rgba(148, 163, 184, 0.24);
+
+        background: rgba(15, 23, 42, 0.76);
+
+        padding: 11px 12px;
+
+      }
+
+      .message-bank-item-head {
+
+        display: flex;
+
+        justify-content: space-between;
+
+        align-items: center;
+
+        gap: 10px;
+
+        margin-bottom: 2px;
+
+      }
+
+      .message-bank-item-title {
+
+        font-size: 0.82rem;
+
+        font-weight: 700;
+
+        color: #e2e8f0;
+
+      }
+
+      .message-bank-item-time {
+
+        font-size: 0.73rem;
+
+        color: rgba(148, 163, 184, 0.86);
+
+      }
+
+      .message-bank-item-text {
+
+        display: none;
+
+      }
+
+      .message-bank-item-actions {
+
+        display: flex;
+
+        flex-wrap: wrap;
+
+        gap: 8px;
+
+        margin-top: 10px;
+
+      }
+
+      .message-bank-empty {
+
+        margin: 12px 0 0;
+
+        padding: 12px;
+
+        border-radius: 12px;
+
+        border: 1px dashed rgba(148, 163, 184, 0.28);
+
+        color: rgba(148, 163, 184, 0.92);
+
+        font-size: 0.8rem;
+
+        text-align: center;
+
+        background: rgba(15, 23, 42, 0.4);
+
+      }
+
 
 
       .slot {
@@ -483,6 +723,77 @@
 
         gap: 6px;
 
+      }
+
+      .slot.is-saturday-slot.is-collapsed .slot-students,
+      .slot.is-saturday-slot.is-collapsed .add-student-form {
+        display: none;
+      }
+
+      .slot.is-saturday-slot .slot-header {
+        align-items: flex-start;
+      }
+
+      .slot-header-main {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .slot-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 6px;
+      }
+
+      .slot-summary-chip {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        line-height: 1.2;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        color: rgba(226, 232, 240, 0.95);
+        background: rgba(15, 23, 42, 0.9);
+      }
+
+      .slot-summary-chip.is-urgent {
+        border-color: rgba(248, 113, 113, 0.7);
+        color: rgba(254, 226, 226, 1);
+        background: rgba(127, 29, 29, 0.5);
+      }
+
+      .slot-summary-chip.is-progress {
+        border-color: rgba(249, 115, 22, 0.7);
+        color: rgba(255, 237, 213, 1);
+        background: rgba(124, 45, 18, 0.52);
+      }
+
+      .slot-summary-chip.is-done {
+        border-color: rgba(16, 185, 129, 0.7);
+        color: rgba(209, 250, 229, 1);
+        background: rgba(6, 78, 59, 0.55);
+      }
+
+      .slot-summary-chip.is-today {
+        border-color: rgba(56, 189, 248, 0.7);
+        color: rgba(224, 242, 254, 1);
+        background: rgba(8, 47, 73, 0.7);
+      }
+
+      .slot-toggle {
+        font-size: 0.72rem;
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        background: rgba(15, 23, 42, 0.86);
+        color: rgba(226, 232, 240, 0.92);
+      }
+
+      .slot-toggle:hover {
+        background: rgba(30, 64, 175, 0.28);
       }
 
 
@@ -555,14 +866,23 @@
 
       }
 
-      .day-column.is-uncertain {
+      .slot.is-saturday-slot:not(.is-collapsed) .slot-students {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
 
-        border-color: rgba(125, 211, 252, 0.5);
+      @media (min-width: 1880px) {
+        .slot.is-saturday-slot:not(.is-collapsed) .slot-students {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
 
-        box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.2), 0 14px 35px rgba(15, 23, 42, 0.5);
+      @media (max-width: 768px) {
 
-        margin-left: 10px;
-
+        .day-column.is-saturday {
+          grid-column: span 2;
+        }
       }
 
 
@@ -617,6 +937,45 @@
 
         text-decoration: underline;
 
+      }
+
+      .student-note-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .student-note {
+        min-width: 0;
+        font-size: 0.72rem;
+        color: rgba(191, 219, 254, 0.92);
+        border-radius: 8px;
+        padding: 3px 7px;
+        border: 1px solid rgba(96, 165, 250, 0.28);
+        background: rgba(15, 23, 42, 0.72);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .student-note.is-empty {
+        color: rgba(148, 163, 184, 0.92);
+        border-style: dashed;
+      }
+
+      .student-note-btn {
+        flex-shrink: 0;
+        font-size: 0.72rem;
+        padding: 2px 7px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        background: rgba(15, 23, 42, 0.9);
+        color: rgba(226, 232, 240, 0.92);
+      }
+
+      .student-note-btn:hover {
+        background: rgba(30, 64, 175, 0.28);
       }
 
 
@@ -1125,7 +1484,914 @@
 
 }
 
+      /* 2026 refresh: Linear structure + Intercom cards + Notion rhythm */
+      :root {
+        --bg: radial-gradient(1200px 680px at 4% 0%, rgba(94, 106, 210, 0.13) 0%, transparent 44%),
+          radial-gradient(960px 620px at 100% 8%, rgba(255, 86, 0, 0.09) 0%, transparent 40%),
+          linear-gradient(180deg, #07080b 0%, #0b0d12 42%, #0a0c10 100%);
+        --surface-panel: rgba(15, 16, 19, 0.94);
+        --surface-card: rgba(255, 255, 255, 0.045);
+        --surface-card-strong: rgba(255, 255, 255, 0.07);
+        --border-subtle: rgba(255, 255, 255, 0.06);
+        --border-strong: rgba(255, 255, 255, 0.1);
+        --text-strong: #f7f8f8;
+        --text-primary: #e7ebf2;
+        --text-secondary: #c7ced9;
+        --text-muted: #8c93a1;
+        --accent: #7170ff;
+        --accent-strong: #5e6ad2;
+        --accent-warm: #ff5600;
+        --success: #27a644;
+        --warning: #dd7a21;
+        --danger: #d45757;
+        --radius-sm: 4px;
+        --radius-md: 6px;
+        --radius-card: 12px;
+        --radius-panel: 16px;
+        --shadow-panel: 0 20px 48px rgba(0, 0, 0, 0.38);
+        --shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.22);
+        --focus-ring: 0 0 0 3px rgba(113, 112, 255, 0.24);
+      }
 
+      html {
+        color-scheme: dark;
+      }
+
+      body {
+        min-height: 100vh;
+        font-family: "Inter", "IBM Plex Sans KR", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+        color: var(--text-primary);
+        background: var(--bg);
+        letter-spacing: -0.01em;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      .page {
+        max-width: 1400px;
+        padding: 28px 18px 40px;
+      }
+
+      .page-header {
+        display: grid;
+        gap: 18px;
+        margin-bottom: 18px;
+        padding: 20px 22px;
+        border-radius: 20px;
+        border: 1px solid var(--border-subtle);
+        background: linear-gradient(180deg, rgba(15, 16, 19, 0.94), rgba(15, 16, 19, 0.82));
+        box-shadow: var(--shadow-panel);
+      }
+
+      .page-header-main {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+      }
+
+      .page-header-copy {
+        max-width: 760px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border-subtle);
+        background: rgba(255, 255, 255, 0.03);
+        font-size: 0.74rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+      }
+
+      .page-title {
+        margin-top: 10px;
+        font-size: clamp(1.9rem, 3.1vw, 2.8rem);
+        font-weight: 700;
+        line-height: 1.02;
+        letter-spacing: -0.055em;
+        color: var(--text-strong);
+      }
+
+      .subtitle {
+        max-width: 640px;
+        margin: 10px 0 0;
+        font-size: 0.95rem;
+        line-height: 1.65;
+        color: var(--text-muted);
+      }
+
+      .header-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .btn-primary,
+      .btn-secondary,
+      .btn-ghost,
+      .icon-btn,
+      .student-note-btn,
+      .slot-toggle,
+      .add-student-form button {
+        transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease,
+          box-shadow 160ms ease, transform 120ms ease;
+      }
+
+      .btn-primary,
+      .btn-secondary,
+      .btn-ghost {
+        min-height: 38px;
+        border-radius: var(--radius-md);
+        padding: 9px 14px;
+        font-size: 0.84rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .btn-primary {
+        background: var(--accent-strong);
+        border-color: rgba(130, 143, 255, 0.38);
+        color: #fff;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .btn-primary:hover {
+        background: #6a78e8;
+        transform: translateY(-1px);
+      }
+
+      .btn-secondary {
+        border-color: var(--border-strong);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text-secondary);
+      }
+
+      .btn-secondary:hover,
+      .btn-ghost:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text-strong);
+      }
+
+      .btn-ghost {
+        border-color: var(--border-subtle);
+        background: rgba(255, 255, 255, 0.02);
+        justify-content: center;
+      }
+
+      .btn-warm {
+        border-color: rgba(255, 86, 0, 0.28);
+        background: rgba(255, 86, 0, 0.12);
+        color: #ffd8c6;
+      }
+
+      .btn-warm:hover {
+        background: rgba(255, 86, 0, 0.18);
+        color: #fff0e8;
+      }
+
+      .btn-primary:focus-visible,
+      .btn-secondary:focus-visible,
+      .btn-ghost:focus-visible,
+      .icon-btn:focus-visible,
+      .student-note-btn:focus-visible,
+      .slot-toggle:focus-visible,
+      .add-student-form input[type="text"]:focus-visible,
+      .message-bank-draft:focus-visible,
+      .today-solved-item a:focus-visible,
+      .student-main:focus-visible,
+      .hw-link:focus-visible,
+      .student-action-link:focus-visible,
+      .student-action-btn:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+      }
+
+      .header-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .meta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 34px;
+        padding: 7px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--border-subtle);
+        background: rgba(255, 255, 255, 0.025);
+        color: var(--text-secondary);
+        font-size: 0.77rem;
+      }
+
+      .meta-chip strong {
+        font-weight: 700;
+        color: var(--text-strong);
+      }
+
+      .meta-chip.is-warm {
+        border-color: rgba(255, 86, 0, 0.22);
+        background: rgba(255, 86, 0, 0.09);
+        color: #ffd2bc;
+      }
+
+      .summary-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .summary-card {
+        padding: 12px 14px;
+        border-radius: var(--radius-card);
+        border: 1px solid var(--border-subtle);
+        background: var(--surface-panel);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .summary-card-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: var(--text-muted);
+      }
+
+      .summary-card-value {
+        margin-top: 6px;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-strong);
+      }
+
+      .summary-card-note {
+        margin-top: 4px;
+        font-size: 0.76rem;
+        color: var(--text-muted);
+      }
+
+      .summary-card[data-tone="danger"] .summary-card-value,
+      .summary-card[data-tone="danger"] .summary-card-note {
+        color: #ffb0b0;
+      }
+
+      .summary-card[data-tone="warm"] .summary-card-value,
+      .summary-card[data-tone="warm"] .summary-card-note {
+        color: #ffd7c6;
+      }
+
+      .section-kicker {
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+      }
+
+      .section-title {
+        margin: 4px 0 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--text-strong);
+      }
+
+      .section-desc {
+        margin-top: 4px;
+        max-width: 660px;
+        font-size: 0.83rem;
+        line-height: 1.55;
+        color: var(--text-muted);
+      }
+
+      .today-solved-panel,
+      .message-bank-panel {
+        margin: 0 0 16px;
+        padding: 16px;
+        border-radius: var(--radius-panel);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .today-solved-panel {
+        border: 1px solid rgba(255, 86, 0, 0.18);
+        background: linear-gradient(180deg, rgba(24, 18, 16, 0.92), rgba(18, 18, 20, 0.9));
+      }
+
+      .message-bank-panel {
+        border: 1px solid var(--border-subtle);
+        background: linear-gradient(180deg, rgba(18, 20, 25, 0.94), rgba(18, 20, 25, 0.88));
+      }
+
+      .today-solved-head,
+      .message-bank-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+
+      .today-solved-title {
+        margin: 4px 0 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #fff3eb;
+      }
+
+      .today-solved-grid {
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 10px;
+      }
+
+      .today-solved-item {
+        border-radius: 12px;
+        border: 1px solid rgba(255, 86, 0, 0.18);
+        background: rgba(255, 248, 244, 0.055);
+        padding: 0;
+        overflow: hidden;
+      }
+
+      .today-solved-item a {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+        min-height: 108px;
+      }
+
+      .today-solved-item a:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .today-solved-status {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(255, 86, 0, 0.14);
+        color: #ffd5c4;
+        font-size: 0.71rem;
+        font-weight: 700;
+      }
+
+      .today-solved-name {
+        font-size: 0.96rem;
+        color: #fff8f3;
+      }
+
+      .today-solved-id {
+        color: rgba(255, 223, 208, 0.8);
+      }
+
+      .today-solved-empty {
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px dashed rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .message-bank-title {
+        font-size: 1.02rem;
+        font-weight: 700;
+        color: var(--text-strong);
+      }
+
+      .message-bank-subtitle,
+      .message-bank-count {
+        color: var(--text-muted);
+      }
+
+      .message-bank-head-side {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .message-bank-draft {
+        min-height: 116px;
+        border-radius: 10px;
+        border: 1px solid var(--border-strong);
+        background: rgba(255, 255, 255, 0.025);
+        padding: 14px;
+        color: var(--text-primary);
+      }
+
+      .message-bank-draft::placeholder {
+        color: var(--text-muted);
+      }
+
+      .message-bank-item {
+        display: grid;
+        gap: 10px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        background: rgba(246, 245, 244, 0.035);
+        padding: 12px 13px;
+      }
+
+      .message-bank-item-head {
+        align-items: flex-start;
+        margin-bottom: 0;
+      }
+
+      .message-bank-item-title {
+        font-size: 0.86rem;
+        line-height: 1.45;
+      }
+
+      .message-bank-item-time {
+        font-size: 0.73rem;
+      }
+
+      .message-bank-item-text {
+        display: block;
+        margin: 0;
+        font-size: 0.8rem;
+        line-height: 1.6;
+        color: var(--text-muted);
+      }
+
+      .message-bank-item-actions .btn-primary {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.09);
+        color: var(--text-strong);
+      }
+
+      .message-bank-item-actions .btn-secondary,
+      .message-bank-item-actions .btn-primary {
+        min-height: 34px;
+        font-size: 0.78rem;
+        padding: 8px 11px;
+      }
+
+      .week-grid {
+        gap: 12px;
+        align-items: stretch;
+      }
+
+      .day-column {
+        min-width: 0;
+        padding: 12px;
+        border-radius: 18px;
+        border: 1px solid var(--border-subtle);
+        background: linear-gradient(180deg, rgba(15, 16, 19, 0.94), rgba(18, 20, 25, 0.86));
+        box-shadow: var(--shadow-soft);
+        gap: 10px;
+      }
+
+      .day-column.is-today {
+        border-color: rgba(113, 112, 255, 0.34);
+        box-shadow: inset 0 0 0 1px rgba(113, 112, 255, 0.16), var(--shadow-soft);
+      }
+
+      .day-header {
+        margin-bottom: 0;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .day-name {
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--text-strong);
+      }
+
+      .day-meta {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 6px;
+      }
+
+      .day-badge {
+        border-radius: 999px;
+        padding: 4px 8px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text-secondary);
+      }
+
+      .day-badge--today {
+        border-color: rgba(113, 112, 255, 0.26);
+        background: rgba(113, 112, 255, 0.12);
+        color: #d9dbff;
+      }
+
+      .slots {
+        gap: 10px;
+      }
+
+      .slot {
+        gap: 10px;
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02));
+      }
+
+      .slot-header {
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .slot-header-main {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .slot-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        opacity: 0.75;
+      }
+
+      .slot:hover .slot-header-actions,
+      .slot:focus-within .slot-header-actions {
+        opacity: 1;
+      }
+
+      .slot-label {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-strong);
+      }
+
+      .slot-summary {
+        gap: 6px;
+        margin-top: 0;
+      }
+
+      .slot-summary-chip {
+        min-height: 24px;
+        padding: 4px 8px;
+        font-size: 0.69rem;
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.035);
+      }
+
+      .slot-summary-chip.is-urgent {
+        border-color: rgba(212, 87, 87, 0.28);
+        background: rgba(212, 87, 87, 0.12);
+        color: #ffcccc;
+      }
+
+      .slot-summary-chip.is-progress {
+        border-color: rgba(221, 122, 33, 0.28);
+        background: rgba(221, 122, 33, 0.12);
+        color: #ffd9b4;
+      }
+
+      .slot-summary-chip.is-done {
+        border-color: rgba(39, 166, 68, 0.28);
+        background: rgba(39, 166, 68, 0.12);
+        color: #d1ffd8;
+      }
+
+      .slot-summary-chip.is-today {
+        border-color: rgba(255, 86, 0, 0.28);
+        background: rgba(255, 86, 0, 0.1);
+        color: #ffd6c7;
+      }
+
+      .icon-btn,
+      .student-note-btn,
+      .slot-toggle {
+        min-width: 30px;
+        min-height: 30px;
+        padding: 6px 8px;
+        border-radius: var(--radius-sm);
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-muted);
+      }
+
+      .icon-btn:hover,
+      .student-note-btn:hover,
+      .slot-toggle:hover {
+        border-color: rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-strong);
+      }
+
+      .slot-students {
+        gap: 8px;
+      }
+
+      .slot-student {
+        gap: 10px;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: linear-gradient(180deg, rgba(250, 249, 246, 0.06), rgba(250, 249, 246, 0.03));
+      }
+
+      .slot-student:hover,
+      .slot-student:focus-within {
+        background: linear-gradient(180deg, rgba(250, 249, 246, 0.08), rgba(250, 249, 246, 0.05));
+      }
+
+      .slot-student.is-same-student {
+        border-color: rgba(255, 255, 255, 0.14);
+        box-shadow: inset 0 0 0 1px rgba(113, 112, 255, 0.18);
+      }
+
+      .student-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .student-main {
+        display: grid;
+        gap: 3px;
+        min-width: 0;
+      }
+
+      .student-id-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .student-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-strong);
+      }
+
+      .student-id {
+        font-size: 0.77rem;
+        color: var(--text-muted);
+      }
+
+      .weekly-badge {
+        margin-left: 0;
+        padding: 3px 7px;
+        border-color: rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.035);
+        color: var(--text-secondary);
+        opacity: 1;
+      }
+
+      .student-note-row {
+        align-items: stretch;
+      }
+
+      .student-note {
+        display: flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: keep-all;
+        overflow-wrap: normal;
+      }
+
+      .student-note.is-empty {
+        border-style: dashed;
+        color: var(--text-muted);
+        background: rgba(246, 245, 244, 0.02);
+      }
+
+      .student-status-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        align-items: stretch;
+      }
+
+      .hw-link {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.025);
+        color: var(--text-secondary);
+        min-width: 0;
+      }
+
+      .hw-link:hover {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-strong);
+      }
+
+      .hw-main {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: nowrap;
+        min-width: 0;
+        width: 100%;
+      }
+
+      .hw-dot {
+        width: 9px;
+        height: 9px;
+      }
+
+      .hw-text {
+        font-size: 0.8rem;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: keep-all;
+        overflow-wrap: normal;
+      }
+
+      .hw-score {
+        display: inline;
+        margin-left: 3px;
+        font-size: 0.74rem;
+        color: var(--text-muted);
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+
+      .today-pill {
+        min-height: 30px;
+        display: inline-flex;
+        justify-content: center;
+        align-self: flex-start;
+        width: fit-content;
+        max-width: 100%;
+        padding: 6px 10px;
+        border-radius: 10px;
+        font-size: 0.72rem;
+        box-shadow: none;
+        white-space: nowrap;
+        word-break: keep-all;
+        overflow-wrap: normal;
+      }
+
+      .today-pill.is-solved {
+        border-color: rgba(39, 166, 68, 0.3);
+        background: rgba(39, 166, 68, 0.12);
+      }
+
+      .today-pill.is-login {
+        border-color: rgba(221, 122, 33, 0.3);
+        background: rgba(221, 122, 33, 0.12);
+      }
+
+      .today-pill.is-none {
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .today-pill.is-error {
+        border-color: rgba(212, 87, 87, 0.35);
+        background: rgba(212, 87, 87, 0.14);
+        color: #ffd1d1;
+      }
+
+      .student-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .student-action-link,
+      .student-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 32px;
+        padding: 7px 10px;
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.025);
+        color: var(--text-secondary);
+        font-size: 0.76rem;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .student-action-link:hover,
+      .student-action-btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-strong);
+      }
+
+      .student-action-btn--danger {
+        color: #ffc9c9;
+      }
+
+      .add-student-form {
+        gap: 6px;
+        margin-top: 2px;
+      }
+
+      .add-student-form input[type="text"] {
+        min-height: 36px;
+        border-radius: var(--radius-md);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 8px 10px;
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--text-primary);
+      }
+
+      .add-student-form button {
+        min-height: 36px;
+        border-radius: var(--radius-sm);
+      }
+
+      .empty {
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px dashed rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      @media (max-width: 1180px) {
+        .summary-strip {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 960px) {
+        .page-header-main {
+          grid-template-columns: 1fr;
+          display: grid;
+        }
+
+        .header-actions {
+          justify-content: flex-start;
+        }
+
+        .student-status-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .page {
+          padding: 18px 14px 32px;
+        }
+
+        .summary-strip {
+          grid-template-columns: 1fr;
+        }
+
+        .today-solved-head,
+        .message-bank-head {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .message-bank-head-side {
+          justify-content: space-between;
+        }
+
+        .today-solved-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .student-top {
+          flex-direction: column;
+        }
+
+        .student-actions {
+          flex-direction: column;
+        }
+
+        .student-action-link,
+        .student-action-btn {
+          width: 100%;
+        }
+      }
 
     </style>
 
@@ -1135,40 +2401,107 @@
 
     <div class="page">
 
+      {% if relax_host_restriction %}
+      <div class="host-warning">{{ host_access_notice }}</div>
+      {% endif %}
+
       <header class="page-header">
+        <div class="page-header-main">
+          <div class="page-header-copy">
+            <div class="eyebrow">Schedule board</div>
+            <div class="page-title">요일별 수업 스케줄</div>
+            <p class="subtitle">
+              학생 등록, 숙제 상태 확인, 메모 편집, 오늘 풀이 체크를 한 보드에서
+              빠르게 처리하는 운영 화면입니다.
+            </p>
+          </div>
 
-        <div>
-
-          <div class="page-title">요일별 수업 스케줄</div>
-
-          <p class="subtitle">
-
-            요일·시간별로 학생을 한 번 등록해 두고,<br />
-
-            클릭 한 번으로 대시보드 / 숙제 기록으로 이동할 수 있는 메뉴
-
-            페이지입니다.
-
-          </p>
-
+          <div class="header-actions">
+            <a href="/" class="btn-secondary">← 내 대시보드</a>
+            <button id="refresh-hw-btn" type="button" class="btn-primary">
+              숙제 상태 새로고침
+            </button>
+            <button id="message-bank-toggle-header" type="button" class="btn-secondary btn-warm">
+              공통 메세지
+            </button>
+          </div>
         </div>
 
-        <div class="header-actions">
-
-          <a href="/" class="btn-secondary">← 내 대시보드</a>
-          <button id="refresh-hw-btn" type="button" class="btn-secondary">
-            숙제 상태 새로고침
-          </button>
-          <div id="hw-sync-meta" class="sync-meta">마지막 갱신: 아직 없음</div>
-
+        <div class="header-meta">
+          <div id="hw-sync-meta" class="meta-chip">
+            <strong>동기화</strong>
+            <span>마지막 갱신: 아직 없음</span>
+          </div>
+          <div class="meta-chip">
+            <strong>보드</strong>
+            <span>요일별 슬롯과 학생 카드를 한 화면에서 관리</span>
+          </div>
         </div>
-
       </header>
 
+      <section class="summary-strip" aria-label="스케줄 요약">
+        <article class="summary-card">
+          <div class="summary-card-label">동기화 상태</div>
+          <div id="summary-sync-status" class="summary-card-value">대기 중</div>
+          <div id="summary-sync-note" class="summary-card-note">아직 집계되지 않았습니다.</div>
+        </article>
+        <article id="summary-sync-results-card" class="summary-card">
+          <div class="summary-card-label">숙제 상태 결과</div>
+          <div id="summary-sync-results" class="summary-card-value">정상 0 / 실패 0</div>
+          <div class="summary-card-note">새로고침 후 최신 기준으로 갱신됩니다.</div>
+        </article>
+        <article id="summary-solved-card" class="summary-card" data-tone="warm">
+          <div class="summary-card-label">오늘 풀이 학생</div>
+          <div id="summary-solved-count" class="summary-card-value">0명</div>
+          <div class="summary-card-note">오늘 제출을 남긴 학생 수</div>
+        </article>
+        <article class="summary-card">
+          <div class="summary-card-label">전체 보드 현황</div>
+          <div id="summary-board-count" class="summary-card-value">슬롯 0 / 학생 0</div>
+          <div class="summary-card-note">현재 화면에 표시된 총 수량</div>
+        </article>
+      </section>
+
       <section class="today-solved-panel">
-        <div class="today-solved-title">오늘 풀이 학생</div>
+        <div class="today-solved-head">
+          <div>
+            <div class="section-kicker">Today solved</div>
+            <div class="today-solved-title">오늘 풀이 학생</div>
+            <div class="section-desc">오늘 실제 제출이 확인된 학생을 빠르게 열어보고 확인합니다.</div>
+          </div>
+        </div>
         <div id="today-solved-grid" class="today-solved-grid"></div>
         <p id="today-solved-empty" class="today-solved-empty">오늘 풀이 학생이 없습니다.</p>
+      </section>
+
+      <section id="message-bank-panel" class="message-bank-panel is-collapsed">
+        <div class="message-bank-head">
+          <div>
+            <div class="section-kicker">Message bank</div>
+            <div class="message-bank-title">공통 메세지 보관함</div>
+            <div class="message-bank-subtitle">
+              일부 학생에게 반복해서 보내는 안내 문구를 임시 저장해 두고 바로 복사할 수 있습니다.
+            </div>
+          </div>
+          <div class="message-bank-head-side">
+            <button id="message-bank-toggle" type="button" class="btn-secondary message-bank-toggle">새 문구 작성</button>
+            <div id="message-bank-count" class="message-bank-count">저장 0개</div>
+          </div>
+        </div>
+        <div id="message-bank-editor" class="message-bank-editor">
+          <textarea
+            id="message-bank-draft"
+            class="message-bank-draft"
+            placeholder="예: 오늘은 진도 대신 오답 정리 위주로 진행해 주세요. 숙제는 내일 저녁까지 제출 부탁드립니다."
+          ></textarea>
+          <div class="message-bank-actions">
+            <button id="message-bank-save" type="button" class="btn-primary">현재 문구 저장</button>
+            <button id="message-bank-copy-draft" type="button" class="btn-secondary">현재 문구 복사</button>
+            <button id="message-bank-clear-draft" type="button" class="btn-secondary">입력 비우기</button>
+          </div>
+        </div>
+        <div id="message-bank-list" class="message-bank-list"></div>
+        <p id="message-bank-empty" class="message-bank-empty">저장된 공통 메세지가 없습니다.</p>
       </section>
 
 
@@ -1176,23 +2509,23 @@
       <main class="week-grid">
 
         {% for w in display_weekdays %}
+        {% if w != uncertain_weekday %}
 
         <section
 
-          class="day-column {% if w == today_w %}is-today{% endif %} {% if w == uncertain_weekday %}is-uncertain{% endif %}"
+          class="day-column {% if w == today_w %}is-today{% endif %} {% if w == 5 %}is-saturday{% endif %}"
+          data-weekday="{{ w }}"
 
         >
 
           <header class="day-header">
-
             <span class="day-name">{{ weekday_label_map[w] }}</span>
-
-            {% if w == today_w and w != uncertain_weekday %}
-
-            <span class="day-badge">오늘</span>
-
-            {% endif %}
-
+            <div class="day-meta">
+              {% if w == today_w %}
+              <span class="day-badge day-badge--today">오늘</span>
+              {% endif %}
+              <span class="day-badge day-badge--count">0 슬롯</span>
+            </div>
           </header>
 
 
@@ -1206,23 +2539,19 @@
             <article class="slot" data-slot-id="{{ slot.id }}" data-weekday="{{ w }}">
 
               <div class="slot-header">
-
-                <div class="slot-label">{{ slot.label }}</div>
-
-                <button
-
-                  class="icon-btn slot-delete"
-
-                  type="button"
-
-                  title="슬롯 삭제"
-
-                >
-
-                  ✕
-
-                </button>
-
+                <div class="slot-header-main">
+                  <div class="slot-label">{{ slot.label }}</div>
+                  <div class="slot-summary"></div>
+                </div>
+                <div class="slot-header-actions">
+                  <button
+                    class="icon-btn slot-delete"
+                    type="button"
+                    title="슬롯 삭제"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
 
@@ -1241,63 +2570,58 @@
 
                 >
 
-                  <a
-
-                    class="student-main"
-
-                    href="/user/{{ s.student_id }}"
-
-                    title="학생 대시보드 열기"
-
-                  >
-
-                    <span class="student-name">{{ s.name }}</span>
-
-                    <span class="student-id">
-                      @{{ s.student_id }}
-                      <span class="weekly-badge" title="주간 출석 요일">주 1회</span>
-                    </span>
-
-                  </a>
-
-                  <div class="student-meta">
-
+                  <div class="student-top">
                     <a
-
-                      class="hw-link"
-
-                      href="/students/{{ s.user_uuid }}/homework"
-
-                      title="숙제 기록 보기"
-
+                      class="student-main"
+                      href="/user/{{ s.student_id }}"
+                      title="학생 대시보드 열기"
                     >
+                      <span class="student-name">{{ s.name }}</span>
+                      <span class="student-id-row">
+                        <span class="student-id">@{{ s.student_id }}</span>
+                        <span class="weekly-badge" title="주간 출석 요일">주 1회</span>
+                      </span>
+                    </a>
+                  </div>
 
+                  <div class="student-note-row">
+                    <div class="student-note {% if not s.note %}is-empty{% endif %}" title="{{ s.note or '메모 없음' }}">
+                      {{ s.note or '메모 없음' }}
+                    </div>
+                    <button
+                      class="icon-btn student-note-btn edit-student-note"
+                      type="button"
+                      title="학생 식별 메모 수정"
+                    >
+                      메모
+                    </button>
+                  </div>
+
+                  <div class="student-status-row">
+                    <a
+                      class="hw-link"
+                      href="/students/{{ s.user_uuid }}/homework"
+                      title="숙제 기록 보기"
+                    >
                       <span class="hw-row hw-row-status">
                         <span class="hw-main">
                           <span class="hw-dot" aria-hidden="true"></span>
                           <span class="hw-text">숙제 확인</span><span class="hw-score"></span>
                         </span>
                       </span>
-                      <span class="hw-row hw-row-activity">
-                        <span class="today-pill is-none">오늘 미접속</span>
-                      </span>
-
                     </a>
+                    <span class="today-pill is-none">오늘 미접속</span>
+                  </div>
 
+                  <div class="student-actions">
+                    <a class="student-action-link" href="/user/{{ s.student_id }}">대시보드</a>
                     <button
-
-                      class="icon-btn remove-student"
-
+                      class="student-action-btn student-action-btn--danger remove-student"
                       type="button"
-
                       title="이 슬롯에서 제거"
-
                     >
-
-                      −
-
+                      제거
                     </button>
-
                   </div>
 
                 </div>
@@ -1355,6 +2679,7 @@
           </div>
 
         </section>
+        {% endif %}
 
         {% endfor %}
 
@@ -1464,6 +2789,441 @@
 
         }
 
+        function escapeHtml(value) {
+          return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        }
+
+        const MESSAGE_BANK_STORAGE_KEY = "schedule.commonMessageBank.v1";
+
+        function getMessageBankElements() {
+          return {
+            panel: document.getElementById("message-bank-panel"),
+            draft: document.getElementById("message-bank-draft"),
+            toggle: document.getElementById("message-bank-toggle"),
+            headerToggle: document.getElementById("message-bank-toggle-header"),
+            list: document.getElementById("message-bank-list"),
+            empty: document.getElementById("message-bank-empty"),
+            count: document.getElementById("message-bank-count"),
+          };
+        }
+
+        function setMessageBankExpanded(expanded) {
+          const { panel, toggle, headerToggle, draft } = getMessageBankElements();
+          if (!panel || !toggle) return;
+          panel.classList.toggle("is-collapsed", !expanded);
+          toggle.textContent = expanded ? "입력 닫기" : "새 문구 작성";
+          toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+          if (headerToggle) {
+            headerToggle.textContent = expanded ? "메세지 닫기" : "공통 메세지";
+            headerToggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+          }
+          if (expanded && draft) {
+            window.requestAnimationFrame(() => draft.focus());
+          }
+        }
+
+        function loadMessageBank() {
+          try {
+            const raw = localStorage.getItem(MESSAGE_BANK_STORAGE_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed.filter((item) => item && item.text) : [];
+          } catch (err) {
+            console.warn("message bank load failed", err);
+            return [];
+          }
+        }
+
+        function saveMessageBank(items) {
+          localStorage.setItem(MESSAGE_BANK_STORAGE_KEY, JSON.stringify(items));
+        }
+
+        function formatMessageBankTime(isoString) {
+          if (!isoString) return "";
+          const date = new Date(isoString);
+          if (Number.isNaN(date.getTime())) return "";
+          return new Intl.DateTimeFormat("ko-KR", {
+            month: "numeric",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }).format(date);
+        }
+
+        function getMessageBankTitle(text) {
+          const firstLine = String(text || "")
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .find(Boolean) || "공통 메세지";
+          return firstLine.length > 32 ? firstLine.slice(0, 32) + "..." : firstLine;
+        }
+
+        async function copyText(text) {
+          const value = String(text || "");
+          if (!value.trim()) {
+            toast("복사할 문구가 없습니다.");
+            return false;
+          }
+          try {
+            await navigator.clipboard.writeText(value);
+            return true;
+          } catch (err) {
+            console.warn("clipboard write failed", err);
+            const temp = document.createElement("textarea");
+            temp.value = value;
+            temp.setAttribute("readonly", "readonly");
+            temp.style.position = "fixed";
+            temp.style.opacity = "0";
+            document.body.appendChild(temp);
+            temp.select();
+            const copied = document.execCommand("copy");
+            document.body.removeChild(temp);
+            return copied;
+          }
+        }
+
+        function renderMessageBank() {
+          const { list, empty, count } = getMessageBankElements();
+          if (!list || !empty || !count) return;
+          const items = loadMessageBank();
+          count.textContent = `저장 ${items.length}개`;
+          list.innerHTML = "";
+          if (!items.length) {
+            empty.style.display = "";
+            return;
+          }
+          empty.style.display = "none";
+          items.forEach((item) => {
+            const article = document.createElement("article");
+            article.className = "message-bank-item";
+            article.dataset.messageBankId = item.id;
+            article.innerHTML = `
+              <div class="message-bank-item-head">
+                <div class="message-bank-item-title">${escapeHtml(getMessageBankTitle(item.text))}</div>
+                <div class="message-bank-item-time">${escapeHtml(formatMessageBankTime(item.updatedAt))}</div>
+              </div>
+              <p class="message-bank-item-text">${escapeHtml(item.text)}</p>
+              <div class="message-bank-item-actions">
+                <button type="button" class="btn-secondary" data-action="load-message">불러오기</button>
+                <button type="button" class="btn-secondary btn-warm" data-action="copy-message">바로 복사</button>
+                <button type="button" class="btn-secondary" data-action="delete-message">삭제</button>
+              </div>
+            `;
+            list.appendChild(article);
+          });
+        }
+
+        function upsertMessageBankItem(text) {
+          const nextText = String(text || "").trim();
+          if (!nextText) {
+            toast("저장할 문구를 입력하세요.");
+            return;
+          }
+          const items = loadMessageBank();
+          const existing = items.find((item) => item.text === nextText);
+          const timestamp = new Date().toISOString();
+          if (existing) {
+            existing.updatedAt = timestamp;
+          } else {
+            items.unshift({
+              id: String(Date.now()),
+              text: nextText,
+              updatedAt: timestamp,
+            });
+          }
+          saveMessageBank(items.slice(0, 12));
+          renderMessageBank();
+          setMessageBankExpanded(false);
+          toast(existing ? "저장된 문구 시간을 갱신했습니다." : "공통 메세지를 저장했습니다.");
+        }
+
+        function deleteMessageBankItem(id) {
+          const items = loadMessageBank().filter((item) => item.id !== id);
+          saveMessageBank(items);
+          renderMessageBank();
+          toast("저장된 문구를 삭제했습니다.");
+        }
+
+
+
+        const SATURDAY_WEEKDAY = 5;
+
+        const SATURDAY_COLLAPSE_THRESHOLD = 5;
+
+
+
+        function isSaturdaySlot(slotEl) {
+
+          return Number(slotEl && slotEl.dataset && slotEl.dataset.weekday) === SATURDAY_WEEKDAY;
+
+        }
+
+
+
+        function getSaturdaySummaryCounts(slotEl) {
+
+          const counts = { total: 0, urgent: 0, progress: 0, done: 0, today: 0 };
+
+          if (!slotEl) return counts;
+
+          slotEl.querySelectorAll(".slot-student").forEach((studentEl) => {
+
+            counts.total += 1;
+
+            const dot = studentEl.querySelector(".hw-dot");
+
+            const pill = studentEl.querySelector(".today-pill");
+
+            const classes = dot ? dot.classList : null;
+
+            if (classes && classes.contains("hw-done")) {
+
+              counts.done += 1;
+
+            } else if (classes && classes.contains("hw-progress")) {
+
+              counts.progress += 1;
+
+            } else if (
+
+              classes &&
+
+              (classes.contains("hw-unattempted") ||
+
+                classes.contains("hw-assigned") ||
+
+                classes.contains("hw-error"))
+
+            ) {
+
+              counts.urgent += 1;
+
+            } else {
+
+              counts.urgent += 1;
+
+            }
+
+            if (pill && (pill.classList.contains("is-solved") || pill.classList.contains("is-login"))) {
+
+              counts.today += 1;
+
+            }
+
+          });
+
+          return counts;
+
+        }
+
+
+
+        function updateSaturdaySlotToggle(slotEl) {
+
+          if (!slotEl) return;
+
+          const toggleBtn = slotEl.querySelector(".slot-toggle");
+
+          if (!toggleBtn) return;
+
+          const total = slotEl.querySelectorAll(".slot-student").length;
+
+          const isCollapsed = slotEl.classList.contains("is-collapsed");
+
+          toggleBtn.textContent = isCollapsed ? `펼치기 (${total})` : "접기";
+
+          toggleBtn.setAttribute(
+
+            "aria-label",
+
+            isCollapsed ? "토요일 슬롯 학생 목록 펼치기" : "토요일 슬롯 학생 목록 접기"
+
+          );
+
+        }
+
+
+
+        function updateSaturdaySlotSummary(slotEl) {
+
+          if (!slotEl || !isSaturdaySlot(slotEl)) return;
+
+          const summaryEl = slotEl.querySelector(".slot-summary");
+
+          if (!summaryEl) return;
+
+          const counts = getSaturdaySummaryCounts(slotEl);
+
+          summaryEl.innerHTML = `
+
+            <span class="slot-summary-chip">학생 ${counts.total}명</span>
+
+            <span class="slot-summary-chip is-urgent">확인 필요 ${counts.urgent}</span>
+
+            <span class="slot-summary-chip is-progress">진행 ${counts.progress}</span>
+
+            <span class="slot-summary-chip is-done">완료 ${counts.done}</span>
+
+            <span class="slot-summary-chip is-today">오늘 활동 ${counts.today}</span>
+
+          `;
+
+          updateSaturdaySlotToggle(slotEl);
+
+        }
+
+        function updateSlotSummary(slotEl) {
+          if (!slotEl) return;
+          const summaryEl = slotEl.querySelector(".slot-summary");
+          if (!summaryEl) return;
+          const counts = getSaturdaySummaryCounts(slotEl);
+          summaryEl.innerHTML = `
+            <span class="slot-summary-chip">학생 ${counts.total}명</span>
+            ${counts.urgent ? `<span class="slot-summary-chip is-urgent">확인 ${counts.urgent}</span>` : ""}
+            ${counts.progress ? `<span class="slot-summary-chip is-progress">진행 ${counts.progress}</span>` : ""}
+            ${counts.done ? `<span class="slot-summary-chip is-done">완료 ${counts.done}</span>` : ""}
+            ${counts.today ? `<span class="slot-summary-chip is-today">오늘 ${counts.today}</span>` : ""}
+          `;
+          if (isSaturdaySlot(slotEl)) {
+            updateSaturdaySlotToggle(slotEl);
+          }
+        }
+
+
+
+        function ensureSaturdaySlotControls(slotEl) {
+
+          if (!slotEl || !isSaturdaySlot(slotEl)) return;
+
+          slotEl.classList.add("is-saturday-slot");
+
+          const header = slotEl.querySelector(".slot-header");
+
+          const label = slotEl.querySelector(".slot-label");
+
+          const deleteBtn = slotEl.querySelector(".slot-delete");
+          let headerActions = header && header.querySelector(".slot-header-actions");
+
+          if (header && label && !header.querySelector(".slot-header-main")) {
+
+            const main = document.createElement("div");
+
+            main.className = "slot-header-main";
+
+            header.insertBefore(main, label);
+
+            main.appendChild(label);
+
+          }
+
+          const headerMain = header && header.querySelector(".slot-header-main");
+
+          if (headerMain && !headerMain.querySelector(".slot-summary")) {
+
+            const summary = document.createElement("div");
+
+            summary.className = "slot-summary";
+
+            headerMain.appendChild(summary);
+
+          }
+
+          if (header && !header.querySelector(".slot-toggle")) {
+
+            const toggleBtn = document.createElement("button");
+
+            toggleBtn.type = "button";
+
+            toggleBtn.className = "icon-btn slot-toggle";
+
+            toggleBtn.setAttribute("data-role", "slot-toggle");
+
+            if (!headerActions && header) {
+              headerActions = document.createElement("div");
+              headerActions.className = "slot-header-actions";
+              header.appendChild(headerActions);
+            }
+
+            if (headerActions && deleteBtn && deleteBtn.parentElement === headerActions) {
+              headerActions.insertBefore(toggleBtn, deleteBtn);
+            } else if (headerActions) {
+              headerActions.appendChild(toggleBtn);
+            } else if (header) {
+              header.appendChild(toggleBtn);
+            }
+
+          }
+
+          if (!slotEl.dataset.saturdayLayoutInit) {
+
+            const totalStudents = slotEl.querySelectorAll(".slot-student").length;
+
+            if (totalStudents >= SATURDAY_COLLAPSE_THRESHOLD) {
+
+              slotEl.classList.add("is-collapsed");
+
+            }
+
+            slotEl.dataset.saturdayLayoutInit = "1";
+
+          }
+
+          updateSaturdaySlotSummary(slotEl);
+
+        }
+
+
+
+        function refreshSaturdayExperience(targetSlotEl = null) {
+
+          const slots = targetSlotEl
+
+            ? [targetSlotEl]
+
+            : Array.from(document.querySelectorAll('.slot[data-weekday="5"]'));
+
+          slots.forEach((slotEl) => {
+
+            ensureSaturdaySlotControls(slotEl);
+
+            updateSaturdaySlotSummary(slotEl);
+
+          });
+
+        }
+
+        function refreshAllSlotSummaries(targetSlotEl = null) {
+          const slots = targetSlotEl ? [targetSlotEl] : Array.from(document.querySelectorAll(".slot"));
+          slots.forEach((slotEl) => updateSlotSummary(slotEl));
+        }
+
+        function updateBoardSummary() {
+          const slotCount = document.querySelectorAll(".slot").length;
+          const studentCount = document.querySelectorAll(".slot-student").length;
+          const solvedCount = document.querySelectorAll(".today-pill.is-solved").length;
+          const boardCountEl = document.getElementById("summary-board-count");
+          const solvedCountEl = document.getElementById("summary-solved-count");
+          if (boardCountEl) {
+            boardCountEl.textContent = `슬롯 ${slotCount} / 학생 ${studentCount}`;
+          }
+          if (solvedCountEl) {
+            solvedCountEl.textContent = `${solvedCount}명`;
+          }
+
+          document.querySelectorAll(".day-column").forEach((columnEl) => {
+            const slotTotal = columnEl.querySelectorAll(".slot").length;
+            const studentTotal = columnEl.querySelectorAll(".slot-student").length;
+            const countBadge = columnEl.querySelector(".day-badge--count");
+            if (countBadge) {
+              countBadge.textContent = `슬롯 ${slotTotal} · 학생 ${studentTotal}`;
+            }
+          });
+        }
+
 
 
         function renderSlotStudents(slotEl, slotData) {
@@ -1486,23 +3246,26 @@
 
             wrap.innerHTML = `
 
-              <a class="student-main" href="/user/${encodeURIComponent(
-
-                s.student_id
-
-              )}" title="학생 대시보드 열기">
-
-                <span class="student-name">${s.name}</span>
-
-                <span class="student-id">
-                  @${s.student_id}
-                  <span class="weekly-badge" title="주간 출석 요일">주 1회</span>
-                </span>
-
-              </a>
-
-              <div class="student-meta">
-
+              <div class="student-top">
+                <a class="student-main" href="/user/${encodeURIComponent(
+                  s.student_id
+                )}" title="학생 대시보드 열기">
+                  <span class="student-name">${s.name}</span>
+                  <span class="student-id-row">
+                    <span class="student-id">@${s.student_id}</span>
+                    <span class="weekly-badge" title="주간 출석 요일">주 1회</span>
+                  </span>
+                </a>
+              </div>
+ 
+              <div class="student-note-row">
+                <div class="student-note ${s.note ? "" : "is-empty"}" title="${escapeHtml(s.note || "메모 없음")}">
+                  ${escapeHtml(s.note || "메모 없음")}
+                </div>
+                <button class="icon-btn student-note-btn edit-student-note" type="button" title="학생 식별 메모 수정">메모</button>
+              </div>
+ 
+              <div class="student-status-row">
                 <a class="hw-link" href="/students/${s.user_uuid}/homework" title="숙제 기록 보기">
                   <span class="hw-row hw-row-status">
                     <span class="hw-main">
@@ -1510,22 +3273,25 @@
                       <span class="hw-text">숙제 확인</span><span class="hw-score"></span>
                     </span>
                   </span>
-                  <span class="hw-row hw-row-activity">
-                    <span class="today-pill is-none">오늘 미접속</span>
-                  </span>
-
                 </a>
-
-                <button class="icon-btn remove-student" type="button" title="이 슬롯에서 제거">−</button>
-
+                <span class="today-pill is-none">오늘 미접속</span>
               </div>
 
+              <div class="student-actions">
+                <a class="student-action-link" href="/user/${encodeURIComponent(s.student_id)}">대시보드</a>
+                <button class="student-action-btn student-action-btn--danger remove-student" type="button" title="이 슬롯에서 제거">제거</button>
+              </div>
+ 
             `;
 
             list.appendChild(wrap);
 
           });
 
+          refreshSaturdayExperience(slotEl);
+          refreshAllSlotSummaries(slotEl);
+          updateBoardSummary();
+ 
         }
 
 
@@ -1564,18 +3330,31 @@ async function attachHomeworkBadges(targetUuids = null) {
     );
   }
   const syncMetaEl = document.getElementById("hw-sync-meta");
+  const summarySyncStatusEl = document.getElementById("summary-sync-status");
+  const summarySyncNoteEl = document.getElementById("summary-sync-note");
+  const summarySyncResultsEl = document.getElementById("summary-sync-results");
+  const summarySyncResultsCardEl = document.getElementById("summary-sync-results-card");
   const formatTime = (d) => {
     const p = (n) => String(n).padStart(2, "0");
     return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
   };
   const updateSyncMeta = (okCount, failCount, note = "") => {
-    if (!syncMetaEl) return;
     const base = `마지막 갱신: ${formatTime(new Date())}`;
-    if (note) {
-      syncMetaEl.textContent = `${base} (${note})`;
-      return;
+    if (syncMetaEl) {
+      syncMetaEl.innerHTML = `<strong>동기화</strong><span>${note ? `${base} (${note})` : `${base} (정상 ${okCount}, 실패 ${failCount})`}</span>`;
     }
-    syncMetaEl.textContent = `${base} (정상 ${okCount}, 실패 ${failCount})`;
+    if (summarySyncStatusEl) {
+      summarySyncStatusEl.textContent = failCount > 0 ? "확인 필요" : "정상";
+    }
+    if (summarySyncNoteEl) {
+      summarySyncNoteEl.textContent = note || `${base} 기준으로 숙제 상태를 다시 계산했습니다.`;
+    }
+    if (summarySyncResultsEl) {
+      summarySyncResultsEl.textContent = `정상 ${okCount} / 실패 ${failCount}`;
+    }
+    if (summarySyncResultsCardEl) {
+      summarySyncResultsCardEl.dataset.tone = failCount > 0 ? "danger" : "";
+    }
   };
 
   const resolveHomeworkState = (log, hasError = false) => {
@@ -1584,10 +3363,10 @@ async function attachHomeworkBadges(targetUuids = null) {
       error: "조회 실패",
       todayDone: "오늘 완료",
       todayProgress: "오늘 진행",
-      todayUnattempted: "오늘 숙제냄",
-      recentDone: "최근 완료",
-      recentProgress: "최근 진행",
-      recentUnattempted: "최근 미시도",
+      todayUnattempted: "오늘 배정",
+      recentDone: "완료",
+      recentProgress: "진행 중",
+      recentUnattempted: "미시도",
     };
 
     if (hasError) {
@@ -1699,6 +3478,8 @@ async function attachHomeworkBadges(targetUuids = null) {
   if (!uniqueUuids.length) {
     updateSyncMeta(0, 0, "대상 없음");
     renderTodaySolvedStudents();
+    refreshSaturdayExperience();
+    refreshAllSlotSummaries();
     return { okCount: 0, failCount: 0, total: 0 };
   }
 
@@ -1720,12 +3501,16 @@ async function attachHomeworkBadges(targetUuids = null) {
     });
     updateSyncMeta(okCount, failCount);
     renderTodaySolvedStudents();
+    refreshSaturdayExperience();
+    refreshAllSlotSummaries();
     return { okCount, failCount, total: uniqueUuids.length };
   } catch (e) {
     console.warn("homework_latest_batch request failed", e);
     uniqueUuids.forEach((uuid) => applyBadge(uuid, null, true));
     updateSyncMeta(0, uniqueUuids.length);
     renderTodaySolvedStudents();
+    refreshSaturdayExperience();
+    refreshAllSlotSummaries();
     return { okCount: 0, failCount: uniqueUuids.length, total: uniqueUuids.length };
   }
 
@@ -1784,12 +3569,14 @@ function renderTodaySolvedStudents() {
       card.className = "today-solved-item";
       card.innerHTML = `
         <a href="/user/${encodeURIComponent(s.studentId)}" title="학생 대시보드 열기">
+          <span class="today-solved-status">오늘 풀이</span>
           <div class="today-solved-name">${s.name}</div>
           <div class="today-solved-id">@${s.studentId}</div>
         </a>
       `;
       grid.appendChild(card);
     });
+  updateBoardSummary();
 }
 
 function renderWeeklyAttendanceBadges() {
@@ -1852,6 +3639,84 @@ function renderWeeklyAttendanceBadges() {
               console.warn("single student homework retry failed", err);
               toast("해당 학생 동기화 실패");
               retryPill.textContent = prevText || "동기화 실패";
+            }
+            return;
+          }
+
+          const toggleBtn = e.target.closest(".slot-toggle");
+          if (toggleBtn) {
+            const slotEl = toggleBtn.closest(".slot");
+            if (!slotEl) return;
+            slotEl.classList.toggle("is-collapsed");
+            slotEl.dataset.saturdayLayoutInit = "1";
+            updateSaturdaySlotToggle(slotEl);
+            return;
+          }
+
+          const noteBtn = e.target.closest(".edit-student-note");
+          if (noteBtn) {
+            const studentEl = noteBtn.closest(".slot-student");
+            const slotEl = noteBtn.closest(".slot");
+            if (!studentEl || !slotEl) return;
+
+            const uuid = studentEl.dataset.userUuid;
+            const studentNameEl = studentEl.querySelector(".student-name");
+            const noteEl = studentEl.querySelector(".student-note");
+            const currentNote =
+              noteEl && !noteEl.classList.contains("is-empty") ? noteEl.textContent.trim() : "";
+            const studentLabel =
+              (studentNameEl && studentNameEl.textContent && studentNameEl.textContent.trim()) ||
+              studentEl.dataset.studentId ||
+              "학생";
+            const nextNote = prompt(
+              `${studentLabel} 메모를 입력하세요. 비워두면 삭제됩니다.`,
+              currentNote
+            );
+            if (nextNote === null) return;
+
+            try {
+              const slotId = slotEl.dataset.slotId;
+              const data = await fetchJson(
+                `/api/schedule/slots/${encodeURIComponent(
+                  slotId
+                )}/students/${encodeURIComponent(uuid)}/note`,
+                {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ note: nextNote }),
+                }
+              );
+              renderSlotStudents(slotEl, data.slot);
+              const uuids = (data.slot.students_detail || [])
+                .map((s) => s.user_uuid)
+                .filter(Boolean);
+              attachHomeworkBadges(uuids);
+              renderWeeklyAttendanceBadges();
+              toast("메모를 저장했습니다.");
+            } catch (err) {
+              console.error(err);
+              toast("메모 저장에 실패했습니다.");
+            }
+            return;
+          }
+
+          const messageActionBtn = e.target.closest("[data-action]");
+          if (messageActionBtn) {
+            const itemEl = messageActionBtn.closest(".message-bank-item");
+            const itemId = itemEl && itemEl.dataset ? itemEl.dataset.messageBankId : "";
+            const item = loadMessageBank().find((entry) => entry.id === itemId);
+            if (!item) return;
+            const draftEl = document.getElementById("message-bank-draft");
+            const action = messageActionBtn.dataset.action;
+            if (action === "load-message") {
+              if (draftEl) draftEl.value = item.text;
+              setMessageBankExpanded(true);
+              toast("저장된 문구를 불러왔습니다.");
+            } else if (action === "copy-message") {
+              const copied = await copyText(item.text);
+              toast(copied ? "저장된 문구를 복사했습니다." : "문구 복사에 실패했습니다.");
+            } else if (action === "delete-message") {
+              deleteMessageBankItem(item.id);
             }
             return;
           }
@@ -1934,6 +3799,8 @@ function renderWeeklyAttendanceBadges() {
 
               renderWeeklyAttendanceBadges();
               renderTodaySolvedStudents();
+              refreshSaturdayExperience();
+              refreshAllSlotSummaries();
               toast("슬롯이 삭제되었습니다.");
 
             } catch (err) {
@@ -1990,6 +3857,8 @@ function renderWeeklyAttendanceBadges() {
 
               renderWeeklyAttendanceBadges();
               renderTodaySolvedStudents();
+              refreshSaturdayExperience(slotEl);
+              refreshAllSlotSummaries(slotEl);
               toast("슬롯에서 제거했습니다.");
 
             } catch (err) {
@@ -2060,6 +3929,7 @@ function renderWeeklyAttendanceBadges() {
 
             attachHomeworkBadges();
             renderWeeklyAttendanceBadges();
+            refreshSaturdayExperience(slotEl);
 
             toast(id + " 추가 완료");
 
@@ -2133,8 +4003,59 @@ function renderWeeklyAttendanceBadges() {
         if (refreshHwBtn) {
           refreshHwBtn.addEventListener("click", refreshHomeworkBadges);
         }
+        const messageBankSaveBtn = document.getElementById("message-bank-save");
+        if (messageBankSaveBtn) {
+          messageBankSaveBtn.addEventListener("click", () => {
+            const draftEl = document.getElementById("message-bank-draft");
+            upsertMessageBankItem(draftEl ? draftEl.value : "");
+          });
+        }
+        const messageBankToggleBtn = document.getElementById("message-bank-toggle");
+        if (messageBankToggleBtn) {
+          messageBankToggleBtn.addEventListener("click", () => {
+            const { panel, draft } = getMessageBankElements();
+            const willExpand = !!(panel && panel.classList.contains("is-collapsed"));
+            if (willExpand && draft && !draft.value.trim()) {
+              draft.value = "";
+            }
+            setMessageBankExpanded(willExpand);
+          });
+        }
+        const messageBankToggleHeaderBtn = document.getElementById("message-bank-toggle-header");
+        if (messageBankToggleHeaderBtn) {
+          messageBankToggleHeaderBtn.addEventListener("click", () => {
+            const { panel } = getMessageBankElements();
+            const willExpand = !!(panel && panel.classList.contains("is-collapsed"));
+            setMessageBankExpanded(willExpand);
+          });
+        }
+        const messageBankCopyDraftBtn = document.getElementById("message-bank-copy-draft");
+        if (messageBankCopyDraftBtn) {
+          messageBankCopyDraftBtn.addEventListener("click", async () => {
+            const draftEl = document.getElementById("message-bank-draft");
+            const copied = await copyText(draftEl ? draftEl.value : "");
+            toast(copied ? "현재 문구를 복사했습니다." : "문구 복사에 실패했습니다.");
+          });
+        }
+        const messageBankClearDraftBtn = document.getElementById("message-bank-clear-draft");
+        if (messageBankClearDraftBtn) {
+          messageBankClearDraftBtn.addEventListener("click", () => {
+            const draftEl = document.getElementById("message-bank-draft");
+            if (draftEl) draftEl.value = "";
+            setMessageBankExpanded(false);
+            toast("입력 중인 문구를 비웠습니다.");
+          });
+        }
+        const messageBankDraftEl = document.getElementById("message-bank-draft");
+        if (messageBankDraftEl) {
+          messageBankDraftEl.addEventListener("focus", () => setMessageBankExpanded(true));
+        }
+        renderMessageBank();
+        updateBoardSummary();
         attachHomeworkBadges();
         renderWeeklyAttendanceBadges();
+        refreshSaturdayExperience();
+        refreshAllSlotSummaries();
 
         const AUTO_REFRESH_MS = 90_000;
         let autoRefreshTimer = null;
