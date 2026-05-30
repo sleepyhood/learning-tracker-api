@@ -1837,16 +1837,33 @@
         background: rgba(255, 255, 255, 0.03);
       }
 
+      .today-solved-badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
       .today-solved-status {
         display: inline-flex;
         align-items: center;
         width: fit-content;
         padding: 4px 8px;
         border-radius: 999px;
-        background: rgba(255, 86, 0, 0.14);
-        color: #ffd5c4;
         font-size: 0.71rem;
         font-weight: 700;
+        border: 1px solid transparent;
+      }
+
+      .today-solved-status.is-solved {
+        background: rgba(255, 86, 0, 0.14);
+        color: #ffd5c4;
+        border-color: rgba(255, 86, 0, 0.2);
+      }
+
+      .today-solved-status.is-hw-given {
+        background: rgba(59, 130, 246, 0.16);
+        color: #93c5fd;
+        border-color: rgba(59, 130, 246, 0.35);
       }
 
       .today-solved-name {
@@ -3285,7 +3302,8 @@
         function updateBoardSummary() {
           const slotCount = document.querySelectorAll(".slot").length;
           const studentCount = document.querySelectorAll(".slot-student").length;
-          const solvedCount = document.querySelectorAll(".today-pill.is-solved").length;
+          const solvedGrid = document.getElementById("today-solved-grid");
+          const solvedCount = solvedGrid ? solvedGrid.querySelectorAll(".today-solved-item").length : 0;
           const boardCountEl = document.getElementById("summary-board-count");
           const solvedCountEl = document.getElementById("summary-solved-count");
           if (boardCountEl) {
@@ -3626,13 +3644,28 @@ function renderTodaySolvedStudents() {
     const uuid = studentEl.dataset.userUuid;
     const studentId = studentEl.dataset.studentId;
     const pill = studentEl.querySelector(".today-pill");
+    const hwDot = studentEl.querySelector(".hw-dot");
     const nameEl = studentEl.querySelector(".student-name");
-    if (!uuid || !studentId || !pill || !pill.classList.contains("is-solved")) return;
-    if (byUuid.has(uuid)) return;
+    if (!uuid || !studentId) return;
+
+    const hasSolved = pill && pill.classList.contains("is-solved");
+    const hasHwGiven = hwDot && hwDot.classList.contains("hw-today");
+
+    if (!hasSolved && !hasHwGiven) return;
+
+    if (byUuid.has(uuid)) {
+      const existing = byUuid.get(uuid);
+      existing.hasSolved = existing.hasSolved || hasSolved;
+      existing.hasHwGiven = existing.hasHwGiven || hasHwGiven;
+      return;
+    }
+
     byUuid.set(uuid, {
       uuid,
       studentId,
       name: (nameEl && nameEl.textContent && nameEl.textContent.trim()) || studentId,
+      hasSolved,
+      hasHwGiven,
     });
   });
 
@@ -3640,6 +3673,7 @@ function renderTodaySolvedStudents() {
   const list = Array.from(byUuid.values());
   if (!list.length) {
     empty.style.display = "";
+    updateBoardSummary();
     return;
   }
 
@@ -3649,9 +3683,19 @@ function renderTodaySolvedStudents() {
     .forEach((s) => {
       const card = document.createElement("article");
       card.className = "today-solved-item";
+
+      let badgesHtml = '<div class="today-solved-badges">';
+      if (s.hasSolved) {
+        badgesHtml += `<span class="today-solved-status is-solved">오늘 풀이</span>`;
+      }
+      if (s.hasHwGiven) {
+        badgesHtml += `<span class="today-solved-status is-hw-given">오늘 숙제냄</span>`;
+      }
+      badgesHtml += '</div>';
+
       card.innerHTML = `
         <a href="/user/${encodeURIComponent(s.studentId)}" title="학생 대시보드 열기">
-          <span class="today-solved-status">오늘 풀이</span>
+          ${badgesHtml}
           <div class="today-solved-name">${s.name}</div>
           <div class="today-solved-id">@${s.studentId}</div>
         </a>

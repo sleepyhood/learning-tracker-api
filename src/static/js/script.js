@@ -1,8 +1,93 @@
 // 숙제 모드
 let assignMode = false;
 
+function getStorageKey() {
+  const groupInfo = document.getElementById("groupInfo");
+  if (!groupInfo) return "selectedProblems";
+  const userUuid = groupInfo.dataset.userUuid || "default_user";
+  const groupUrl = groupInfo.dataset.url || "default_group";
+  return `selectedProblems_${userUuid}_${groupUrl}`;
+}
+
 let selectedProblems = []; // {title, link, chapter}
 let lastChecked = null;
+
+let isDragging = false;
+let dragStartCheckedState = false;
+let dragStartIndex = -1;
+let initialStates = [];
+let lastMouseX = 0;
+let lastMouseY = 0;
+
+let scrollIntervalId = null;
+let scrollSpeed = 0;
+
+function startAutoScroll(speed) {
+  scrollSpeed = speed;
+  if (scrollIntervalId) return;
+
+  function scrollStep() {
+    if (!isDragging) {
+      stopAutoScroll();
+      return;
+    }
+    window.scrollBy(0, scrollSpeed);
+    
+    // 스크롤하면서 마우스 아래에 새롭게 지나가는 문제 탐색
+    const hoveredEl = document.elementFromPoint(lastMouseX, lastMouseY);
+    if (hoveredEl) {
+      const problemDiv = hoveredEl.closest(".problem");
+      if (problemDiv) {
+        const checkboxesArray = Array.from(document.querySelectorAll(".assign-checkbox"));
+        const cb = problemDiv.querySelector(".assign-checkbox");
+        const currIdx = checkboxesArray.indexOf(cb);
+        if (currIdx !== -1) {
+          updateDragRange(currIdx, checkboxesArray);
+        }
+      }
+    }
+    scrollIntervalId = requestAnimationFrame(scrollStep);
+  }
+  scrollIntervalId = requestAnimationFrame(scrollStep);
+}
+
+function stopAutoScroll() {
+  if (scrollIntervalId) {
+    cancelAnimationFrame(scrollIntervalId);
+    scrollIntervalId = null;
+  }
+}
+
+function updateDragRange(currentIndex, checkboxesArray) {
+  const min = Math.min(dragStartIndex, currentIndex);
+  const max = Math.max(dragStartIndex, currentIndex);
+
+  for (let i = 0; i < checkboxesArray.length; i++) {
+    let targetState;
+    if (i >= min && i <= max) {
+      targetState = dragStartCheckedState;
+    } else {
+      targetState = initialStates[i];
+    }
+
+    if (checkboxesArray[i].checked !== targetState) {
+      checkboxesArray[i].checked = targetState;
+      checkboxesArray[i].dispatchEvent(new Event("change"));
+    }
+  }
+}
+
+let updateAssignUI_scheduled = false;
+function scheduleUISync() {
+  if (updateAssignUI_scheduled) return;
+  updateAssignUI_scheduled = true;
+  queueMicrotask(() => {
+    const key = getStorageKey();
+    sessionStorage.setItem(key, JSON.stringify(selectedProblems));
+    updateAssignUI();
+    updateAssignUI_scheduled = false;
+  });
+}
 
 async function postHomeworkLog({
   title,
@@ -69,7 +154,12 @@ function goToParentPage() {
 function toggleAll(checked) {
   document
     .querySelectorAll(".assign-checkbox")
-    .forEach((cb) => (cb.checked = checked));
+    .forEach((cb) => {
+      if (cb.checked !== checked) {
+        cb.checked = checked;
+        cb.dispatchEvent(new Event("change"));
+      }
+    });
 }
 
 function toggleAssignMode() {
@@ -79,6 +169,8 @@ function toggleAssignMode() {
   const problemLinks = document.querySelectorAll(".problem-link");
 
   assignMode = !assignMode;
+
+  document.body.classList.toggle("assign-mode-active", assignMode);
 
   checkboxes.forEach((checkbox) => {
     checkbox.style.display = assignMode ? "inline-flex" : "none";
@@ -165,21 +257,18 @@ async function copySelectedProblems() {
 function toggleProblemSelection(problemId) {
   if (!assignMode) return;
 
-  const idx = selectedProblems.indexOf(problemId);
-  if (idx > -1) {
-    selectedProblems.splice(idx, 1);
-  } else {
-    selectedProblems.push(problemId);
+  const cb = document.querySelector(`.assign-checkbox[data-pid="${problemId}"]`);
+  if (cb) {
+    cb.checked = !cb.checked;
+    cb.dispatchEvent(new Event("change"));
   }
-
-  sessionStorage.setItem("selectedProblems", JSON.stringify(selectedProblems));
-  updateAssignUI();
 }
 
 function updateAssignUI() {
-  // 예시: 문제 박스에 class 추가
-  document.querySelectorAll(".problem-box").forEach((el) => {
-    const pid = el.dataset.problemId;
+  document.querySelectorAll(".problem").forEach((el) => {
+    const cb = el.querySelector(".assign-checkbox");
+    if (!cb) return;
+    const pid = cb.dataset.pid;
     if (selectedProblems.includes(pid)) {
       el.classList.add("assigned");
     } else {
@@ -190,19 +279,6 @@ function updateAssignUI() {
 
 function selectUnsolved() {
   selectUnsolvedByParity(null); // 기존과 동일: 안 푼 것만 전체 선택
-
-  // const checkboxes = document.querySelectorAll(".assign-checkbox");
-  // checkboxes.forEach((cb) => {
-  //   const problemDiv = cb.closest(".problem");
-  //   if (
-  //     problemDiv.classList.contains("unsolved") ||
-  //     problemDiv.classList.contains("wrong")
-  //   ) {
-  //     cb.checked = true;
-  //   } else {
-  //     cb.checked = false;
-  //   }
-  // });
 }
 
 /*
@@ -221,7 +297,10 @@ function selectUnsolvedByParity(parity /* 'odd' | 'even' | null */) {
       problemDiv?.classList.contains("wrong");
 
     if (!isUnsolved) {
-      cb.checked = false;
+      if (cb.checked) {
+        cb.checked = false;
+        cb.dispatchEvent(new Event("change"));
+      }
       return;
     }
 
@@ -230,9 +309,15 @@ function selectUnsolvedByParity(parity /* 'odd' | 'even' | null */) {
     let num = parseInt(cb.dataset.pid, 10);
     if (Number.isNaN(num)) num = unsolvedOrder;
 
-    if (parity === "odd") cb.checked = num % 2 === 1;
-    else if (parity === "even") cb.checked = num % 2 === 0;
-    else cb.checked = true; // null => 전부 선택
+    let targetChecked = false;
+    if (parity === "odd") targetChecked = num % 2 === 1;
+    else if (parity === "even") targetChecked = num % 2 === 0;
+    else targetChecked = true; // null => 전부 선택
+
+    if (cb.checked !== targetChecked) {
+      cb.checked = targetChecked;
+      cb.dispatchEvent(new Event("change"));
+    }
   });
 
   // 쉬프트 범위선택 기준 초기화(예상치 못한 range 체크 방지)
@@ -248,30 +333,40 @@ function selectUnsolvedEven() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll(".problem").forEach((problemDiv) => {
-    problemDiv.addEventListener("click", (e) => {
-      if (!assignMode) return;
+  // 1. sessionStorage로부터 selectedProblems 복구
+  try {
+    const key = getStorageKey();
+    const stored = sessionStorage.getItem(key);
+    if (stored) {
+      selectedProblems = JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error("Failed to load selectedProblems from sessionStorage", e);
+  }
 
-      // a, button, input 클릭 무시
-      if (
-        e.target.closest("a") ||
-        e.target.closest("button") ||
-        e.target.closest("input")
-      ) {
-        return;
-      }
+  const checkboxes = document.querySelectorAll(".assign-checkbox");
 
-      const checkbox = problemDiv.querySelector(".assign-checkbox");
-      if (checkbox) {
-        checkbox.checked = !checkbox.checked;
-        toggleProblemSelection(checkbox.dataset.pid);
+  // 2. 체크박스 상태 동기화 및 이벤트 리스너 연결
+  checkboxes.forEach((checkbox) => {
+    const pid = checkbox.dataset.pid;
+    if (selectedProblems.includes(pid)) {
+      checkbox.checked = true;
+    }
+
+    // 상태 변경 감지
+    checkbox.addEventListener("change", function () {
+      const pid = this.dataset.pid;
+      if (this.checked) {
+        if (!selectedProblems.includes(pid)) {
+          selectedProblems.push(pid);
+        }
+      } else {
+        selectedProblems = selectedProblems.filter((id) => id !== pid);
       }
+      scheduleUISync();
     });
-  });
-});
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll(".assign-checkbox").forEach((checkbox) => {
+    // Shift 클릭 범위 선택 처리
     checkbox.addEventListener("click", function (e) {
       if (!lastChecked) {
         lastChecked = this;
@@ -279,24 +374,135 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (e.shiftKey) {
-        const checkboxes = Array.from(
+        const checkboxesArray = Array.from(
           document.querySelectorAll(".assign-checkbox")
         );
-        const start = checkboxes.indexOf(this);
-        const end = checkboxes.indexOf(lastChecked);
+        const start = checkboxesArray.indexOf(this);
+        const end = checkboxesArray.indexOf(lastChecked);
         const [min, max] = [Math.min(start, end), Math.max(start, end)];
+        const targetState = this.checked;
 
         for (let i = min; i <= max; i++) {
-          checkboxes[i].checked = true;
+          if (checkboxesArray[i].checked !== targetState) {
+            checkboxesArray[i].checked = targetState;
+            checkboxesArray[i].dispatchEvent(new Event("change"));
+          }
         }
       }
 
       lastChecked = this;
     });
   });
-});
 
-document.addEventListener("DOMContentLoaded", () => {
+  // 3. 마우스 드래그 선택 (Drag-to-Select) 및 단일 클릭 토글 지원 (역순 해제 & 자동 스크롤 지원)
+  document.addEventListener("mousedown", (e) => {
+    if (!assignMode) return;
+
+    const problemDiv = e.target.closest(".problem");
+    if (!problemDiv) return;
+
+    // 링크, 버튼, 입력필드 및 체크박스 자체 클릭은 무시 (브라우저 기본 동작에 위임)
+    if (
+      e.target.closest("a") ||
+      e.target.closest("button") ||
+      e.target.closest("input") ||
+      e.target.closest(".custom-checkbox")
+    ) {
+      return;
+    }
+
+    const checkbox = problemDiv.querySelector(".assign-checkbox");
+    if (!checkbox) return;
+
+    const checkboxesArray = Array.from(
+      document.querySelectorAll(".assign-checkbox")
+    );
+    dragStartIndex = checkboxesArray.indexOf(checkbox);
+    if (dragStartIndex === -1) return;
+
+    isDragging = true;
+    dragStartCheckedState = !checkbox.checked;
+
+    // 드래그 중 화면 전역 커서 고정을 위해 클래스 추가
+    document.body.classList.add("is-dragging-active");
+
+    // 복구용 초기 상태 스냅샷 저장
+    initialStates = checkboxesArray.map((cb) => cb.checked);
+
+    // 마우스 초기 위치 추적
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+
+    // 드래그 범위 갱신 (첫 문항 반영)
+    updateDragRange(dragStartIndex, checkboxesArray);
+
+    // Shift 클릭 연동을 위해 lastChecked 업데이트
+    lastChecked = checkbox;
+
+    // 드래그 도중 브라우저 기본 텍스트 선택(블록 지정) 현상 차단
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging || !assignMode) return;
+
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+
+    // 화면 상단/하단 경계 접근 시 스크롤 처리
+    const threshold = 60; // 경계선 반응 영역 (px)
+    const bottomEdge = window.innerHeight - threshold;
+    const topEdge = threshold;
+
+    if (e.clientY > bottomEdge) {
+      // 아래로 자동 스크롤 (경계선에 가까울수록 가속)
+      const speed = Math.min(15, Math.max(3, (e.clientY - bottomEdge) / 3));
+      startAutoScroll(speed);
+    } else if (e.clientY < topEdge) {
+      // 위로 자동 스크롤
+      const speed = -Math.min(15, Math.max(3, (topEdge - e.clientY) / 3));
+      startAutoScroll(speed);
+    } else {
+      stopAutoScroll();
+    }
+  });
+
+  document.addEventListener("mouseover", (e) => {
+    if (!isDragging || !assignMode) return;
+
+    const problemDiv = e.target.closest(".problem");
+    if (!problemDiv) return;
+
+    // 링크, 버튼 등은 드래그 중에도 무시
+    if (
+      e.target.closest("a") ||
+      e.target.closest("button") ||
+      e.target.closest("input") ||
+      e.target.closest(".custom-checkbox")
+    ) {
+      return;
+    }
+
+    const checkboxesArray = Array.from(
+      document.querySelectorAll(".assign-checkbox")
+    );
+    const checkbox = problemDiv.querySelector(".assign-checkbox");
+    const currentIndex = checkboxesArray.indexOf(checkbox);
+    if (currentIndex !== -1) {
+      updateDragRange(currentIndex, checkboxesArray);
+      lastChecked = checkbox;
+    }
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (isDragging) {
+      isDragging = false;
+      stopAutoScroll();
+    }
+    document.body.classList.remove("is-dragging-active");
+  });
+
+  // 4. 단일 복사 버튼 이벤트 바인딩
   document.querySelectorAll(".copy-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const title = btn.dataset.title;
@@ -321,9 +527,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
-});
 
-document.addEventListener("DOMContentLoaded", updateAssignUI);
+  // 5. 초기 UI 데코레이션 반영
+  updateAssignUI();
+});
 
 function showToast(message, duration = 3000) {
   const toast = document.createElement("div");

@@ -268,3 +268,37 @@ padding: 20px 10px;
   margin-right: 0; /* 기존 assign-btn의 margin-right(6px) 중복 방지 */
   flex: 1;         /* 두 버튼 폭 동일 */
 }
+
+/* 글로벌 헤더 스케줄 버튼 스타일 */
+.header-schedule-btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  color: #444;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: background-color 0.2s, transform 0.1s;
+}
+.header-schedule-btn:hover {
+  background: rgba(255, 255, 255, 0.65);
+  transform: translateY(-1px);
+}
+.header-schedule-btn:active {
+  transform: translateY(0);
+}
+
+/* 숙제 출제 모드 활성화 시 커서 변경 */
+body.assign-mode-active .problem,
+body.assign-mode-active .problem-link {
+  cursor: crosshair !important;
+}
+
+/* 드래그 동작 진행 중 화면 전체 커서 고정 */
+body.assign-mode-active.is-dragging-active,
+body.assign-mode-active.is-dragging-active * {
+  cursor: grabbing !important;
+}

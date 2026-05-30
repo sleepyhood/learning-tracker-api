@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
   <head>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
@@ -144,9 +144,12 @@
   </head>
   <body>
     <header>
-      <a href="/" style="text-decoration: none; color: inherit">
-        <h1>풀이현황</h1>
-      </a>
+      <div class="header-left-group" style="display: flex; align-items: center; gap: 16px;">
+        <a href="/" style="text-decoration: none; color: inherit">
+          <h1>풀이현황</h1>
+        </a>
+        <a href="/schedule" class="header-schedule-btn">수업 스케줄</a>
+      </div>
       <form id="search-form" method="POST" action="/">
         <div class="search-wrapper">
           <input

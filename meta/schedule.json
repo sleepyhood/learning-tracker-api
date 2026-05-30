@@ -21,7 +21,9 @@
         "7a2b39fd-e081-4220-81e4-1a4d9c070021",
         "6070e521-e181-493c-96c3-c069158d6389",
         "f4247f3a-8dea-49bd-bb6b-45286a1027e2",
-        "4acd5d46-c8fc-4951-bd7f-af3fee657c71"
+        "4acd5d46-c8fc-4951-bd7f-af3fee657c71",
+        "31ac2ef3-2a24-4d2c-85dc-757bf9647c92",
+        "33929ea0-2530-4c82-be8b-10321abe0808"
       ],
       "student_notes": {
         "f478ee25-e92b-4bfc-8c8b-a7828c1326e6": "심규민",
@@ -39,11 +41,10 @@
         "5e82df43-98bd-49bd-a2e2-d291afee485c",
         "14864f79-806f-432d-902d-acab9359ec8d",
         "e28d1180-0fa8-45f9-82e1-b594cd10beb0",
-        "c527e326-a0c8-4cb0-90c1-af8396fed48d",
-        "46a97893-cc09-4e1b-8c15-31fed50876ae"
+        "46a97893-cc09-4e1b-8c15-31fed50876ae",
+        "eb4c1f2e-fdf7-4896-bdc5-6b1b83994197"
       ],
       "student_notes": {
-        "c527e326-a0c8-4cb0-90c1-af8396fed48d": "윤준혁_부계정",
         "46a97893-cc09-4e1b-8c15-31fed50876ae": "경명초"
       }
     },
@@ -52,11 +53,7 @@
       "weekday": 5,
       "label": "Java",
       "order": 0,
-      "students": [
-        "fa854e53-5733-46f1-a377-c373c5f6b9fb",
-        "f255d5ba-e354-4337-8417-7ddca465af5e",
-        "9f26b4dc-adb1-4bb6-ad6f-4480608b4c3a"
-      ]
+      "students": []
     },
     {
       "id": "9e11d2c9-f35f-4e79-8bb6-936e63e88000",
@@ -65,8 +62,12 @@
       "order": 0,
       "students": [
         "f2f3fe57-0721-4114-aef7-ec0af32b9aba",
-        "915fe723-a645-46e6-8979-354378b22e2b"
-      ]
+        "71eff3a4-8e68-4ed4-9154-c342094b2ee8",
+        "469a5d72-9a39-448f-8ab6-f4aa54bfaefe"
+      ],
+      "student_notes": {
+        "71eff3a4-8e68-4ed4-9154-c342094b2ee8": "강동현1103-부계"
+      }
     },
     {
       "id": "1231136d-e148-479e-8a8d-10911e82e8be",
@@ -74,9 +75,8 @@
       "label": "Python",
       "order": 0,
       "students": [
-        "277e05d6-86ef-424d-927d-90bad1bded25",
         "9224393c-a0b8-40e9-b6d3-5ed5f058b858",
-        "14864f79-806f-432d-902d-acab9359ec8d"
+        "46a97893-cc09-4e1b-8c15-31fed50876ae"
       ]
     },
     {
@@ -85,10 +85,12 @@
       "label": "Python",
       "order": 0,
       "students": [
-        "277e05d6-86ef-424d-927d-90bad1bded25",
         "9224393c-a0b8-40e9-b6d3-5ed5f058b858",
-        "14864f79-806f-432d-902d-acab9359ec8d"
-      ]
+        "19c42601-813f-455d-bb3a-078e4f759820"
+      ],
+      "student_notes": {
+        "19c42601-813f-455d-bb3a-078e4f759820": "격주마다 py와 스크래치 진행"
+      }
     },
     {
       "id": "3965f9d5-1bdd-4fb4-aa17-9db759fe9b5a",
@@ -98,7 +100,8 @@
       "students": [
         "f2f3fe57-0721-4114-aef7-ec0af32b9aba",
         "31ae9adb-6939-4849-a63e-3144400189c1",
-        "bf869678-398f-46d4-a04f-26ac9df00bf3"
+        "bf869678-398f-46d4-a04f-26ac9df00bf3",
+        "469a5d72-9a39-448f-8ab6-f4aa54bfaefe"
       ]
     },
     {
@@ -115,7 +118,7 @@
       "order": 0,
       "students": [
         "334a628c-c56e-4f92-aa73-59854a966a9a",
-        "915fe723-a645-46e6-8979-354378b22e2b"
+        "614dc750-15d6-4fbe-9ae3-6a2b36c5530d"
       ]
     },
     {
@@ -125,8 +128,7 @@
       "order": 0,
       "students": [
         "94e8b6de-5090-4b02-ab4e-4b9e112692f8",
-        "614dc750-15d6-4fbe-9ae3-6a2b36c5530d",
-        "14864f79-806f-432d-902d-acab9359ec8d"
+        "e28d1180-0fa8-45f9-82e1-b594cd10beb0"
       ]
     },
     {
@@ -134,9 +136,7 @@
       "weekday": 4,
       "label": "Python",
       "order": 0,
-      "students": [
-        "14864f79-806f-432d-902d-acab9359ec8d"
-      ]
+      "students": []
     },
     {
       "id": "54d28e46-6bc4-45d0-a64f-24aa4670542c",
@@ -148,7 +148,7 @@
         "d50c11ee-c090-4040-b209-fdd53320ee39",
         "6070e521-e181-493c-96c3-c069158d6389",
         "614dc750-15d6-4fbe-9ae3-6a2b36c5530d",
-        "915fe723-a645-46e6-8979-354378b22e2b"
+        "31ac2ef3-2a24-4d2c-85dc-757bf9647c92"
       ]
     },
     {
@@ -184,9 +184,7 @@
       "weekday": 2,
       "label": "Java",
       "order": 0,
-      "students": [
-        "f255d5ba-e354-4337-8417-7ddca465af5e"
-      ]
+      "students": []
     }
   ]
 }
