@@ -316,18 +316,21 @@ def build_dashboard_viewmodel(s, profile_json: dict, is_me: bool, days: int = 7)
         fsession["role"] = role_norm
 
     problems = payload.get("oi_problems_status", {}).get("problems", {})
+
+    myself_flag = 1 if is_me else 0
+    submissions = fetch_submissions_window(
+        s, username, myself=myself_flag, days=max(days, 30), limit=100
+    )
+    filtered = filter_main_account_submissions(submissions, username)
+
+    # 최근 제출 이력을 머지하여 캐시 생성
+    problems = _merge_submissions_list_into_problems(filtered, problems)
     user_path = cache_user_problems(username, problems)
 
     legacy_map = resolve_legacy_map_path()
     chapter_summary = summarize_progress(
         PROBLEM_FILE, user_path, legacy_map_file=legacy_map
     )
-
-    myself_flag = 1 if is_me else 0
-    submissions = fetch_submissions_window(
-        s, username, myself=myself_flag, days=max(days, 7), limit=100
-    )
-    filtered = filter_main_account_submissions(submissions, username)
 
     # ✅ days 반영
     streak = generate_streak_data(filtered, days=days)
@@ -339,6 +342,7 @@ def build_dashboard_viewmodel(s, profile_json: dict, is_me: bool, days: int = 7)
 
     return dict(
         username=username,
+        real_name=user_data.get("realname") or username,
         last_login=last_login_fmt,
         accepted_number=payload.get("accepted_number"),
         submission_number=payload.get("submission_number"),
@@ -463,6 +467,60 @@ def role_ctx_from_session():
     return {"role_label": "??", "is_admin": False}
 
 
+def _merge_submissions_list_into_problems(submissions, problems: dict) -> dict:
+    if not submissions:
+        return problems
+    merged = dict(problems)
+    
+    legacy_to_server = resolve_legacy_map_dict()
+    server_to_legacy = {v: k for k, v in legacy_to_server.items()}
+
+    for rec in submissions:
+        pid = rec.get("problem")
+        if isinstance(pid, dict):
+            pid = pid.get("_id") or pid.get("id") or str(pid)
+        pid = str(pid).strip()
+        if not pid:
+            continue
+
+        if pid in legacy_to_server:
+            legacy_code = pid
+            server_id = legacy_to_server[pid]
+        elif pid in server_to_legacy:
+            server_id = pid
+            legacy_code = server_to_legacy[pid]
+        else:
+            server_id = pid
+            legacy_code = pid
+
+        result = rec.get("result")
+        score = rec.get("statistic_info", {}).get("score", 0)
+        status = 0 if result == 0 else -1
+
+        if server_id not in merged:
+            merged[server_id] = {
+                "_id": legacy_code,
+                "score": score,
+                "status": status
+            }
+        else:
+            existing_status = merged[server_id].get("status")
+            if status == 0 or (existing_status != 0 and status == -1):
+                merged[server_id]["status"] = status
+                merged[server_id]["score"] = max(merged[server_id].get("score", 0), score)
+    return merged
+
+
+def merge_submissions_into_problems(api_session, username: str, problems: dict) -> dict:
+    try:
+        submissions = fetch_submissions_window(
+            api_session, username, myself=0, days=30, limit=100
+        )
+        problems = _merge_submissions_list_into_problems(submissions, problems)
+    except Exception as e:
+        print(f"[merge_submissions_into_problems] failed for {username}: {e}")
+    return problems
+
 
 def sync_user_problems_cache(
     api_session, username: str, timeout=10
@@ -479,6 +537,9 @@ def sync_user_problems_cache(
         f"{BASE_URL}/api/profile?username={encoded_username}", timeout=timeout
     ).json()
     problems = prof.get("data", {}).get("oi_problems_status", {}).get("problems", {})
+
+    # 최근 30일 제출 현황을 반영하여 실시간 동기화율 향상
+    problems = merge_submissions_into_problems(api_session, username, problems)
 
     filename = f"{sanitize_filename(username)}.json"
     user_path = os.path.join(USER_DATA_DIR, filename)

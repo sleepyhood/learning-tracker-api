@@ -2689,6 +2689,15 @@
                       숙제 부여
                     </button>
                     <button
+                      class="student-action-btn student-action-btn--primary"
+                      style="background: #6c5ce7; border-color: #6c5ce7; color: white;"
+                      type="button"
+                      title="피드백 작성"
+                      onclick="openFeedbackModal('{{ s.name }}', '{{ s.student_id }}', '{{ s.user_uuid }}')"
+                    >
+                      📝 피드백
+                    </button>
+                    <button
                       class="student-action-btn student-action-btn--danger remove-student"
                       type="button"
                       title="이 슬롯에서 제거"
@@ -3379,6 +3388,7 @@
               <div class="student-actions">
                 <a class="student-action-link" href="/user/${encodeURIComponent(s.student_id)}">대시보드</a>
                 <button class="student-action-btn student-action-btn--primary assign-homework" type="button" title="직접 숙제 부여">숙제 부여</button>
+                <button class="student-action-btn student-action-btn--primary" style="background: #6c5ce7; border-color: #6c5ce7; color: white;" type="button" title="피드백 작성" onclick="openFeedbackModal('${s.name}', '${s.student_id}', '${s.user_uuid}')">📝 피드백</button>
                 <button class="student-action-btn student-action-btn--danger remove-student" type="button" title="이 슬롯에서 제거">제거</button>
               </div>
  
@@ -4331,8 +4341,7 @@ function renderWeeklyAttendanceBadges() {
       })();
 
     </script>
-
+    {% include '_feedback_modal.html' %}
   </body>
-
 </html>
 

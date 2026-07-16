@@ -54,6 +54,7 @@ from utils.utils_common import (
     resolve_legacy_map_path,
     resolve_legacy_map_dict,
     resolve_uuid,
+    merge_submissions_into_problems,
 )
 
 
@@ -895,6 +896,7 @@ def pull_and_store_user(username: str):
     data = res.json()
     user_data = data["data"]["user"]
     problems = data["data"]["oi_problems_status"]["problems"]
+    problems = merge_submissions_into_problems(session, username, problems)
 
     student_id = user_data["username"]
     doc = load_doc_by_any(student_id)  # student_id나 uuid로 찾아오는 헬퍼
@@ -955,6 +957,7 @@ def refresh_user_doc_by_uuid(user_uuid: str) -> dict:
     data = res.json()
     user_data = data["data"]["user"]
     problems = data["data"]["oi_problems_status"]["problems"]
+    problems = merge_submissions_into_problems(session, username, problems)
 
     # 저장 직전 다시 읽어 homework_logs 보존
     current = load_doc_by_any(user_uuid)
@@ -1527,12 +1530,14 @@ def index():
     vm["streak_days"] = days
     my_name = me_json.get("data").get("user").get("username")
     my_uuid = resolve_uuid(my_name)
+    role_ctx = role_ctx_from_session()
     return render_template(
         "index.html",
         **vm,
         view_mode="me",
         view_username="",
         user_uuid=my_uuid,  # uuid 필드
+        viewer_is_admin=role_ctx["is_admin"],
         # 공통 데이터 주입
     )
 
@@ -1559,12 +1564,14 @@ def user(username):
     other_name = other_json.get("data").get("user").get("username")
     other_uuid = resolve_uuid(other_name)
 
+    role_ctx = role_ctx_from_session()
     return render_template(
         "index.html",
         **vm,
         view_mode="user",
         view_username=username,
         user_uuid=other_uuid,  # uuid 필드
+        viewer_is_admin=role_ctx["is_admin"],
     )
 
 

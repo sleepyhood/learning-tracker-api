@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 
 
 <html lang="ko">
@@ -3533,20 +3533,6 @@
           });
       }
 
-overlayEl.addEventListener("click", () => {
-
-
-        popover.style.display = "none";
-
-
-        overlayEl.style.display = "none";
-
-
-        popover.__ownerCell = null;
-
-
-      });
-
 
 
 
@@ -3704,22 +3690,17 @@ overlayEl.addEventListener("click", () => {
 
 
 
-      document.querySelectorAll(".chart-card").forEach((card) => {
-
-
-        card.addEventListener("click", () => {
-
-
-          const href = card.dataset.href;
-
-
-          if (href) window.location.href = href;
-
-
+      if (container) {
+        container.addEventListener("click", (e) => {
+          const card = e.target.closest(".chart-card");
+          if (card) {
+            const href = card.dataset.href;
+            if (href) {
+              window.location.href = href;
+            }
+          }
         });
-
-
-      });
+      }
     </script>
 
 

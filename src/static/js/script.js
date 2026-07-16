@@ -1,6 +1,40 @@
 // 숙제 모드
 let assignMode = false;
 
+function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text);
+  } else {
+    // Legacy fallback for insecure HTTP contexts (HTTP + IP address)
+    return new Promise((resolve, reject) => {
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        const successful = document.execCommand("copy");
+        document.body.removeChild(textArea);
+        
+        if (successful) {
+          resolve();
+        } else {
+          reject(new Error("document.execCommand('copy') failed"));
+        }
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+}
+
 function getStorageKey() {
   const groupInfo = document.getElementById("groupInfo");
   if (!groupInfo) return "selectedProblems";
@@ -164,7 +198,6 @@ function toggleAll(checked) {
 
 function toggleAssignMode() {
   const checkboxes = document.querySelectorAll(".assign-checkbox-wrapper");
-  const copyFab = document.getElementById("copyFab");
   const assignControls = document.getElementById("assignModeControls");
   const problemLinks = document.querySelectorAll(".problem-link");
 
@@ -175,11 +208,6 @@ function toggleAssignMode() {
   checkboxes.forEach((checkbox) => {
     checkbox.style.display = assignMode ? "inline-flex" : "none";
   });
-
-  // 복사 버튼도 같이 보여줌
-  if (copyFab) {
-    copyFab.style.display = assignMode ? "flex" : "none";
-  }
 
   if (assignControls) {
     assignControls.classList.toggle("hidden", !assignMode);
@@ -219,19 +247,29 @@ async function copySelectedProblems() {
     document.getElementById("includeGreeting")?.checked ?? true;
   const greetingLine = includeGreeting ? "안녕하세요 두잉창의코딩학원입니다. 😊\n수업에 해당되는 숙제 부분 안내드립니다.\n" : null;
 
-  const text = [
-    ...(greetingLine ? [greetingLine] : []),
-    `📘 ${groupTitle}`,
-    `🔗 ${groupUrl}`,
-    `🗓 출제일: ${assignedDateStr}`,
-    `⏰ 마감: 다음 수업시간 전까지`,
-    "",
-    ...problemTitles,
-    "=========================",
-  ].join("\n");
+  const includeUsername =
+    document.getElementById("includeUsername")?.checked ?? false;
+  const usernameLine = (includeUsername && groupInfo.dataset.username) ? `👤 풀이 계정: ${groupInfo.dataset.username}` : null;
+
+  const commentVal = document.getElementById("homeworkComment")?.value?.trim() ?? "";
+  const commentLine = commentVal ? `📝 코멘트: ${commentVal}` : null;
+
+  const textLines = [];
+  if (greetingLine) textLines.push(greetingLine);
+  textLines.push(`📘 ${groupTitle}`);
+  textLines.push(`🔗 ${groupUrl}`);
+  if (usernameLine) textLines.push(usernameLine);
+  textLines.push(`🗓 출제일: ${assignedDateStr}`);
+  textLines.push(`⏰ 마감: 다음 수업시간 전까지`);
+  if (commentLine) textLines.push(commentLine);
+  textLines.push("");
+  textLines.push(...problemTitles);
+  textLines.push("=========================");
+
+  const text = textLines.join("\n");
 
   try {
-    await navigator.clipboard.writeText(text);
+    await copyToClipboard(text);
     showToast(`📘 ${groupTitle}\n✅ ${problemTitles.length}개 복사 완료`);
 
     const problemsPayload = selected.map((cb) => ({
@@ -275,6 +313,96 @@ function updateAssignUI() {
       el.classList.remove("assigned");
     }
   });
+}
+
+async function copyAiPrompt() {
+  const selected = [...document.querySelectorAll(".assign-checkbox:checked")];
+  const memoVal = document.getElementById("teacherMemo")?.value?.trim() || "";
+
+  if (selected.length === 0 && !memoVal) {
+    showToast("⚠️ 문제를 선택하거나 관찰 메모를 작성해주세요!");
+    return;
+  }
+
+  const groupInfo = document.getElementById("groupInfo");
+  const username = groupInfo?.dataset.username || "학생";
+
+  const wrong = [];
+  const unsolved = [];
+  const partial = [];
+  const solved = [];
+
+  selected.forEach(cb => {
+    const problemDiv = cb.closest(".problem");
+    if (!problemDiv) return;
+    const title = cb.dataset.title || "";
+    if (problemDiv.classList.contains("wrong")) {
+      wrong.push(title);
+    } else if (problemDiv.classList.contains("unsolved")) {
+      unsolved.push(title);
+    } else if (problemDiv.classList.contains("partial")) {
+      partial.push(title);
+    } else if (problemDiv.classList.contains("solved")) {
+      solved.push(title);
+    }
+  });
+
+  let problemsSummary = "";
+  if (selected.length > 0) {
+    if (wrong.length > 0) {
+      problemsSummary += `  * 오답 문항 (${wrong.length}개): ${wrong.join(", ")}\n`;
+    }
+    if (unsolved.length > 0) {
+      problemsSummary += `  * 미완료 문항 (${unsolved.length}개): ${unsolved.join(", ")}\n`;
+    }
+    if (partial.length > 0) {
+      problemsSummary += `  * 부분 점수 문항 (${partial.length}개): ${partial.join(", ")}\n`;
+    }
+    if (solved.length > 0 && wrong.length === 0 && unsolved.length === 0 && partial.length === 0) {
+      problemsSummary += `  * 복습 문항 (${solved.length}개): ${solved.join(", ")}\n`;
+    }
+    if (!problemsSummary) {
+      problemsSummary = "  * 선택된 문항 전체 복습\n";
+    }
+  } else {
+    problemsSummary = "  * (신규 숙제 및 복습용 지정 문항 없음)\n";
+  }
+
+  const finalMemo = memoVal || "(없음)";
+
+  const promptText = `[역할]
+너는 코딩학원 선생님의 알림장 피드백 코멘트를 작성해주는 전문 비서야.
+아래 제공된 [숙제 내역], [교사 관찰 메모]를 바탕으로 학부모님께 알림장으로 보낼 정중하고 신뢰감 있는 코멘트(존댓말)를 작성해줘.
+
+[작성 조건]
+1. 과장되거나 상투적인 AI 어투(예: "한 단계 성장할 것입니다", "화이팅! 👍" 등)를 배제하고, 차분하고 담백한 전문 서술체(~했습니다, ~하고자 합니다)로 작성해줘.
+2. 부드러운 격려나 친근한 감정 표현(예: ^^, ~, !)은 과하지 않게 아주 살짝만 허용해줘.
+3. 코멘트는 총 2~3문장(약 200~300자) 내외의 적절한 길이로 구체적으로 작성해줘.
+4. **학생의 학습 태도, 집중도, 진도율 및 학습 행동 분석**에 대해 교사 관찰 메모를 적극 반영하여 서술해줘.
+5. **중요: 만약 숙제 정보에 '복습 문항'만 주어지고 오답/미완료 문항이 없다면**, 신규 숙제를 내주는 대신 **오늘 성공적으로 완료한 문제들을 집에서 복습(리뷰)하도록 안내했다는 맥락**으로 작성해줘.
+6. **중요: 만약 숙제 정보가 '지정 문항 없음'으로 주어지면**, 신규 과제나 복습에 대한 언급을 완전히 제외하고, **오직 교사 관찰 메모의 내용을 상세하게 다듬어 오늘 수업 태도, 성향, 집중도 중심의 피드백 코멘트**로만 2~3문장을 채워줘.
+7. **중요: 코멘트 작성 시 학생의 실제 이름을 직접 언급하지 마세요.** (예: 이름 대신 주어를 생략하거나 '학생은' 등으로 표현)
+8. **중요: 다른 인사말이나 설명 없이 오직 복사해서 붙여넣을 '다듬어진 코멘트 텍스트'만 출력해줘.**
+
+[정보]
+- 숙제 정보:
+${problemsSummary.trim()}
+- 교사 관찰 메모: ${finalMemo}
+
+[답변 예시 (참고용)]:
+- 예시 A (신규 숙제가 있는 경우):
+"오늘 학생은 딴짓 없이 차분하게 수업에 참여했으며, 정해진 시간 이후에도 문제를 더 풀고자 할 정도로 적극적인 학습 태도를 보였습니다. 금일 미완료된 '문자형 배열 및 인덱스 활용' 관련 4개 문항(15~18번)은 다음 시간까지 스스로 보완하며 학습 연속성을 이어갈 수 있도록 숙제로 안내했습니다."
+- 예시 B (신규 숙제 없이 복습만 지시하는 경우):
+"오늘 학생은 딴짓 없이 차분하게 수업에 참여했으며, 문제 본문에 제시된 조건을 정확히 파악하여 풀이를 완성했습니다. 별도의 신규 숙제는 없으며, 오늘 수업 중에 해결했던 '변수 출력' 문항들을 집에서 가볍게 복습하며 개념을 다질 수 있도록 안내했습니다."
+- 예시 C (숙제/복습 지정 없이 수업 관찰 피드백만 하는 경우):
+"오늘 학생은 딴짓 없이 차분하게 수업에 참여했으며, 모르는 부분이 나왔을 때 적극적으로 질문하며 해결하려는 자세를 보였습니다. 스스로 오답의 원인을 끝까지 찾아내어 논리적인 문제를 완전히 해결하려는 집중력이 돋보였습니다."`;
+
+  try {
+    await copyToClipboard(promptText);
+    showToast("📋 AI 프롬프트 복사 완료!\nChatGPT나 Claude에 붙여넣으세요.");
+  } catch (err) {
+    alert("프롬프트 복사 실패: " + err.message);
+  }
 }
 
 function selectUnsolved() {
@@ -510,7 +638,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const text = `${title}\n${url}`;
 
       try {
-        await navigator.clipboard.writeText(text);
+        await copyToClipboard(text);
 
         await postHomeworkLog({
           title,
@@ -530,6 +658,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 5. 초기 UI 데코레이션 반영
   updateAssignUI();
+  highlightTodaySolvedProblems();
+
+  // 6. 자동 높이 조절 Textarea 설정
+  const autoExpandTextarea = (el) => {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  };
+
+  const panelTextareas = document.querySelectorAll(".panel-textarea");
+  panelTextareas.forEach((ta) => {
+    ta.addEventListener("input", function () {
+      autoExpandTextarea(this);
+    });
+    ta.addEventListener("change", function () {
+      autoExpandTextarea(this);
+    });
+  });
 });
 
 function showToast(message, duration = 3000) {
@@ -731,3 +876,47 @@ document.addEventListener("DOMContentLoaded", () => {
     searchClearBtn?.classList.toggle("hidden", false);
   }
 });
+
+async function highlightTodaySolvedProblems() {
+  const groupInfo = document.getElementById("groupInfo");
+  if (!groupInfo) return;
+  const username = groupInfo.dataset.username;
+  if (!username) return;
+
+  try {
+    const res = await fetch(`/api/streak?viewMode=user&viewUsername=${encodeURIComponent(username)}&days=1`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.streak_data || data.streak_data.length === 0) return;
+    
+    const todayDetails = data.streak_data[0].details || [];
+    const todaySolvedPids = new Set(todayDetails.map(item => String(item.problem)));
+
+    if (todaySolvedPids.size === 0) return;
+
+    document.querySelectorAll(".problem").forEach((el) => {
+      if (!el.classList.contains("solved")) return;
+      const cb = el.querySelector(".assign-checkbox");
+      if (!cb) return;
+      
+      const pid = String(cb.dataset.pid);
+      if (todaySolvedPids.has(pid)) {
+        if (!el.querySelector(".badge-today")) {
+          const badge = document.createElement("span");
+          badge.className = "badge-today";
+          badge.textContent = "오늘 해결 ✨";
+          
+          const problemLink = el.querySelector(".problem-link");
+          if (problemLink) {
+            problemLink.after(badge);
+          } else {
+            el.appendChild(badge);
+          }
+        }
+      }
+    });
+  } catch (err) {
+    console.error("Failed to highlight today solved problems:", err);
+  }
+}
+

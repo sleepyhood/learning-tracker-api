@@ -140,6 +140,33 @@
         font-weight: bold;
         cursor: pointer;
       }
+
+      .badge-today {
+        background: linear-gradient(135deg, #00e676, #00b0ff);
+        color: white;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 3px 8px;
+        border-radius: 6px;
+        margin-left: 10px;
+        display: inline-flex;
+        align-items: center;
+        box-shadow: 0 0 8px rgba(0, 230, 118, 0.5);
+        vertical-align: middle;
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+        animation: badgePulse 2s infinite alternate;
+      }
+
+      @keyframes badgePulse {
+        0% {
+          box-shadow: 0 0 6px rgba(0, 230, 118, 0.4);
+          transform: scale(1);
+        }
+        100% {
+          box-shadow: 0 0 12px rgba(0, 176, 255, 0.8);
+          transform: scale(1.03);
+        }
+      }
     </style>
   </head>
   <body>
@@ -180,33 +207,66 @@
         <!-- 관리자 전용 FAB: 숙제 모드 -->
         {% if is_admin%}
 
-        <div
-          id="copyFab"
-          class="fab fab-copy"
-          title="선택 복사"
-          style="display: none"
-          onclick="copySelectedProblems()"
-        >
-          📋
-        </div>
-
 <!-- templates/group_detail.html -->
 <!-- 기존 assignModeControls 블록을 아래로 교체 -->
-<div id="assignModeControls" class="hidden fab-options">
-  <label class="assign-btn" style="display: flex; align-items: center; gap: 6px">
-    <input type="checkbox" id="includeGreeting" checked />
-    인사말 포함
-  </label>
-  <button class="assign-btn" onclick="selectUnsolved()">안 푼 것만</button>
-
-  <!-- ✅ UX: 5개가 1열로 서지 않게 '홀수/짝수'를 한 줄로 묶음 -->
-  <div class="assign-btn-row" aria-label="안 푼 문제 홀짝 선택">
-    <button class="assign-btn" onclick="selectUnsolvedOdd()">홀수만</button>
-    <button class="assign-btn" onclick="selectUnsolvedEven()">짝수만</button>
+<div id="assignModeControls" class="hidden fab-options homework-panel">
+  <!-- 섹션 1: 문제 선택 -->
+  <div class="panel-section">
+    <div class="section-title">🎯 문제 선택</div>
+    <div class="btn-grid">
+      <button class="panel-btn" onclick="toggleAll(true)">전체</button>
+      <button class="panel-btn" onclick="toggleAll(false)">해제</button>
+      <button class="panel-btn" onclick="selectUnsolved()">안 푼 것만</button>
+    </div>
+    <div class="btn-grid-half">
+      <button class="panel-btn" onclick="selectUnsolvedOdd()">홀수만</button>
+      <button class="panel-btn" onclick="selectUnsolvedEven()">짝수만</button>
+    </div>
   </div>
 
-  <button class="assign-btn" onclick="toggleAll(true)">전체 선택</button>
-  <button class="assign-btn" onclick="toggleAll(false)">전체 해제</button>
+  <!-- 섹션 2: 옵션 설정 -->
+  <div class="panel-section">
+    <div class="section-title">⚙️ 옵션 설정</div>
+    <div class="checkbox-row">
+      <label class="panel-checkbox">
+        <input type="checkbox" id="includeGreeting" checked />
+        인사말
+      </label>
+      <label class="panel-checkbox">
+        <input type="checkbox" id="includeUsername" />
+        풀이 계정
+      </label>
+    </div>
+  </div>
+
+  <!-- 섹션 3: AI 코멘트 파이프라인 -->
+  <div class="panel-section">
+    <div class="section-title">🪄 AI 코멘트 작성</div>
+    
+    <div class="step-container">
+      <div class="step-label">1단계: 관찰 메모 작성</div>
+      <textarea id="teacherMemo" placeholder="예: 오늘 피곤해 보여서 자주 깨움" class="panel-input panel-textarea" rows="1"></textarea>
+    </div>
+
+    <div class="step-container">
+      <div class="step-label">2단계: 프롬프트 복사</div>
+      <button class="panel-btn ai-btn" onclick="copyAiPrompt()">
+        📋 AI 프롬프트 복사
+      </button>
+    </div>
+
+    <div class="step-container">
+      <div class="step-label">3단계: AI 답변 붙여넣기</div>
+      <textarea id="homeworkComment" placeholder="외부 AI 답변 붙여넣기" class="panel-input panel-textarea" rows="1"></textarea>
+    </div>
+
+    <div class="step-container">
+      <div class="step-label">4단계: 완료</div>
+      <button class="panel-btn complete-btn" onclick="copySelectedProblems()">
+        📋 최종 복사 및 전송
+      </button>
+    </div>
+  </div>
 </div>
 
 
