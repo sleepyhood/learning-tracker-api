@@ -499,6 +499,12 @@ ${problemsSummary.trim()}
 
       if (!res.ok) throw new Error("서버 응답 오류");
       
+      if (window.attachHomeworkBadges) {
+        setTimeout(() => {
+          window.attachHomeworkBadges([userUuid]);
+        }, 300);
+      }
+      
       setTimeout(() => {
         closeFeedbackModal();
       }, 1000);

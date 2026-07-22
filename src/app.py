@@ -1310,11 +1310,25 @@ def build_homework_latest_payload(doc: dict, today_activity: dict | None = None)
     wrong = counts.get("wrong") or 0
     pending = counts.get("pending") or 0
 
+    feedback_given_today = False
+    for x in logs:
+        x_title = x.get("title") or ""
+        x_ts = x.get("ts") or ""
+        if "피드백" in x_title and x_ts:
+            try:
+                x_dt = datetime.fromisoformat(x_ts)
+                if x_dt.astimezone(KST).date() == today:
+                    feedback_given_today = True
+                    break
+            except ValueError:
+                pass
+
     flags = {
         "is_given_today": bool(given_date and given_date == today),
         "all_passed": total > 0 and passed == total,
         "has_any": total > 0,
         "has_unresolved": (wrong + pending) > 0,
+        "feedback_given_today": feedback_given_today,
     }
 
     return {
