@@ -2053,6 +2053,271 @@ def api_schedule_delete_slot(slot_id):
     save_schedule(data)
     return jsonify({"ok": True})
 
+# --- 2-Pane Dual Workspace Routes ---
+
+WORKSPACE_STUDENTS_PATH = META_DIR / "workspace_students.json"
+
+def _load_workspace_students():
+    if not WORKSPACE_STUDENTS_PATH.exists():
+        return {}
+    try:
+        return json.loads(WORKSPACE_STUDENTS_PATH.read_text(encoding="utf-8"))
+    except:
+        return {}
+
+def _save_workspace_students(data):
+    WORKSPACE_STUDENTS_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+def _sync_workspace_students():
+    # Sync with uuids.json if needed
+    data = _load_workspace_students()
+    try:
+        uuids = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+        for sid, u in uuids.items():
+            # Basic display ID generation: Name + (No birthdate for now)
+            # Actually, just use sid as display_id for auto-imported ones
+            display_id = sid
+            if display_id not in data:
+                data[display_id] = {
+                    "display_id": display_id,
+                    "name": sid,
+                    "birth_md": "",
+                    "accounts": [sid], # Map to this sid
+                    "user_uuid": u # Primary UUID
+                }
+        _save_workspace_students(data)
+    except:
+        pass
+    return data
+
+@app.route("/workspace")
+def workspace_page():
+    s, err = ensure_admin_or_redirect()
+    if err:
+        return err
+    return render_template("workspace_2pane.html")
+
+
+@app.route("/api/workspace/schedule_students")
+def api_workspace_schedule_students():
+    s, err = ensure_admin_or_403()
+    if err: return err
+    
+    weekday_str = request.args.get("weekday", "all")
+    
+    raw = load_schedule()
+    slots = raw.get("slots", [])
+    
+    if weekday_str != "all":
+        try:
+            target_w = int(weekday_str)
+            slots = [slot for slot in slots if slot.get("weekday") == target_w]
+        except ValueError:
+            pass
+            
+    hydrated_slots = hydrate_slot_students(slots)
+    workspace_data = _sync_workspace_students()
+    
+    result_students = []
+    seen_uuids = set()
+    
+    for slot in hydrated_slots:
+        slot_label = slot.get("label", "")
+        for st in slot.get("students_detail", []):
+            u = st.get("user_uuid")
+            if not u: continue
+            
+            display_id = u
+            st_name = st.get("name", "이름없음")
+            
+            found = False
+            for w_did, w_obj in workspace_data.items():
+                if w_obj.get("user_uuid") == u:
+                    display_id = w_did
+                    st_name = w_obj.get("name") or st_name
+                    found = True
+                    break
+            
+            if not found:
+                display_id = st.get("student_id") or st_name
+                workspace_data[display_id] = {
+                    "display_id": display_id,
+                    "name": st_name,
+                    "birth_md": "",
+                    "accounts": [st.get("student_id")],
+                    "user_uuid": u
+                }
+                _save_workspace_students(workspace_data)
+            
+            if u not in seen_uuids:
+                seen_uuids.add(u)
+                result_students.append({
+                    "user_uuid": u,
+                    "display_id": display_id,
+                    "name": st_name,
+                    "slot_label": slot_label,
+                    "note": st.get("note", ""),
+                    "slot_id": slot.get("id"),
+                    "accounts": workspace_data[display_id].get("accounts", [])
+                })
+            else:
+                for rs in result_students:
+                    if rs["user_uuid"] == u:
+                        if slot_label and slot_label not in rs["slot_label"]:
+                            rs["slot_label"] += f", {slot_label}"
+                        if st.get("note") and st.get("note") not in rs["note"]:
+                            rs["note"] += f" | {st.get('note')}"
+    
+    # Also fetch full raw slots for dropdowns
+    all_slots = [{"id": s.get("id"), "label": s.get("label"), "weekday": s.get("weekday")} for s in raw.get("slots", [])]
+    return jsonify({"ok": True, "students": result_students, "all_slots": all_slots})
+
+
+@app.route("/api/workspace/register_student", methods=["POST"])
+def api_workspace_register_student():
+    s, err = ensure_admin_or_403()
+    if err: return err
+    
+    payload = request.get_json(force=True) or {}
+    name = payload.get("name", "").strip()
+    birth_md = payload.get("birth_md", "").strip()
+    slot_id = payload.get("slot_id")
+    
+    if not name or not slot_id:
+        return jsonify({"ok": False, "error": "이름과 요일 슬롯을 선택해주세요."}), 400
+        
+    display_id = f"{name}{birth_md}"
+    
+    from uuid import uuid4
+    new_uuid = str(uuid4())
+    
+    workspace_data = _load_workspace_students()
+    if display_id in workspace_data:
+        new_uuid = workspace_data[display_id].get("user_uuid", new_uuid)
+    else:
+        workspace_data[display_id] = {
+            "display_id": display_id,
+            "name": name,
+            "birth_md": birth_md,
+            "accounts": [],
+            "user_uuid": new_uuid
+        }
+        _save_workspace_students(workspace_data)
+        
+    m = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+    if display_id not in m:
+        m[display_id] = new_uuid
+        UUIDS_PATH.write_text(json.dumps(m, ensure_ascii=False, indent=2), encoding="utf-8")
+        
+    doc = load_doc_by_any(new_uuid)
+    doc["profile"] = {"name": name, "student_id": display_id}
+    save_doc_by_any(new_uuid, doc)
+    
+    raw = load_schedule()
+    for slot in raw.get("slots", []):
+        if slot.get("id") == slot_id:
+            students = slot.setdefault("students", [])
+            if new_uuid not in students:
+                students.append(new_uuid)
+            break
+    
+    save_schedule(raw)
+    return jsonify({"ok": True, "display_id": display_id})
+
+
+@app.route("/api/workspace/generate_ai_prompt", methods=["POST"])
+def api_workspace_generate_ai_prompt():
+    s, err = ensure_admin_or_403()
+    if err: return err
+    
+    payload = request.get_json(force=True) or {}
+    display_id = payload.get("display_id")
+    
+    workspace_data = _load_workspace_students()
+    student = workspace_data.get(display_id)
+    if not student:
+        return jsonify({"ok": False, "error": "Student not found"}), 404
+        
+    u = student.get("user_uuid") or display_id
+    doc = load_doc_by_any(u)
+    
+    name = student.get("name", display_id)
+    
+    logs = doc.get("homework_logs", [])
+    recent_hw = logs[-1] if logs else {}
+    hw_list = recent_hw.get("problems", [])
+    hw_titles = [f"[{p.get('legacy_code')}] {p.get('title')}" for p in hw_list]
+    hw_text = "\n".join(hw_titles) if hw_titles else "숙제 없음"
+    
+    prompt = f"""다음은 {name} 학생의 오늘 학습 내용 및 숙제입니다. 학부모님께 보낼 피드백 문자를 친절하고 전문적인 어조로 작성해주세요.
+
+[학생 이름] {name}
+[오늘 부여된 숙제]
+{hw_text}
+
+[요청 사항]
+- 숙제를 열심히 할 수 있도록 격려하는 멘트 포함
+- 3~4문장으로 간결하게 작성
+"""
+    return jsonify({"ok": True, "prompt": prompt})
+
+
+@app.route("/api/workspace/student_problems/<display_id>")
+def api_workspace_student_problems(display_id):
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
+    data = _load_workspace_students()
+    student = data.get(display_id)
+    if not student:
+        return jsonify({"ok": False, "error": "Student not found"}), 404
+    
+    # In v4, we can look up the user doc using user_uuid
+    u = student.get("user_uuid") or display_id
+    doc = load_doc_by_any(u)
+    
+    problems = []
+    
+    # We'll return recent homework logs as problems for now
+    logs = doc.get("homework_logs", [])
+    for log in logs:
+        for p in log.get("problems", []):
+            problems.append({
+                "legacy_code": p.get("legacy_code"),
+                "title": p.get("title", "알 수 없는 문제"),
+                "status": "partial" # default
+            })
+            
+    # Deduplicate
+    seen = set()
+    uniq_problems = []
+    for p in problems:
+        if p["legacy_code"] not in seen:
+            seen.add(p["legacy_code"])
+            uniq_problems.append(p)
+
+    return jsonify({"ok": True, "problems": uniq_problems})
+
+@app.route("/api/workspace/save_homework_log", methods=["POST"])
+def api_workspace_save_homework_log():
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
+    payload = request.get_json(force=True) or {}
+    display_id = payload.get("display_id")
+    problems = payload.get("problems", [])
+    
+    data = _load_workspace_students()
+    student = data.get(display_id)
+    if not student:
+        return jsonify({"ok": False, "error": "Student not found"}), 404
+        
+    u = student.get("user_uuid") or display_id
+    
+    append_homework_log(u, {"problems": problems})
+    
+    return jsonify({"ok": True})
+
 
 @app.route("/schedule")
 def schedule_page():

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace 2-Pane</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/css/workspace_apple.css">
+</head>
+<body>
+    <header class="workspace-header">
+        <div class="header-content">
+            <h1 class="header-title">🍎 Dual Workspace</h1>
+            <div class="header-actions">
+                <button class="btn-primary" id="btn-export-excel">⬇ 엑셀 내보내기</button>
+                <button class="btn-secondary" onclick="window.location.href='/schedule'">기존 스케줄로 돌아가기</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="workspace-container">
+        <!-- Left Pane: Problem Picker -->
+        <aside class="pane-left">
+            <div class="pane-header">
+                <h2>🎯 문제 카탈로그</h2>
+                <input type="text" id="problem-search" class="search-input" placeholder="문제 제목 또는 번호 검색...">
+            </div>
+            
+            <div class="problem-list" id="problem-list-container">
+                <div class="problem-empty-state">학생을 먼저 선택하거나 챕터를 로드하세요.</div>
+            </div>
+
+            <div class="pickup-basket">
+                <div class="basket-header">
+                    <h3>🛒 숙제 바구니 (<span id="basket-count">0</span>)</h3>
+                    <button class="btn-small btn-ghost" id="btn-clear-basket">비우기</button>
+                </div>
+                <ul id="basket-items" class="basket-items-list">
+                    <!-- 담긴 문제가 표시될 곳 -->
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Right Pane: Student Feedback Grid -->
+        <main class="pane-right">
+            <div class="pane-header" style="flex-direction: column; align-items: stretch; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>👥 요일별 수강생 보드</h2>
+                    <div class="filter-actions">
+                        <button class="btn-small btn-primary" id="btn-add-student-modal">+ 수강생 수동 등록</button>
+                    </div>
+                </div>
+                <!-- 요일 필터 탭 -->
+                <div class="weekday-tabs" id="weekday-tabs">
+                    <button class="tab-btn active" data-weekday="all">전체</button>
+                    <button class="tab-btn" data-weekday="0">월</button>
+                    <button class="tab-btn" data-weekday="1">화</button>
+                    <button class="tab-btn" data-weekday="2">수</button>
+                    <button class="tab-btn" data-weekday="3">목</button>
+                    <button class="tab-btn" data-weekday="4">금</button>
+                    <button class="tab-btn" data-weekday="5">토</button>
+                    <button class="tab-btn" data-weekday="6">일</button>
+                </div>
+            </div>
+
+            <div class="student-grid" id="student-grid-container">
+                <!-- 학생 카드들이 렌더링될 곳 -->
+            </div>
+        </main>
+    </div>
+
+    <!-- 신규 학생 등록 모달 -->
+    <div id="register-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>📝 수강생 수동 등록</h3>
+            <div class="modal-body">
+                <label>이름</label>
+                <input type="text" id="reg-name" placeholder="예: 홍길동">
+                
+                <label>생년월일 4자리 (선택)</label>
+                <input type="text" id="reg-birth" placeholder="예: 0505" maxlength="4">
+
+                <label>요일 슬롯 (필수)</label>
+                <select id="reg-slot">
+                    <option value="">불러오는 중...</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="btn-close-modal">취소</button>
+                <button class="btn-primary" id="btn-submit-register">등록하기</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="/static/js/workspace_2pane.js"></script>
+</body>
+</html>
