@@ -245,7 +245,14 @@
     
     <div class="step-container">
       <div class="step-label">1단계: 관찰 메모 작성</div>
-      <textarea id="teacherMemo" placeholder="예: 오늘 피곤해 보여서 자주 깨움" class="panel-input panel-textarea" rows="1"></textarea>
+      <textarea id="teacherMemo" placeholder="예: 오늘 피곤해 보여서 자주 깨움 (비워두면 기본값 적용)" class="panel-input panel-textarea" rows="1"></textarea>
+      <div class="quick-tags-container" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;">
+        <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('teacherMemo', '😊 집중도 좋음')">😊 집중도 좋음</button>
+        <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('teacherMemo', '❓ 질문 적극적')">❓ 질문 적극적</button>
+        <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('teacherMemo', '💡 오답 혼자 해결')">💡 오답 혼자 해결</button>
+        <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('teacherMemo', '⚡ 풀이 속도 빠름')">⚡ 풀이 속도 빠름</button>
+        <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('teacherMemo', '💤 조금 피곤해함')">💤 조금 피곤해함</button>
+      </div>
     </div>
 
     <div class="step-container">

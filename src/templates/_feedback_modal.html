@@ -120,6 +120,21 @@
     font-weight: 700;
     color: #868e96;
   }
+  .quick-tag-btn {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+  .quick-tag-btn:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+  }
   .feedback-input {
     border: 1.5px solid #dee2e6;
     border-radius: 12px;
@@ -247,7 +262,14 @@
         
         <div class="feedback-step-container">
           <div class="feedback-step-label">1단계: 관찰 메모 작성</div>
-          <textarea id="modalTeacherMemo" placeholder="예: 오늘 피곤해 보여서 자주 깨움" class="feedback-input feedback-textarea" rows="1"></textarea>
+          <textarea id="modalTeacherMemo" placeholder="예: 오늘 피곤해 보여서 자주 깨움 (비워두면 기본값 적용)" class="feedback-input feedback-textarea" rows="1"></textarea>
+          <div class="quick-tags-container" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;">
+            <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '😊 집중도 좋음')">😊 집중도 좋음</button>
+            <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '❓ 질문 적극적')">❓ 질문 적극적</button>
+            <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '💡 오답 혼자 해결')">💡 오답 혼자 해결</button>
+            <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '⚡ 풀이 속도 빠름')">⚡ 풀이 속도 빠름</button>
+            <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '💤 조금 피곤해함')">💤 조금 피곤해함</button>
+          </div>
         </div>
 
         <div class="feedback-step-container" style="margin-top: 8px;">
@@ -384,10 +406,6 @@
 
   async function copyModalAiPrompt() {
     const memoVal = document.getElementById("modalTeacherMemo").value.trim() || "";
-    if (!memoVal) {
-      showModalToast("⚠️ 먼저 관찰 메모를 작성해주세요!");
-      return;
-    }
 
     const includeReview = document.getElementById("modalIncludeReview").checked;
     let problemsSummary = "";
@@ -397,7 +415,7 @@
       problemsSummary = "  * (신규 숙제 및 복습용 지정 문항 없음)\n";
     }
 
-    const finalMemo = memoVal;
+    const finalMemo = memoVal || "오늘 수업에 차분하고 성실하게 임함 (특이사항 없음)";
 
     const promptText = `[역할]
 너는 코딩학원 선생님의 알림장 피드백 코멘트를 작성해주는 전문 비서야.

@@ -315,14 +315,26 @@ function updateAssignUI() {
   });
 }
 
+function toggleQuickTag(textareaId, tagText) {
+  const el = document.getElementById(textareaId);
+  if (!el) return;
+
+  let val = el.value.trim();
+  if (val.includes(tagText)) {
+    val = val.replace(tagText, "").replace(/,\s*,/g, ",").replace(/^,\s*|\s*,\s*$/g, "").trim();
+  } else {
+    val = val ? `${val}, ${tagText}` : tagText;
+  }
+  el.value = val;
+
+  if (typeof autoExpandModalTextarea === "function" && (textareaId === "modalTeacherMemo" || textareaId === "teacherMemo")) {
+    autoExpandModalTextarea(el);
+  }
+}
+
 async function copyAiPrompt() {
   const selected = [...document.querySelectorAll(".assign-checkbox:checked")];
   const memoVal = document.getElementById("teacherMemo")?.value?.trim() || "";
-
-  if (selected.length === 0 && !memoVal) {
-    showToast("⚠️ 문제를 선택하거나 관찰 메모를 작성해주세요!");
-    return;
-  }
 
   const groupInfo = document.getElementById("groupInfo");
   const username = groupInfo?.dataset.username || "학생";
@@ -368,7 +380,7 @@ async function copyAiPrompt() {
     problemsSummary = "  * (신규 숙제 및 복습용 지정 문항 없음)\n";
   }
 
-  const finalMemo = memoVal || "(없음)";
+  const finalMemo = memoVal || "오늘 수업에 차분하고 성실하게 임함 (특이사항 없음)";
 
   const promptText = `[역할]
 너는 코딩학원 선생님의 알림장 피드백 코멘트를 작성해주는 전문 비서야.
