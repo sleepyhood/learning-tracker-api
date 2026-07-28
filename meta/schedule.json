@@ -52,7 +52,8 @@
         "b93ab96d-0fea-4950-a56b-8bf8af9b6738",
         "2a8ff72f-3719-46e8-a068-34932831f028",
         "ce119cb3-8254-4f68-8673-8ff0cdb81f5f",
-        "c043343b-cae3-444c-8d61-63d6759c79d5"
+        "c043343b-cae3-444c-8d61-63d6759c79d5",
+        "adcedd6b-fbee-451d-b7ea-54713d97ee4d"
       ],
       "student_notes": {
         "46a97893-cc09-4e1b-8c15-31fed50876ae": "경명초"
@@ -175,7 +176,8 @@
         "decdb0ae-7617-4527-b9f3-6bcf30a8aeef",
         "d50c11ee-c090-4040-b209-fdd53320ee39",
         "614dc750-15d6-4fbe-9ae3-6a2b36c5530d",
-        "32b1b6c3-b399-4089-bdd3-691d20727afb"
+        "32b1b6c3-b399-4089-bdd3-691d20727afb",
+        "418f9786-0210-463b-80af-595daf0b1c8d"
       ],
       "student_notes": {
         "d50c11ee-c090-4040-b209-fdd53320ee39": "금요일만 숙제냄"
@@ -260,7 +262,8 @@
       "label": "C++",
       "order": 0,
       "students": [
-        "5fc9eb29-9ff6-45c9-9cba-976dd57d30eb"
+        "5fc9eb29-9ff6-45c9-9cba-976dd57d30eb",
+        "07dab7d6-1332-410c-b6fb-4d6fc48be8e8"
       ]
     },
     {
@@ -270,7 +273,8 @@
       "order": 0,
       "students": [
         "01dd0bf5-0193-47c3-8657-2067bbda9928",
-        "c974c287-4481-4ca3-bcfd-16c5c9ca4faa"
+        "c974c287-4481-4ca3-bcfd-16c5c9ca4faa",
+        "6a8d2fd9-0ccf-419f-9043-3555b157af78"
       ]
     },
     {
