@@ -346,6 +346,22 @@
     el.style.height = el.scrollHeight + 'px';
   }
 
+  // 퀵 태그 토글 (schedule 등 script.js 미포함 페이지에서도 동작)
+  function toggleQuickTag(textareaId, tagText) {
+    const el = document.getElementById(textareaId);
+    if (!el) return;
+    let val = el.value.trim();
+    if (val.includes(tagText)) {
+      val = val.replace(tagText, "").replace(/,\s*,/g, ",").replace(/^,\s*|\s*,\s*$/g, "").trim();
+    } else {
+      val = val ? `${val}, ${tagText}` : tagText;
+    }
+    el.value = val;
+    if (typeof autoExpandModalTextarea === "function") {
+      autoExpandModalTextarea(el);
+    }
+  }
+
   document.querySelectorAll(".feedback-textarea").forEach((ta) => {
     ta.addEventListener("input", function () {
       autoExpandModalTextarea(this);
