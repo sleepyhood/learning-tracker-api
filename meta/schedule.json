@@ -93,7 +93,8 @@
         "13745114-f32c-4609-a946-e8c15dfc8255",
         "48841b4e-be55-43ce-af41-e0d07b89bd93",
         "d5aca472-b95f-4462-9dac-934fdd527ac9",
-        "92454fb2-c350-4e69-b017-1f3b795bd8fb"
+        "92454fb2-c350-4e69-b017-1f3b795bd8fb",
+        "a0bdd8d0-9c33-4b54-bc09-e44947ac4529"
       ],
       "student_notes": {
         "13745114-f32c-4609-a946-e8c15dfc8255": "전서준"
@@ -283,6 +284,15 @@
       "label": "기타",
       "order": 0,
       "students": []
+    },
+    {
+      "id": "ad4abd38-634a-4429-81d6-c052f548a899",
+      "weekday": 3,
+      "label": "블록",
+      "order": 0,
+      "students": [
+        "2fad3d6f-0c33-430e-91d8-e6537ab3ec83"
+      ]
     }
   ]
 }
