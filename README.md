@@ -1,208 +1,101 @@
-# 📊 학습 진도 시각화 (Legacy Snapshot)
+# 📊 DoingCoding 학습 진도 및 숙제 관리 도구 (Learning Tracker)
 
-> 이 저장소는 **기존 아키텍처의 최종 스냅샷**입니다.
-> 이후 개발은 **DB 도입 + React 프런트 + 경량화/최적화** 중심의 새 구조로 진행됩니다.
-> (버그 수정만 최소한으로 반영, 신규 기능은 차세대 버전에서 개발)
+DoingCoding(edu.doingcoding.com)의 API를 연동하여 수강생의 **문제 풀이 이력/진도**를 수집·정제하고, 일자별 수업 스케줄링, 숙제 출제/관리 및 AI 기반 학부모 피드백 코멘트 작성을 지원하는 **Flask 기반 통합 학원 관리 도구**입니다.
+
+> **Note:** 본 프로젝트는 로컬 파일 캐시(JSON)를 데이터 스토어로 활용하여 가볍고 빠르게 동작하며, 학원 현장의 행정 및 교육 관리 비효율을 해소하는 것을 목적으로 합니다.
 
 ---
 
 ## 📖 Project Story: 교육 현장의 비효율을 기술로 해결하다
 
-> "강사의 에너지는 행정이 아니라 교육에 집중되어야 합니다."
+> *"강사의 에너지는 행정이 아니라 교육에 집중되어야 합니다."*
 
-이 프로젝트는 프로그래밍 학원 현장에서 강사가 겪는 **'수동 데이터 관리의 고통'** 에서 시작되었습니다. 매일 수십 명의 학생들의 진도를 여러 사이트에서 일일이 확인하고 기록하는 비효율을 해결하기 위해, 직접 **인하우스 자동화 툴**을 구축했습니다.
-
-### 🎯 주요 성과 (Impact)
-
-- **행정 업무 효율화:** 수동 확인 방식을 API 자동화로 전환하여, 강사진의 학생 관리 소요 시간을 **약 00% 이상 단축**했습니다.
-- **데이터 기반 상담:** 단순한 감이 아닌, 시각화된 대시보드를 통해 학부모 상담 및 학생 진도 관리에 객관적인 지표를 제공합니다.
-
-### 💡 기술적 도전과 해결 (Engineering Note)
-
-- **LLM 협업 및 직접 디버깅:** 초기 프로토타입 개발 시 LLM(Codex 등)을 활용해 속도를 높였으나, 외부 API의 복잡한 비정형 데이터(JSON) 파싱에서 발생하는 예외 상황들은 **직접 디버깅하고 스키마를 설계**하며 정밀도를 높였습니다.
-- **아키텍처 리팩터링:** 초기 '크롤링' 기반의 불안정한 접근을 **'API 중심'**으로 리팩터링하여 데이터 수집의 안정성과 속도를 확보했습니다.
+매일 수십 명의 학생들의 진도를 여러 웹 페이지에서 일일이 확인하고 알림장을 적어 보내는 수동 행정 업무의 비효율을 해소하기 위해 직접 **인하우스 자동화 툴**을 설계하였습니다. 
+진도 현황 자동 시각화, 지능형 숙제 제안, 클릭 한 번으로 가공되는 알림장 문구 작성을 도입하여 강사진의 수강생 관리 소요 시간을 **획기적으로 단축**시켰습니다.
 
 ---
 
-## ✨ 프로젝트 개요
+## ✨ 핵심 기능 (Key Features)
 
-DoingCoding(edu.doingcoding.com)의 **API**를 통해 수강생의 **문제 풀이 이력/진도**를 수집·정제하고, Flask 기반 웹 대시보드로 시각화하는 **Python 도구**입니다.
-초기 크롤링 기반 접근을 API 중심으로 리팩터링한 버전이며, 파일 캐시(JSON)를 활용해 빠르게 시각화를 제공합니다.
+### 1. 요일별 수업 스케줄 및 학생 관리 (`/schedule`)
+* **요일별 시간표 슬롯(Slot) 생성 및 삭제**: 학원 수업 일정에 맞춘 실시간 시간표 배치 관리
+* **슬롯별 학생 등록 및 해제**: 직관적인 인터페이스를 이용해 특정 수업 타임에 학생을 배정하거나 삭제
+* **출석부 및 상태 연동**: 당일 등원한 학생들의 목록과 학습 여부 한눈에 점검
+
+### 2. 숙제(과제) 출제 및 내역 관리 (CRUD)
+* **지능형 숙제 제안**: 학생의 당일 풀이 로그를 분석하여 **오답 문항 / 미완료 문항 / 복습 문항**을 자동 분류하고 추천 숙제 리스트업
+* **알림장 메시지 빌더**: 출제일, 마감 일정, 숙제용 개별 풀이 계정 및 고유 피드백 링크가 포함된 완성형 텍스트 생성 (클릭 한 번으로 클립보드 복사)
+* **백엔드 로그 적재 및 삭제**: 숙제 발송 기록을 데이터베이스(유저 JSON 문서)에 영구 기록하며, 잘못 보낸 로그는 개별 삭제(`DELETE /api/students/<uuid>/homework_logs/<key>`) 지원
+
+### 3. 🪄 AI 학부모 피드백 코멘트 파이프라인
+* **원클릭 퀵 태그(Quick Tags) 입력**: `[😊 집중도 좋음]`, `[❓ 질문 적극적]`, `[💡 오답 혼자 해결]` 등 자주 쓰는 수업 태도 관찰 키워드를 클릭 한 번으로 메모란에 추가
+* **기본값(Default) 대응**: 관찰 메모를 빈칸으로 남겨두어도 차분하고 성실하게 참여했다는 기본 관찰 텍스트가 자동 조합
+* **전역 공통 프롬프트 모듈 (`ai_prompt.js`)**:
+  - `group_detail.html` 및 `_feedback_modal.html`에서 동일한 피드백 생성 지침 공유
+  - **엄격한 표현 검증**: `'학생'`, `'교사'` 등 격식상 번역체 같거나 어색한 단어 사용을 원천 금지
+  - **과장 배제**: `'매우'`, `'무척'` 등 인위적인 부사를 제거하여 차분하고 객관적인 서술 유도
+  - **부정적 뉘앙스 순화**: `'마무리하지 못한'`, `'오늘 못 풀은'` 등 학습 지체를 암시하는 표현을 완전히 금지하고, `'이어서 주도적으로 보완 연습을 해볼 수 있도록 과제로 안내했습니다'`와 같이 긍정적이고 주도적인 연속성 표현 강제
+
+### 4. 실시간 챕터 워크스페이스 (`/user/<username>/chapter/<chapter>/workspace`)
+* **2-Pane 인터페이스**: 화면 분할 기능을 지원하여 학생의 정보 및 풀이 영역을 동시에 비교 모니터링 가능
+* **실시간 문제 제출 이벤트 로깅**: 실시간으로 유저의 정답/오답 제출 흐름과 상태 변동 현황 파악
 
 ---
 
-## ✅ 이 스냅샷에 포함된 핵심 기능
-
-- 로그인 세션 유지(쿠키 기반) 및 API 호출
-- 문제 태그/챕터/그룹 단위 카탈로그 수집 및 정제(JSON)
-- 사용자 제출(submissions) 수집·집계(해당 챕터/그룹/문제별 진행 현황)
-- Flask + Jinja 템플릿 대시보드(챕터/그룹 상세, 진행 카드/차트)
-- 환경변수/`.gitignore` 기반의 민감정보 분리
-- (프런트 토대만 있음) **숙제 모드(assignMode)** UI 훅—백엔드 미구현
-
-> 한계(스냅샷): 파일 캐시 중심 구조로 **동시성/무결성·검색성**이 약하고, **숙제/과제 백엔드**가 미구현입니다.
-
----
-
-## 🧱 디렉터리 구조(요약)
+## 🧱 디렉터리 구조
 
 ```
 .
-├─ README.md
-├─ .env                # 로컬 환경변수(예: API_BASE_URL 등)
-├─ cookies.json        # 쿠키 스냅샷(민감, 커밋 금지 권장)
-└─ src/
-   ├─ app.py           # Flask 엔트리
-   ├─ login.py
-   ├─ templates/       # index.html, chapter_detail.html, group_detail.html ...
-   ├─ static/          # style.css, js/, images/
-   ├─ problems_data/   # 서버 문제 메타/카탈로그(JSON)
-   ├─ users_data/      # 유저별 풀이 스냅샷(JSON, 저장소 제외 권장)
-   └─ utils/           # requests wrapper, summarizer, streak utils, crawler 등
+├── README.md
+├── requirements.txt
+├── requirements.lock.txt
+└── src/
+    ├── app.py           # Flask 애플리케이션 엔트리 및 API 라우트
+    ├── login.py         # DoingCoding 로그인 세션 핸들러
+    ├── config.py        # 로컬 환경 설정 변수 로더
+    ├── static/
+    │   ├── css/         # unified.css, fab.css, workspace_apple.css 등 스타일시트
+    │   └── js/
+    │       ├── script.js     # 메인 인터랙션 및 숙제 로직
+    │       └── ai_prompt.js  # [공통] AI 피드백 프롬프트 생성기 및 퀵 태그 매니저
+    ├── templates/
+    │   ├── _feedback_modal.html # 수업 피드백 및 AI 코멘트 모달
+    │   ├── schedule.html        # 주간 스케줄 및 학생 출석/피드백 화면
+    │   ├── group_detail.html    # 그룹별 상세 문제 리스트 및 숙제 패널
+    │   ├── homework_view.html   # 학생별 과제 이력 조회 페이지
+    │   └── chapter_workspace.html # 실시간 챕터 모니터링 워크스페이스
+    ├── problems_data/   # 서버 문제 메타데이터 캐시 디렉터리
+    ├── users_data/      # 유저별 누적 문제 풀이 데이터 및 숙제 로그 백업 디렉터리
+    └── utils/           # DoingCoding 통신 모듈, 통계 요약 및 분석 헬퍼 함수군
 ```
 
 ---
 
-## ⚙️ 빠른 시작
+## ⚙️ 빠른 시작 (Quick Start)
 
+### 1) 의존성 설치 (Python 3.10+ 권장)
 ```bash
-# 1) 의존성 설치 (Python 3.10+ 권장)
 pip install -r requirements.txt
-
-# 2) 환경변수 설정
-cp .env.example .env
-# .env에 API_BASE_URL 등 채우기
-# * DoingCoding 계정/쿠키는 로컬에서만 관리(커밋 금지)
-
-# 3) 실행
-python src/app.py
-# 기본: http://127.0.0.1:5000
-# 사내 공유 실행: FLASK_HOST=0.0.0.0 로 실행 후 http://<서버IP>:5000 접속
 ```
 
-**.env 예시**
-
-```
-# DoingCoding API
-API_BASE_URL=https://...
-# 서버 바인딩(공유 운영 시 권장)
-FLASK_HOST=0.0.0.0
+### 2) 환경변수 설정
+`src/.env` 파일을 만들고 아래 설정을 작성합니다. (필요 시 `src/.env.bak` 참조)
+```ini
+API_BASE_URL=https://edu.doingcoding.com/api # API 기본 URL
+FLASK_HOST=127.0.0.1
 FLASK_PORT=5000
-FLASK_DEBUG=0
-
-# 공유 스토리지 경로(선택)
-# 여러 PC에서 같은 데이터가 보여야 하면 USER_DATA_DIR/PROBLEM_DIR/COOKIE_PATH를
-# 동일한 공용 경로로 맞추세요.
-# USER_DATA_DIR=Z:/learning-tracker/users_data
-# PROBLEM_DIR=Z:/learning-tracker/problems_data
-# COOKIE_PATH=Z:/learning-tracker/cookies.json
-
-# 선택: 계정 직접 로그인 플로우를 사용할 경우
-USER_ID=your_id
-USER_PW=your_password
-
-# 경로 커스터마이즈(단일 PC 운영 시)
-# PROBLEM_DIR=./src/problems_data
-# USER_DATA_DIR=./src/users_data
+FLASK_DEBUG=1
 ```
 
-> 보안 안내
->
-> - `cookies.json`, 유저별 JSON은 **커밋하지 마세요**.
-> - 가능하면 `secrets/` 또는 OS 비밀 저장소에 보관하세요.
-> - 파일명에 실명/개인정보가 드러나지 않도록 주의하세요.
+### 3) Flask 애플리케이션 실행
+```bash
+python src/app.py
+```
+브라우저를 열고 `http://127.0.0.1:5000`에 접속합니다.
 
 ---
 
-## 🧭 사용 시나리오
+## 🔒 보안 및 캐시 파일 주의 사항
 
-- **학급/개인 진행 현황 점검**: 챕터/그룹별 통과율·시도 수·최근 활동(streak)을 개요 페이지에서 확인
-- **문제 메타 리프레시**: 필요한 경우 도구 내부 엔드포인트(또는 스크립트)로 문제 카탈로그 강제 갱신
-- **숙제 모드(프런트 토대)**: 선택 UI는 존재하나, 서버 저장/배포/마감 로직은 차세대 버전에서 구현
-
----
-
-## 🚧 알려진 제한 사항(스냅샷)
-
-- 파일 캐시에 의존 → **동시 접근/락·무결성** 취약
-- 대규모 쿼리/통계에 비효율적
-- **숙제/과제**: UI 토대만 존재, 백엔드는 미구현
-- 스케줄러/큐 기반의 **자동 동기화/리포트** 미구현
-
----
-
-## 🔭 다음 버전(차세대) 로드맵 요약
-
-> 이 부분은 새 저장소/브랜치에서 진행됩니다. 아래는 설계 방향 요약입니다.
-
-### 1) 백엔드 & 데이터
-
-- **PostgreSQL** + **SQLAlchemy & Alembic** 도입(마이그레이션 관리)
-- 핵심 스키마(예시)
-  - 카탈로그: `chapters`, `groups`, `problems`, `problem_aliases`
-  - 계정/수업: `users`, `classes`, `enrollments`, `external_accounts(enc_cookies)`
-  - 진행/제출: `submissions`, `user_problem_status`, `progress_snapshots`
-  - 숙제: `assignments`, `assignment_problems`, `assignment_submissions`
-  - 운영/감사: `sync_jobs`, `audit_logs`
-
-- **머티리얼라이즈드 뷰**로 주간/숙제 통계 가속(`mv_user_weekly_progress`, `mv_assignment_stats`)
-
-### 2) 애플리케이션 구조
-
-- Flask(또는 FastAPI) **레이어드 구조**
-  - `adapters/doingcoding` : API 우선 + 크롤링 fallback, 재시도/레이트리밋 표준화
-  - `services/` : 집계/동기화/숙제 등 도메인 로직
-  - `routes/` : `auth`, `sync`, `progress`, `assignments` 등 블루프린트 분리
-
-- **작업 큐 + 스케줄러**
-  - RQ/Celery + Redis로 `sync_user`, `sync_class` 잡 구성
-  - APScheduler로 야간 동기화(예: 02:00 KST), 주간 리포트 예약
-
-### 3) 프런트엔드
-
-- **React + Vite**로 경량 SPA
-  - 상태관리/쿼리 캐싱, 컴포넌트 단위 차트(예: Recharts/Chart.js)
-  - 기존 `assignMode`를 **과제 생성 → 배포 → 현황/마감** 플로우와 연결
-  - RBAC(관리자/강사/학생) 뷰 분리
-
-### 4) 보안/운영
-
-- **쿠키/토큰 암호화 저장**, 만료 자동 감지 및 재인증 플로우
-- **로그/메트릭/감사 로그** 표준화(요청/응답 핵심 필드)
-- 백업 전략: DB 스냅샷 + 오브젝트 스토리지 버전닝
-
----
-
-## 🔁 마이그레이션(파일 → DB) 가이드 스케치
-
-1. **문제 메타 이행**
-   - `server_problems.json` + 내부 카탈로그 매핑을 이용해 `chapters/groups/problems` 업서트
-
-2. **유저 진행/제출 이행**
-   - `users_data/*.json`에서 문제별 최신 상태·제출 이벤트 파싱
-   - `submissions`와 `user_problem_status` 적재 → 요약 뷰 리프레시
-
-3. **검증**
-   - 미매핑/다중매핑 리포트 출력, 수동 보정 워크플로우
-
-> 실제 스크립트/DDL, 새 디렉터리 구조는 차세대 저장소에서 제공됩니다.
-
----
-
-## 🔗 관련 프로젝트
-
-- **COS 스크래치 자동 채점기**: Scratch(.sb2) 내부 JSON 파싱으로 자동 채점, HTML 리포트 출력
-- (이 프로젝트) **학원 사이트 기반 진도 시각화(API 리팩터링판)**
-
----
-
-## 🤝 기여 & 라이선스
-
-- 내부 교육 운영을 위한 프로젝트입니다. 외부 기여(PR) 환영합니다.
-- 라이선스: 저장소 루트의 `LICENSE` 참고(미포함 시 추후 명시).
-
----
-
-## 📝 변경 이력(요약)
-
-- 2025-08-28: 기존 아키텍처 **Legacy Snapshot** 선언, 차세대 설계 로드맵 공개
+* `cookies/` 디렉터리에 생성되는 DoingCoding 세션 쿠키 데이터와 `src/users_data/` 하위의 개인별 문제 제출 이력 JSON 파일은 **절대로 Git 저장소에 커밋하거나 공유하지 마십시오**. (`.gitignore` 설정 확인 권장)
+* 로컬 데이터 무결성을 위해 주기적으로 `src/users_data/` 및 `src/problems_data/` 백업을 권장합니다.
