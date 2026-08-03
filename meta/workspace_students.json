@@ -1519,5 +1519,14 @@
       "이세나0526"
     ],
     "user_uuid": "07dab7d6-1332-410c-b6fb-4d6fc48be8e8"
+  },
+  "홍준기": {
+    "display_id": "홍준기",
+    "name": "홍준기",
+    "birth_md": "",
+    "accounts": [
+      "홍준기"
+    ],
+    "user_uuid": "2fad3d6f-0c33-430e-91d8-e6537ab3ec83"
   }
 }

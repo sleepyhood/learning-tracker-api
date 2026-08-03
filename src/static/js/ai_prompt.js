@@ -1,3 +1,38 @@
+const STUDY_CONCEPTS = {
+  "출력": "화면에 서식과 특수문자를 제어하여 텍스트 및 결과를 출력하는 기초 문법 개념",
+  "변수": "데이터(정수, 실수, 문자)를 메모리에 저장하고 가공하여 알맞은 변수 타입으로 다루는 기본 원리",
+  "연산자": "산술, 비교, 논리 연산자를 조합하여 원하는 계산 결과를 도출하는 식 구성 논리",
+  "조건문": "조건식의 참/거짓 판단을 통해 프로그램의 진행 흐름을 분기시키는 구조",
+  "반복문": "특정 구간을 지정된 횟수나 조건만큼 반복 실행하여 효율적인 루프를 제어하는 알고리즘",
+  "배열": "동일한 타입의 데이터들을 연속된 메모리 공간에 묶어서 인덱스를 통해 관리하는 자료구조",
+  "배열2차": "격자판 형태의 다차원 데이터를 다중 루프 구조와 행/열 인덱스로 제어하는 심화 논리",
+  "함수": "재사용 가능한 코드 블록을 모듈화하고 매개변수와 반환값을 다루는 프로그래밍 구조",
+  "문자열": "문자 배열 및 문자열 조작 함수를 활용하여 텍스트 데이터를 분석하고 처리하는 기술",
+  "포인터": "메모리 주소 직접 접근 및 참조 구조를 이해하고 제어하는 C언어 심화 개념"
+};
+
+const OFFLINE_PRESETS = [
+  { id: "doingcoding", name: "💻 DoingCoding 플랫폼", concept: "DoingCoding 문제 풀이 기반 학습" },
+  { id: "c_book", name: "📘 C언어 교재 진도", concept: "C언어의 기본 자료형, 제어문 및 텍스트 기반 기초 코딩 문법을 교재를 보며 연습" },
+  { id: "python_book", name: "🐍 파이썬 교재 진도", concept: "파이썬의 동적 자료구조와 기본 함수 활용법을 익히고, 교재 내 실습 문제를 개별 구현" },
+  { id: "scratch_block", name: "🧩 블록코딩 (스크래치/엔트리)", concept: "블록을 조립하며 프로그램의 순차, 반복, 조건 3대 논리 제어 구조를 시각적·직관적으로 학습" },
+  { id: "goorm_cert", name: "🏆 구름(Goorm) 자격증 실기", concept: "자료형 변환 및 코딩 테스트용 기초 알고리즘을 분석하며 자격증 실기 평가 문항 구현 대비" },
+  { id: "theory_logic", name: "📝 알고리즘 및 순서도 이론", concept: "구현에 앞서 논리적인 문제 해결력과 문제 접근 아이디어를 키우기 위한 알고리즘 순서도 설계 수업" }
+];
+
+function extractConceptDescription(problemTitle) {
+  if (!problemTitle) return "";
+  const match = problemTitle.match(/\[(.*?)\]/);
+  if (!match) return "";
+  const tag = match[1]; // e.g. "배열2차 - 23" or "출력-기본1"
+  for (const key in STUDY_CONCEPTS) {
+    if (tag.includes(key)) {
+      return STUDY_CONCEPTS[key];
+    }
+  }
+  return "";
+}
+
 function toggleQuickTag(textareaId, tagText) {
   const el = document.getElementById(textareaId);
   if (!el) return;
@@ -10,7 +45,6 @@ function toggleQuickTag(textareaId, tagText) {
   }
   el.value = val;
 
-  // autoExpandModalTextarea가 정의되어 있다면 자동 높이 조절 수행
   if (typeof autoExpandModalTextarea === "function" && (textareaId === "modalTeacherMemo" || textareaId === "teacherMemo")) {
     autoExpandModalTextarea(el);
   }

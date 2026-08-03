@@ -134,7 +134,9 @@
       "weekday": 1,
       "label": "Java",
       "order": 0,
-      "students": []
+      "students": [
+        "6973f152-3e1e-4e4a-85ff-7f7e80c60706"
+      ]
     },
     {
       "id": "5ef9c082-fc6f-4857-a01a-317c2214680f",
