@@ -5,10 +5,12 @@ document.addEventListener("DOMContentLoaded", () => {
     let allSlots = [];
     let selectedStudentId = null;
     let currentWeekday = "all";
+    let searchDebounceTimer = null;
 
     // Elements
     const gridContainer = document.getElementById("student-grid-container");
     const problemListContainer = document.getElementById("problem-list-container");
+    const problemSearchInput = document.getElementById("problem-search");
     const basketCount = document.getElementById("basket-count");
     const basketItemsContainer = document.getElementById("basket-items");
     const weekdayTabs = document.querySelectorAll(".tab-btn");
@@ -97,50 +99,182 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Multi-Curriculum & Chapter Filter Elements & Functions
+    const curriculumSelect = document.getElementById("curriculum-select");
+    const chapterFilterSelect = document.getElementById("chapter-filter-select");
+    const quickTagChips = document.querySelectorAll("#quick-tag-chips button");
+    let curriculumsData = [];
+    let selectedTag = "";
+
+    async function loadCurriculums() {
+        try {
+            const res = await fetch("/api/workspace/curriculums");
+            if (!res.ok) return;
+            const data = await res.json();
+            curriculumsData = data.curriculums || [];
+            updateChapterDropdown();
+        } catch (e) {
+            console.error("Failed to load curriculums", e);
+        }
+    }
+
+    function updateChapterDropdown() {
+        if (!chapterFilterSelect) return;
+        const currKey = curriculumSelect ? curriculumSelect.value : "prog1";
+        const currObj = curriculumsData.find(c => c.key === currKey);
+
+        chapterFilterSelect.innerHTML = `<option value="all">전체 대단원 목차</option>`;
+        if (currObj && currObj.chapters) {
+            currObj.chapters.forEach(ch => {
+                const opt = document.createElement("option");
+                opt.value = ch;
+                opt.textContent = ch;
+                chapterFilterSelect.appendChild(opt);
+            });
+        }
+    }
+
+    function triggerCatalogSearch() {
+        const q = problemSearchInput ? problemSearchInput.value.trim() : "";
+        searchProblems(q);
+    }
+
+    // Curriculum & Chapter Select Event Handlers
+    curriculumSelect?.addEventListener("change", () => {
+        updateChapterDropdown();
+        triggerCatalogSearch();
+    });
+
+    chapterFilterSelect?.addEventListener("change", () => {
+        triggerCatalogSearch();
+    });
+
+    // Quick Tag Chips Event Handlers
+    quickTagChips.forEach(chip => {
+        chip.addEventListener("click", (e) => {
+            quickTagChips.forEach(c => {
+                c.style.background = "";
+                c.style.color = "";
+            });
+            e.target.style.background = "var(--accent-color)";
+            e.target.style.color = "white";
+            selectedTag = e.target.getAttribute("data-tag") || "";
+
+            if (selectedTag) {
+                if (problemSearchInput) problemSearchInput.value = selectedTag;
+            } else {
+                if (problemSearchInput) problemSearchInput.value = "";
+            }
+            triggerCatalogSearch();
+        });
+    });
+
     // 5. Select Student
     window.selectStudent = (displayId) => {
         selectedStudentId = displayId;
         renderStudents();
-        loadStudentProblems(displayId);
+
+        // 1. Clear basket when switching student to avoid cross-assignment
+        basket = [];
+        renderBasket();
+
+        // 2. Re-trigger active search with newly selected student ID to update solve status icons (🟢)
+        if (problemSearchInput) {
+            problemSearchInput.focus();
+            triggerCatalogSearch();
+        }
     };
 
-    // 6. Load Student Problems
-    async function loadStudentProblems(displayId) {
-        problemListContainer.innerHTML = "<div class='problem-empty-state'>로딩 중...</div>";
+    // 6. Live Problem Search (replaces loadStudentProblems)
+    async function searchProblems(query) {
+        let q = query.trim();
+        const currKey = curriculumSelect ? curriculumSelect.value : "prog1";
+        const chapterVal = chapterFilterSelect ? chapterFilterSelect.value : "all";
+
+        // If query is empty but chapter filter or curriculum is set, search all in that chapter
+        if (q.length < 2 && chapterVal === "all" && !q) {
+            q = "ALL";
+        }
+
+        problemListContainer.innerHTML = `<div class='problem-empty-state'>검색 중...</div>`;
+
         try {
-            const res = await fetch(`/api/workspace/student_problems/${displayId}`);
-            if (!res.ok) throw new Error("Failed to load problems");
+            const displayIdParam = selectedStudentId ? `&display_id=${encodeURIComponent(selectedStudentId)}` : "";
+            const chapterParam = chapterVal !== "all" ? `&chapter=${encodeURIComponent(chapterVal)}` : "";
+            const currParam = `&curriculum=${encodeURIComponent(currKey)}`;
+
+            const res = await fetch(`/api/workspace/search_problems?q=${encodeURIComponent(q)}&limit=80${currParam}${chapterParam}${displayIdParam}`);
+            if (!res.ok) throw new Error("search failed");
             const data = await res.json();
-            
-            problemListContainer.innerHTML = "";
             const problems = data.problems || [];
-            
+
+            problemListContainer.innerHTML = "";
+
             if (problems.length === 0) {
-                problemListContainer.innerHTML = "<div class='problem-empty-state'>오늘의 숙제/풀이 내역이 없습니다.</div>";
+                problemListContainer.innerHTML = `<div class='problem-empty-state'>"${query}" 검색 결과 없음</div>`;
                 return;
             }
 
-            problems.forEach(p => {
-                const item = document.createElement("div");
-                item.className = "problem-item";
-                item.onclick = () => addToBasket(p);
-                
-                let icon = "⚪";
-                if (p.status === "solved") icon = "🟢";
-                else if (p.status === "wrong") icon = "🔴";
-                else if (p.status === "partial") icon = "🟡";
+            // Summary badge
+            const solvedCount = problems.filter(p => p.status === "solved").length;
+            const countBadge = document.createElement("div");
+            countBadge.style.cssText = "font-size:0.78rem;color:#86868b;padding:2px 4px 8px;";
+            countBadge.innerHTML = `${problems.length}개 목록${selectedStudentId ? ` · <span style='color:#34c759'>🟢 풀이완료 ${solvedCount}개</span>` : ""}`;
+            problemListContainer.appendChild(countBadge);
 
+            problems.forEach(p => {
+                const inBasket = basket.find(b => b.legacy_code === p.legacy_code);
+                const isSolved = p.status === "solved";
+                const isWrong  = p.status === "wrong";
+                const isPartial = p.status === "partial";
+
+                // Status icon
+                let statusIcon = "";
+                let rowStyle = "";
+                if (isSolved) {
+                    statusIcon = `<span title="이미 풀이 완료" style="margin-right:4px;font-size:0.85rem;">🟢</span>`;
+                    rowStyle = "background:#f0fdf4;border-color:#bbf7d0;";
+                } else if (isWrong) {
+                    statusIcon = `<span title="오답" style="margin-right:4px;font-size:0.85rem;">🔴</span>`;
+                } else if (isPartial) {
+                    statusIcon = `<span title="진행 중" style="margin-right:4px;font-size:0.85rem;">🟡</span>`;
+                }
+
+                const item = document.createElement("div");
+                item.className = "problem-item" + (inBasket ? " in-basket" : "");
+                item.style.cssText = (inBasket ? "opacity:0.45;" : "") + rowStyle;
+
+                const safeP = JSON.stringify(p).replace(/"/g, "&quot;");
                 item.innerHTML = `
-                    <span class="problem-status-icon">${icon}</span>
-                    <span class="problem-title">[${p.legacy_code}] ${p.title}</span>
-                    <button class="btn-small btn-ghost" onclick="event.stopPropagation(); addToBasket(${JSON.stringify(p).replace(/"/g, '&quot;')})">담기</button>
+                    <span class="problem-status-icon" style="font-size:0.72rem;color:#86868b;flex-shrink:0;min-width:80px;">${statusIcon}${p.legacy_code}</span>
+                    <span class="problem-title" style="font-size:0.87rem;">${p.title}</span>
+                    <button class="btn-small btn-primary" style="flex-shrink:0;padding:3px 8px;font-size:0.78rem;${isSolved ? 'background:#34c759;' : ''}" onclick="event.stopPropagation(); addToBasket(${safeP})">${inBasket ? "✓" : "+"}</button>
                 `;
+                item.onclick = () => addToBasket(p);
                 problemListContainer.appendChild(item);
             });
 
         } catch (e) {
-            showToast("문제 목록을 불러오는데 실패했습니다.", true);
+            showToast("문제 검색에 실패했습니다.", true);
         }
+    }
+
+
+    // Wire search input with debounce (300ms)
+    if (problemSearchInput) {
+        problemSearchInput.addEventListener("input", () => {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                triggerCatalogSearch();
+            }, 300);
+        });
+        // Trigger on Enter for speed
+        problemSearchInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                clearTimeout(searchDebounceTimer);
+                searchProblems(problemSearchInput.value);
+            }
+        });
     }
 
     // 7. Basket Logic
@@ -148,13 +282,32 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!basket.find(p => p.legacy_code === problem.legacy_code)) {
             basket.push(problem);
             renderBasket();
-            showToast("바구니에 담았습니다.");
+            // Update the matching row in search results in-place (no re-search needed)
+            const items = problemListContainer.querySelectorAll(".problem-item");
+            items.forEach(item => {
+                const codeSpan = item.querySelector(".problem-status-icon");
+                if (codeSpan && codeSpan.textContent.trim() === problem.legacy_code) {
+                    item.style.opacity = "0.45";
+                    const btn = item.querySelector("button");
+                    if (btn) btn.textContent = "✓";
+                }
+            });
+            showToast(`🛒 [${problem.legacy_code}] 바구니에 담았습니다.`);
+        } else {
+            showToast("이미 바구니에 있습니다.", true);
         }
     };
 
     document.getElementById("btn-clear-basket").onclick = () => {
         basket = [];
         renderBasket();
+        // Re-enable all dimmed search items
+        const items = problemListContainer.querySelectorAll(".problem-item");
+        items.forEach(item => {
+            item.style.opacity = "";
+            const btn = item.querySelector("button.btn-primary");
+            if (btn && btn.textContent === "✓") btn.textContent = "+";
+        });
     };
 
     function renderBasket() {
@@ -510,5 +663,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Init
+    loadCurriculums();
     loadStudents(currentWeekday);
+    triggerCatalogSearch();
 });

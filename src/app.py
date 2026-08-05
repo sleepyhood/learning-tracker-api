@@ -2298,6 +2298,151 @@ def api_workspace_student_problems(display_id):
 
     return jsonify({"ok": True, "problems": uniq_problems})
 
+
+def _build_micro_registry(raw_json: dict) -> dict:
+    registry = {}
+    if not isinstance(raw_json, dict):
+        return registry
+    for major_ch, chapter_groups in raw_json.items():
+        if not isinstance(chapter_groups, dict):
+            continue
+        for group_id, group_data in chapter_groups.items():
+            if not isinstance(group_data, dict):
+                continue
+            sub_title = group_data.get("title", "")
+            problem_names = group_data.get("problem_names", {})
+            for prob_id, prob_title in problem_names.items():
+                concept = ""
+                if "[" in prob_title and "]" in prob_title:
+                    concept = prob_title.split("[")[1].split("]")[0]
+                registry[prob_id] = {
+                    "id": prob_id,
+                    "title": prob_title,
+                    "concept": concept,
+                    "major": major_ch,
+                    "sub": sub_title
+                }
+    return registry
+
+
+CURRICULUM_FILES = {
+    "prog1": "all_problems.json",
+    "prog2": "prog2_problems.json",
+    "block": "block_problems.json",
+    "external": "external_problems.json",
+}
+
+@app.route("/api/workspace/curriculums")
+def api_workspace_curriculums():
+    s, err = ensure_admin_or_403()
+    if err: return err
+
+    results = []
+    for key, filename in CURRICULUM_FILES.items():
+        fpath = os.path.join(PROBLEM_DIR, filename)
+        chapters = []
+        if os.path.exists(fpath):
+            try:
+                with open(fpath, encoding="utf-8") as f:
+                    pdata = json.load(f)
+                    chapters = list(pdata.keys())
+            except Exception:
+                pass
+        results.append({
+            "key": key,
+            "filename": filename,
+            "chapters": chapters
+        })
+    return jsonify({"ok": True, "curriculums": results})
+
+
+@app.route("/api/workspace/search_problems")
+def api_workspace_search_problems():
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
+
+    q = (request.args.get("q") or "").strip().upper()
+    limit = int(request.args.get("limit", 60))
+    display_id = (request.args.get("display_id") or "").strip()
+    curr_key = request.args.get("curriculum", "prog1").strip()
+    chapter_filter = request.args.get("chapter", "").strip()
+
+    # Determine problem JSON file
+    fname = CURRICULUM_FILES.get(curr_key, "all_problems.json")
+    fpath = os.path.join(PROBLEM_DIR, fname)
+    if not os.path.exists(fpath):
+        fpath = PROBLEM_FILE
+
+    try:
+        with open(fpath, encoding="utf-8") as f:
+            raw_problems = json.load(f)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+    # Build Micro-Registry
+    micro_registry = _build_micro_registry(raw_problems)
+
+    # Build student status map if display_id provided
+    user_status_map = {}
+    if display_id:
+        ws_data = _load_workspace_students()
+        student = ws_data.get(display_id)
+        if student:
+            u = student.get("user_uuid") or display_id
+            doc = load_doc_by_any(u)
+            if doc:
+                oi = doc.get("oi_problems") if (isinstance(doc, dict) and "oi_problems" in doc) else doc
+                lc_status = {}
+                
+                if isinstance(oi, dict):
+                    for server_id, rec in oi.items():
+                        if isinstance(rec, dict):
+                            legacy_code = rec.get("_id")
+                            raw_st = rec.get("status")
+                            if legacy_code and raw_st is not None:
+                                lc_status[legacy_code] = _status_label_from_raw(raw_st)
+                
+                # Fallback overlay via legacy_map mapping (server_id -> legacy_code)
+                raw_status_map = _build_user_status_map(oi)
+                legacy_map = resolve_legacy_map_dict()
+                for legacy_code, server_id in legacy_map.items():
+                    raw = raw_status_map.get(str(server_id))
+                    if raw is not None and legacy_code not in lc_status:
+                        lc_status[legacy_code] = _status_label_from_raw(raw)
+                        
+                # Overlay homework statuses (take precedence)
+                hw_status_map = _latest_homework_status_map(doc)
+                for lc, st in hw_status_map.items():
+                    lc_status[lc] = st
+
+                user_status_map = lc_status
+
+    results = []
+    for prob_id, item in micro_registry.items():
+        major_ch = item["major"]
+        if chapter_filter and chapter_filter != "all" and chapter_filter != major_ch:
+            continue
+        
+        match_q = not q or q == "ALL" or (q in prob_id.upper() or q in item["title"].upper() or q in item["concept"].upper())
+        if match_q:
+            status = user_status_map.get(prob_id, "unsolved") if user_status_map else "unsolved"
+            results.append({
+                "id": prob_id,
+                "legacy_code": prob_id,
+                "title": item["title"],
+                "concept": item["concept"],
+                "group": item["sub"],
+                "major_chapter": major_ch,
+                "status": status,
+            })
+            if len(results) >= limit:
+                break
+
+    return jsonify({"ok": True, "problems": results})
+
+
+
 @app.route("/api/workspace/save_homework_log", methods=["POST"])
 def api_workspace_save_homework_log():
     s, err = ensure_admin_or_403()

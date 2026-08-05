@@ -24,9 +24,34 @@
     <div class="workspace-container">
         <!-- Left Pane: Problem Picker -->
         <aside class="pane-left">
-            <div class="pane-header">
-                <h2>🎯 문제 카탈로그</h2>
-                <input type="text" id="problem-search" class="search-input" placeholder="문제 제목 또는 번호 검색...">
+            <div class="pane-header" style="flex-direction: column; align-items: stretch; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>🎯 문제 카탈로그</h2>
+                    <select id="curriculum-select" style="padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; border: 1px solid var(--panel-border); font-weight: 600; color: var(--accent-color);">
+                        <option value="prog1">💻 프로그래밍 I (기초/기본)</option>
+                        <option value="prog2">💻 프로그래밍 II (심화)</option>
+                        <option value="block">🧩 블록코딩 활동</option>
+                        <option value="external">📘 외부 교재 / 자격증</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 8px;">
+                    <select id="chapter-filter-select" style="flex: 1; padding: 6px 8px; border-radius: 6px; font-size: 0.85rem; border: 1px solid var(--panel-border);">
+                        <option value="all">전체 대단원 목차</option>
+                    </select>
+                    <input type="text" id="problem-search" class="search-input" placeholder="문제 제목/ID 검색..." style="width: 140px;">
+                </div>
+
+                <!-- 퀵 개념 태그 칩 -->
+                <div id="quick-tag-chips" style="display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px;">
+                    <button class="btn-small btn-secondary active-tag-chip" data-tag="" style="font-size: 0.75rem; padding: 2px 8px; white-space: nowrap; background: var(--accent-color); color: white;">전체</button>
+                    <button class="btn-small btn-secondary" data-tag="출력" style="font-size: 0.75rem; padding: 2px 8px; white-space: nowrap;">출력</button>
+                    <button class="btn-small btn-secondary" data-tag="변수" style="font-size: 0.75rem; padding: 2px 8px; white-space: nowrap;">변수</button>
+                    <button class="btn-small btn-secondary" data-tag="조건문" style="font-size: 0.75rem; padding: 2px 8px; white-space: nowrap;">조건문</button>
+                    <button class="btn-small btn-secondary" data-tag="반복문" style="font-size: 0.75rem; padding: 2px 8px; white-space: nowrap;">반복문</button>
+                    <button class="btn-small btn-secondary" data-tag="배열" style="font-size: 0.75rem; padding: 2px 8px; white-space: nowrap;">배열</button>
+                    <button class="btn-small btn-secondary" data-tag="배열2차" style="font-size: 0.75rem; padding: 2px 8px; white-space: nowrap;">2차배열</button>
+                </div>
             </div>
             
             <div class="problem-list" id="problem-list-container">
