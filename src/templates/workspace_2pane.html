@@ -38,7 +38,7 @@
                     </div>
                 </div>
                 
-                <!-- 2단 계층 필터 (대단원 + 소단원) 및 검색창 -->
+                <!-- 2단 계층 필터 (대단원 + 소단원) 및 세그먼트 필터 & 검색창 -->
                 <div class="catalog-filter-group">
                     <div class="catalog-select-row">
                         <select id="chapter-filter-select" class="catalog-select flex-1">
@@ -47,6 +47,13 @@
                         <select id="sub-chapter-filter-select" class="catalog-select flex-1">
                             <option value="all">전체 소단원</option>
                         </select>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; margin-bottom: 4px;">
+                        <div id="sub-type-filter-group" style="display: flex; gap: 4px; align-items: center;">
+                            <button type="button" class="btn-small btn-secondary active-sub-type-btn" id="btn-sub-type-all" data-type="all" style="padding: 2px 7px; font-size: 0.73rem; background: var(--accent-color); color: white;">전체</button>
+                            <button type="button" class="btn-small btn-secondary" id="btn-sub-type-regular" data-type="regular" style="padding: 2px 7px; font-size: 0.73rem;">📖 진도만</button>
+                            <button type="button" class="btn-small btn-secondary" id="btn-sub-type-hw" data-type="homework" style="padding: 2px 7px; font-size: 0.73rem;">🛒 숙제만</button>
+                        </div>
                     </div>
                     <input type="text" id="problem-search" class="search-input" placeholder="문제 제목/ID 검색..." style="width: 100%;">
                 </div>
@@ -90,16 +97,34 @@
                         <button class="btn-small btn-primary" id="btn-add-student-modal">+ 수강생 수동 등록</button>
                     </div>
                 </div>
-                <!-- 요일 필터 탭 -->
-                <div class="weekday-tabs" id="weekday-tabs">
-                    <button class="tab-btn active" data-weekday="all">전체</button>
-                    <button class="tab-btn" data-weekday="0">월</button>
-                    <button class="tab-btn" data-weekday="1">화</button>
-                    <button class="tab-btn" data-weekday="2">수</button>
-                    <button class="tab-btn" data-weekday="3">목</button>
-                    <button class="tab-btn" data-weekday="4">금</button>
-                    <button class="tab-btn" data-weekday="5">토</button>
-                    <button class="tab-btn" data-weekday="6">일</button>
+                <!-- 요일 필터 탭 & 검색 / 상태 필터 컨트롤 바 -->
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <div class="weekday-tabs" id="weekday-tabs" style="flex: 1; min-width: 260px;">
+                        <button class="tab-btn active" data-weekday="all">전체</button>
+                        <button class="tab-btn" data-weekday="0">월</button>
+                        <button class="tab-btn" data-weekday="1">화</button>
+                        <button class="tab-btn" data-weekday="2">수</button>
+                        <button class="tab-btn" data-weekday="3">목</button>
+                        <button class="tab-btn" data-weekday="4">금</button>
+                        <button class="tab-btn" data-weekday="5">토</button>
+                        <button class="tab-btn" data-weekday="6">일</button>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <select id="student-status-filter" style="padding: 6px 10px; font-size: 0.82rem; border: 1px solid var(--panel-border); border-radius: 6px; background: white; font-weight: 600;">
+                            <option value="active">🟢 재원생만</option>
+                            <option value="all">👥 전체 보기</option>
+                            <option value="paused">🟡 휴원생만</option>
+                            <option value="inactive">⚪ 퇴원생만</option>
+                        </select>
+                        <select id="student-sort-select" style="padding: 6px 10px; font-size: 0.82rem; border: 1px solid var(--panel-border); border-radius: 6px; background: white;">
+                            <option value="name">🔤 이름순</option>
+                            <option value="wrong">🔴 오답 많은순</option>
+                            <option value="hw">🛒 숙제 많은순</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="width: 100%;">
+                    <input type="text" id="student-search-input" placeholder="🔍 수강생 이름, 과목(Python, C언어), 계정 ID, 비고 메모 검색..." style="width: 100%; padding: 7px 12px; font-size: 0.85rem; border: 1px solid var(--panel-border); border-radius: 6px; box-sizing: border-box;">
                 </div>
             </div>
 
@@ -140,13 +165,46 @@
                 <button class="btn-small btn-ghost" id="btn-close-amm">✕</button>
             </h3>
             <div class="modal-body" style="gap: 14px;">
-                <div>
-                    <label>학생 이름</label>
-                    <input type="text" id="amm-name" style="width: 100%;" placeholder="학생 이름 입력">
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>학생 이름</label>
+                        <input type="text" id="amm-name" style="width: 100%; box-sizing: border-box;" placeholder="학생 이름 입력">
+                    </div>
+                    <div style="width: 130px;">
+                        <label>🏷️ 수강 상태</label>
+                        <select id="amm-status" style="width: 100%; padding: 6px 8px; font-size: 0.85rem; border: 1px solid var(--panel-border); border-radius: 6px; background: white; box-sizing: border-box;">
+                            <option value="active">🟢 재원</option>
+                            <option value="paused">🟡 휴원</option>
+                            <option value="inactive">⚪ 퇴원</option>
+                        </select>
+                    </div>
                 </div>
                 <div>
                     <label>📝 비고 / 동명이인 구분용 메모</label>
                     <input type="text" id="amm-display-id" style="width: 100%;" placeholder="예: 동명이인 구분용 메모 (월수반 / 1004 / OO학교)">
+                </div>
+                <div>
+                    <label style="font-weight: 700; font-size: 0.85rem;">📅 등원 요일 선택 (다중 선택)</label>
+                    <div id="amm-weekdays-container" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; padding: 6px 8px; background: #f8fafc; border: 1px solid var(--panel-border); border-radius: 8px;">
+                        <label style="font-size: 0.82rem; cursor: pointer;"><input type="checkbox" class="amm-wday-cb" value="0"> 월</label>
+                        <label style="font-size: 0.82rem; cursor: pointer;"><input type="checkbox" class="amm-wday-cb" value="1"> 화</label>
+                        <label style="font-size: 0.82rem; cursor: pointer;"><input type="checkbox" class="amm-wday-cb" value="2"> 수</label>
+                        <label style="font-size: 0.82rem; cursor: pointer;"><input type="checkbox" class="amm-wday-cb" value="3"> 목</label>
+                        <label style="font-size: 0.82rem; cursor: pointer;"><input type="checkbox" class="amm-wday-cb" value="4"> 금</label>
+                        <label style="font-size: 0.82rem; cursor: pointer;"><input type="checkbox" class="amm-wday-cb" value="5"> 토</label>
+                        <label style="font-size: 0.82rem; cursor: pointer;"><input type="checkbox" class="amm-wday-cb" value="6"> 일</label>
+                    </div>
+                </div>
+                <div>
+                    <label style="font-weight: 700; font-size: 0.85rem;">📘 수강 과목 선택</label>
+                    <div id="amm-subjects-container" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; padding: 6px 8px; background: #f8fafc; border: 1px solid var(--panel-border); border-radius: 8px;">
+                        <label style="font-size: 0.82rem; cursor: pointer;"><input type="checkbox" class="amm-sbj-cb" value="C언어"> C언어</label>
+                        <label style="font-size: 0.82rem; cursor: pointer;"><input type="checkbox" class="amm-sbj-cb" value="Python"> Python</label>
+                        <label style="font-size: 0.82rem; cursor: pointer;"><input type="checkbox" class="amm-sbj-cb" value="Java"> Java</label>
+                        <label style="font-size: 0.82rem; cursor: pointer;"><input type="checkbox" class="amm-sbj-cb" value="C++"> C++</label>
+                        <label style="font-size: 0.82rem; cursor: pointer;"><input type="checkbox" class="amm-sbj-cb" value="블록"> 블록코딩</label>
+                        <label style="font-size: 0.82rem; cursor: pointer;"><input type="checkbox" class="amm-sbj-cb" value="기타"> 기타</label>
+                    </div>
                 </div>
                 <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -238,22 +296,26 @@
         </div>
     </div>
 
-    <!-- ⚙️ 카탈로그 & 크롤링 관리 모달 -->
+    <!-- ⚙️ 카탈로그 & 크롤링 & 학습목표 메타데이터 관리 모달 -->
     <div id="catalog-manage-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 680px; width: 90%;">
+        <div class="modal-content" style="max-width: 860px; width: 94%; transition: all 0.2s ease-in-out;">
             <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
-                <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">⚙️ 카탈로그 & 크롤링 관리 Webview</h3>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">⚙️ 카탈로그 & 크롤링 & 학습목표 메타데이터 관리</h3>
+                    <button class="btn-small btn-secondary" id="btn-toggle-catalog-fullscreen" style="font-size: 0.8rem; padding: 2px 8px; cursor: pointer;" title="전체화면 / 팝업 토글">⛶ 전체화면</button>
+                </div>
                 <button class="btn-small btn-ghost" id="btn-close-catalog-manage" style="font-size: 1.1rem; padding: 2px 8px; cursor: pointer;">❌</button>
             </div>
             <div class="modal-body" style="gap: 12px; display: flex; flex-direction: column;">
-                <!-- 탭 헤더 -->
-                <div style="display: flex; gap: 8px; border-bottom: 2px solid var(--panel-border); padding-bottom: 6px;">
-                    <button id="tab-cat-crawl" class="btn-small btn-secondary active-manage-tab" style="background: var(--accent-color); color: white;">🔄 과정 및 크롤링 (Playwright)</button>
+                <!-- 탭 헤더 (우선순위 개편) -->
+                <div style="display: flex; gap: 8px; border-bottom: 2px solid var(--panel-border); padding-bottom: 6px; flex-wrap: wrap;">
+                    <button id="tab-cat-crawl" class="btn-small btn-secondary">🔄 과정 및 크롤링 (Playwright)</button>
+                    <button id="tab-cat-meta" class="btn-small btn-secondary active-manage-tab" style="background: var(--accent-color); color: white;">📚 학습목표 & 메타데이터 에디터</button>
                     <button id="tab-cat-batch" class="btn-small btn-secondary">📋 엑셀/텍스트 일괄 문제 등록</button>
                 </div>
 
                 <!-- 탭 1: 과정 및 크롤링 (Playwright) -->
-                <div id="manage-tab-content-crawl" style="display: flex; flex-direction: column; gap: 12px;">
+                <div id="manage-tab-content-crawl" style="display: none; flex-direction: column; gap: 12px;">
                     <div style="font-size: 0.85rem; color: #64748b;">
                         등록된 과정의 URL을 수정하거나 <b>[🔄 1클릭 최신화]</b> 버튼을 누르면 백엔드 Playwright 크롤러가 문제 목록을 자동으로 긁어와 마이크로 레지스트리 포맷으로 갱신합니다.
                     </div>
@@ -263,7 +325,59 @@
                     <div style="font-size: 0.8rem; color: #94a3b8; text-align: right;">* 크롤링 시 학원 세션 쿠키가 자동으로 사용됩니다.</div>
                 </div>
 
-                <!-- 탭 2: 엑셀/텍스트 일괄 등록 -->
+                <!-- 탭 2: 학습목표 & 메타데이터 에디터 (메인 탭) -->
+                <div id="manage-tab-content-meta" style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                            <select id="meta-curr-select" style="padding: 5px 8px; border-radius: 6px; border: 1px solid var(--panel-border); font-size: 0.85rem;">
+                                <option value="prog1">💻 프로그래밍 I</option>
+                                <option value="prog2">💻 프로그래밍 II</option>
+                                <option value="block">🧩 블록코딩</option>
+                                <option value="external">📘 외부교재</option>
+                            </select>
+                            <select id="meta-major-select" style="padding: 5px 8px; border-radius: 6px; border: 1px solid var(--panel-border); font-size: 0.85rem;">
+                                <option value="all">전체 대단원 목차</option>
+                            </select>
+                            <select id="meta-sub-select" style="padding: 5px 8px; border-radius: 6px; border: 1px solid var(--panel-border); font-size: 0.85rem;">
+                                <option value="all">전체 소단원</option>
+                            </select>
+                            <div id="meta-sub-type-filter-group" style="display: flex; gap: 3px; align-items: center;">
+                                <button type="button" class="btn-small btn-secondary active-meta-sub-type-btn" id="btn-meta-sub-all" data-type="all" style="padding: 2px 6px; font-size: 0.73rem; background: var(--accent-color); color: white;">전체</button>
+                                <button type="button" class="btn-small btn-secondary" id="btn-meta-sub-regular" data-type="regular" style="padding: 2px 6px; font-size: 0.73rem;">📖 진도</button>
+                                <button type="button" class="btn-small btn-secondary" id="btn-meta-sub-hw" data-type="homework" style="padding: 2px 6px; font-size: 0.73rem;">🛒 숙제</button>
+                            </div>
+                            <label style="font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 4px; margin-left: 4px;">
+                                <input type="checkbox" id="chk-meta-missing-only"> ⚠️ 미입력 건만
+                            </label>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button id="btn-export-meta-tsv" class="btn-small btn-secondary" style="font-size: 0.8rem; background: #f1f5f9;">📥 엑셀 내보내기 (TSV)</button>
+                            <button id="btn-import-meta-tsv" class="btn-small btn-secondary" style="font-size: 0.8rem; background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">📤 엑셀 일괄 적용</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 엑셀 일괄 붙여넣기 박스 (토글) -->
+                    <div id="meta-tsv-import-box" style="display: none; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px dashed var(--panel-border);">
+                        <div style="font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">📋 엑셀에서 복사한 탭 구분(TSV) 붙여넣기 (형식: [문제ID] [학습목표] [개념])</div>
+                        <textarea id="meta-tsv-text" rows="4" style="width: 100%; font-family: monospace; font-size: 0.8rem; padding: 6px; border-radius: 6px; border: 1px solid var(--panel-border);" placeholder="STRLv01001&#t;반복문으로 문자열 역순 출력 원리 체득&#t;문자열 인덱싱"></textarea>
+                        <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;">
+                            <button id="btn-cancel-tsv-import" class="btn-small btn-secondary">취소</button>
+                            <button id="btn-submit-tsv-import" class="btn-small btn-primary">💾 1초 일괄 적용</button>
+                        </div>
+                    </div>
+
+                    <!-- 문제 학습목표 테이블 -->
+                    <div id="meta-problems-table-container" style="max-height: 340px; overflow-y: auto; border: 1px solid var(--panel-border); border-radius: 8px;">
+                        <!-- JS에서 동적으로 렌더링 -->
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #64748b;">
+                        <span>* 개별 입력 후 [💾 저장] 버튼을 누르면 크롤링 재실행 시에도 100% 영구 보존됩니다.</span>
+                        <button id="btn-save-all-table-meta" class="btn-small btn-primary" style="padding: 5px 14px; font-weight: 700;">💾 선택 소단원 변경사항 전체 저장</button>
+                    </div>
+                </div>
+
+                <!-- 탭 3: 엑셀/텍스트 일괄 등록 -->
                 <div id="manage-tab-content-batch" style="display: none; flex-direction: column; gap: 10px;">
                     <div style="display: flex; gap: 8px;">
                         <select id="batch-curr-select" style="padding: 6px; border-radius: 6px; border: 1px solid var(--panel-border); font-size: 0.85rem;">
@@ -292,7 +406,17 @@ STRLv01003 03. [문자열-심화3] 아스키 연산" style="width: 100%; font-fa
 
     <script src="/static/js/ai_prompt.js"></script>
     <script src="/static/js/modules/workspace_students.js"></script>
+    <script src="/static/js/modules/workspace_catalog.js"></script>
+    <script src="/static/js/modules/workspace_basket.js"></script>
+    <script src="/static/js/modules/workspace_account_modal.js"></script>
+    <script src="/static/js/modules/workspace_feedback_ufm.js"></script>
+    <script src="/static/js/modules/workspace_crawler.js"></script>
+    <script src="/static/js/modules/workspace_register_modal.js"></script>
     <script src="/static/js/workspace_2pane.js"></script>
+
+
+
+
 
 </body>
 </html>

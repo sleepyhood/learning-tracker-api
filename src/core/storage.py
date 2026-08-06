@@ -118,8 +118,43 @@ def _load_workspace_students():
     if not WORKSPACE_STUDENTS_PATH.exists():
         return {}
     try:
-        return json.loads(WORKSPACE_STUDENTS_PATH.read_text(encoding="utf-8"))
-    except Exception:
+        raw_data = json.loads(WORKSPACE_STUDENTS_PATH.read_text(encoding="utf-8"))
+        if not isinstance(raw_data, dict):
+            return {}
+        
+        # Migration check: if keys are display_id, convert primary key to user_uuid
+        migrated = {}
+        need_save = False
+        for k, v in raw_data.items():
+            if not isinstance(v, dict):
+                continue
+            u = v.get("user_uuid")
+            if not u:
+                from uuid import uuid4
+                u = str(uuid4())
+                v["user_uuid"] = u
+                need_save = True
+            
+            # Ensure standard fields
+            v.setdefault("display_id", v.get("name") or k)
+            v.setdefault("name", v.get("display_id") or k)
+            v.setdefault("birth_md", "")
+            v.setdefault("weekdays", [])
+            v.setdefault("subjects", [])
+            v.setdefault("accounts", [])
+            v.setdefault("note", "")
+            v.setdefault("status", "active")
+
+            # If key is not uuid, set key to uuid
+            migrated[u] = v
+            if k != u:
+                need_save = True
+
+        if need_save and migrated:
+            _save_workspace_students(migrated)
+        return migrated
+    except Exception as e:
+        print("[workspace_students] load error:", e)
         return {}
 
 
@@ -131,19 +166,25 @@ def _sync_workspace_students():
     data = _load_workspace_students()
     try:
         uuids = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+        changed = False
         for sid, u in uuids.items():
-            display_id = sid
-            if display_id not in data:
-                data[display_id] = {
-                    "display_id": display_id,
+            if u not in data:
+                data[u] = {
+                    "user_uuid": u,
+                    "display_id": sid,
                     "name": sid,
                     "birth_md": "",
-                    "accounts": [sid],
-                    "user_uuid": u
+                    "weekdays": [],
+                    "subjects": [],
+                    "accounts": [{"type": "academy", "label": "학원", "username": sid}],
+                    "note": "",
+                    "status": "active"
                 }
-        _save_workspace_students(data)
-    except Exception:
-        pass
+                changed = True
+        if changed:
+            _save_workspace_students(data)
+    except Exception as e:
+        print("[workspace_students] sync error:", e)
     return data
 
 

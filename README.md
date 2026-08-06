@@ -47,6 +47,18 @@ DoingCoding(edu.doingcoding.com)의 API 및 DOM 기반 자동 크롤러를 연�
 * **원클릭 퀵 태그(Quick Tags) 입력**: `[😊 집중도 좋음]`, `[❓ 질문 적극적]`, `[💡 오답 혼자 해결]` 등 수업 태도 키워드 1클릭 추가
 * **전역 공통 프롬프트 모듈 (`ai_prompt.js`)**: 과장 배제, 부정적 뉘앙스 순화 및 차분하고 주도적인 연속성 표현 강제
 
+### 6. 🧩 샌드박스 프론트엔드 모듈화 아키텍처 (Modular JS System)
+* **비대한 메인 스크립트 슬림화**: 기존 1,125줄 분량의 `workspace_2pane.js`를 **90줄 수준의 메인 진입점 오케스트레이터**로 경량 다이어트 완료.
+* **7대 도메인 마이크로 모듈 분리 (`src/static/js/modules/`)**:
+  - `workspace_students.js`: 요일별 수강생 보드 렌더링, 시간표 슬롯 배정, 수강생 선택
+  - `workspace_catalog.js`: 과정 목록 로드, 동적 대/소단원 드롭다운, 라이브 문제 검색
+  - `workspace_basket.js`: 숙제 바구니 담기/비우기, 수강생별 숙제 할당 로그 저장
+  - `workspace_account_modal.js`: ⚙️ 1:N 도메인 계정(학원/스크래치/구름) 매핑 및 비고/동명이인 메모 관리
+  - `workspace_feedback_ufm.js`: UFM AI 피드백 모달, 개념 파싱, 카톡 메시지 3종 복사
+  - `workspace_crawler.js`: 카탈로그 수집 크롤러, 실시간 토스트 폴링, 엑셀 1초 일괄 문제 등록
+  - `workspace_register_modal.js`: 신규 수강생 수동 등록 및 슬롯 지정 모달
+* **100% 무결성 & 하위 호환성 래퍼 (`Object.defineProperty`)**: 기존 코드나 인라인 DOM 핸들러와의 연동이 끊기지 않도록 전역 반응형 게터/세터 및 이벤트를 오케스트레이팅하여 Zero-Regression 완벽 보장.
+
 ---
 
 ## 🧱 디렉터리 구조
@@ -63,7 +75,15 @@ DoingCoding(edu.doingcoding.com)의 API 및 DOM 기반 자동 크롤러를 연�
     ├── static/
     │   ├── css/         # workspace_apple.css (60fps 경량 그래픽 최적화), unified.css 등
     │   └── js/
-    │       ├── workspace_2pane.js # 2-Pane 카탈로그, 2단 계층 필터, 관리 모달 & 크롤링 JS
+    │       ├── workspace_2pane.js # 오케스트레이터 진입점 (Phase 1~5 모듈 연결)
+    │       ├── modules/           # 7대 분리 모듈 디렉터리
+    │       │   ├── workspace_students.js       # [Phase 1] 수강생 보드 & 슬롯 관리
+    │       │   ├── workspace_catalog.js        # [Phase 2] 카탈로그 & 라이브 문제 검색
+    │       │   ├── workspace_basket.js         # [Phase 3-1] 숙제 바구니 관리
+    │       │   ├── workspace_account_modal.js  # [Phase 3-2] ⚙️ 도메인 계정/메모 모달
+    │       │   ├── workspace_feedback_ufm.js   # [Phase 4-1] UFM AI 피드백 모달
+    │       │   ├── workspace_crawler.js        # [Phase 4-2] 크롤러 & 1초 일괄 등록
+    │       │   └── workspace_register_modal.js # [Phase 5-1] 수강생 수동 등록 모달
     │       ├── script.js          # 메인 인터랙션 및 숙제 로직
     │       └── ai_prompt.js       # AI 피드백 프롬프트 생성기 & 개념 사전
     ├── templates/
