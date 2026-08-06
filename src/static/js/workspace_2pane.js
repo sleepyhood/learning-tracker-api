@@ -102,7 +102,20 @@ document.addEventListener("DOMContentLoaded", () => {
     // Multi-Curriculum & Chapter Filter Elements & Functions
     const curriculumSelect = document.getElementById("curriculum-select");
     const chapterFilterSelect = document.getElementById("chapter-filter-select");
+    const subChapterFilterSelect = document.getElementById("sub-chapter-filter-select");
     const quickTagChips = document.querySelectorAll("#quick-tag-chips button");
+
+    // Modal Elements
+    const btnOpenCatalogManage = document.getElementById("btn-open-catalog-manage");
+    const btnCloseCatalogManage = document.getElementById("btn-close-catalog-manage");
+    const catalogManageModal = document.getElementById("catalog-manage-modal");
+    const tabCatCrawl = document.getElementById("tab-cat-crawl");
+    const tabCatBatch = document.getElementById("tab-cat-batch");
+    const manageTabContentCrawl = document.getElementById("manage-tab-content-crawl");
+    const manageTabContentBatch = document.getElementById("manage-tab-content-batch");
+    const curriculumManageList = document.getElementById("curriculum-manage-list");
+    const btnSubmitBatchAdd = document.getElementById("btn-submit-batch-add");
+
     let curriculumsData = [];
     let selectedTag = "";
 
@@ -113,6 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await res.json();
             curriculumsData = data.curriculums || [];
             updateChapterDropdown();
+            renderCurriculumManageList();
         } catch (e) {
             console.error("Failed to load curriculums", e);
         }
@@ -124,12 +138,37 @@ document.addEventListener("DOMContentLoaded", () => {
         const currObj = curriculumsData.find(c => c.key === currKey);
 
         chapterFilterSelect.innerHTML = `<option value="all">전체 대단원 목차</option>`;
+        if (subChapterFilterSelect) subChapterFilterSelect.innerHTML = `<option value="all">전체 소단원</option>`;
+
         if (currObj && currObj.chapters) {
             currObj.chapters.forEach(ch => {
                 const opt = document.createElement("option");
-                opt.value = ch;
-                opt.textContent = ch;
-                chapterFilterSelect.appendChild(opt);
+                const majorName = typeof ch === "object" ? (ch.major || ch) : ch;
+                if (majorName && majorName !== "undefined") {
+                    opt.value = majorName;
+                    opt.textContent = majorName;
+                    chapterFilterSelect.appendChild(opt);
+                }
+            });
+        }
+    }
+
+    function updateSubChapterDropdown() {
+        if (!subChapterFilterSelect) return;
+        const currKey = curriculumSelect ? curriculumSelect.value : "prog1";
+        const currObj = curriculumsData.find(c => c.key === currKey);
+        const selectedMajor = chapterFilterSelect ? chapterFilterSelect.value : "all";
+
+        subChapterFilterSelect.innerHTML = `<option value="all">전체 소단원</option>`;
+        if (selectedMajor === "all" || !currObj || !currObj.chapters) return;
+
+        const majorObj = currObj.chapters.find(ch => (typeof ch === "object" ? ch.major : ch) === selectedMajor);
+        if (majorObj && typeof majorObj === "object" && majorObj.subs) {
+            majorObj.subs.forEach(subName => {
+                const opt = document.createElement("option");
+                opt.value = subName;
+                opt.textContent = subName;
+                subChapterFilterSelect.appendChild(opt);
             });
         }
     }
@@ -146,6 +185,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     chapterFilterSelect?.addEventListener("change", () => {
+        updateSubChapterDropdown();
+        triggerCatalogSearch();
+    });
+
+    subChapterFilterSelect?.addEventListener("change", () => {
         triggerCatalogSearch();
     });
 
@@ -169,6 +213,211 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // Modal Event Bindings
+    btnOpenCatalogManage?.addEventListener("click", () => {
+        catalogManageModal?.classList.add("show");
+        loadCurriculums();
+    });
+
+    btnCloseCatalogManage?.addEventListener("click", () => {
+        catalogManageModal?.classList.remove("show");
+    });
+
+    tabCatCrawl?.addEventListener("click", () => {
+        tabCatCrawl.style.background = "var(--accent-color)";
+        tabCatCrawl.style.color = "white";
+        tabCatBatch.style.background = "";
+        tabCatBatch.style.color = "";
+        manageTabContentCrawl.style.display = "flex";
+        manageTabContentBatch.style.display = "none";
+    });
+
+    tabCatBatch?.addEventListener("click", () => {
+        tabCatBatch.style.background = "var(--accent-color)";
+        tabCatBatch.style.color = "white";
+        tabCatCrawl.style.background = "";
+        tabCatCrawl.style.color = "";
+        manageTabContentBatch.style.display = "flex";
+        manageTabContentCrawl.style.display = "none";
+    });
+
+    function renderCurriculumManageList() {
+        if (!curriculumManageList) return;
+        curriculumManageList.innerHTML = "";
+
+        curriculumsData.forEach((cfg, idx) => {
+            const selectId = `scope-select-${cfg.key}-${idx}`;
+            const item = document.createElement("div");
+            item.style.cssText = "display:flex; flex-direction:column; gap:6px; background:#f8fafc; padding:10px 12px; border-radius:8px; border:1px solid #e2e8f0;";
+
+            let optionsHtml = `<option value="all">🌐 전체 갱신 (전체 단원)</option>`;
+            if (cfg.key === "prog2") {
+                optionsHtml += `
+                    <option value="AL100">1. 알고리즘 기초 (AL100)</option>
+                    <option value="STR101">2. 자료구조 브론즈1 (STR101)</option>
+                    <option value="AL101">3. 알고리즘 브론즈1 (AL101)</option>
+                    <option value="STR102">4. 자료구조 브론즈2 (STR102)</option>
+                    <option value="AL102">5. 알고리즘 브론즈2 (AL102)</option>
+                    <option value="STR201">6. 자료구조 실버 (STR201)</option>
+                    <option value="AL201">7. 알고리즘 실버1 (AL201)</option>
+                    <option value="AL202">8. 알고리즘 실버2 (AL202)</option>
+                    <option value="AL301">9. 알고리즘 골드1 (AL301)</option>
+                    <option value="AL302">10. 알고리즘 골드2 (AL302)</option>
+                `;
+            } else if (cfg.key === "prog1") {
+                optionsHtml += `
+                    <option value="p101">1. 기초문법1 (p101)</option>
+                    <option value="p102">2. 기초문법2 (p102)</option>
+                    <option value="p201">3. 알고리즘 초급 (p201)</option>
+                    <option value="p202">4. 알고리즘 중급1 (p202)</option>
+                    <option value="p203">5. 알고리즘 중급2 (p203)</option>
+                    <option value="p206">6. 알고리즘 중급3 (p206)</option>
+                    <option value="p204">7. 알고리즘 고급1 (p204)</option>
+                    <option value="p205">8. 알고리즘 고급2 (p205)</option>
+                `;
+            } else if (cfg.chapters && cfg.chapters.length > 0) {
+                cfg.chapters.forEach((ch, cidx) => {
+                    const majorName = typeof ch === "object" ? ch.major : ch;
+                    const slugVal = (typeof ch === "object" && ch.slug) ? ch.slug : (cidx + 1).toString();
+                    optionsHtml += `<option value="${slugVal}">${majorName}</option>`;
+                });
+            }
+
+            item.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:700; font-size:0.88rem;">${cfg.name}</div>
+                        <div style="font-size:0.75rem; color:#64748b;">${cfg.url ? cfg.url : "오프라인/자체 데이터셋"}</div>
+                    </div>
+                </div>
+                ${cfg.url ? `
+                <div style="display:flex; gap:6px; align-items:center; margin-top:2px;">
+                    <select id="${selectId}" style="flex:1; padding:4px 8px; border-radius:6px; border:1px solid var(--panel-border); font-size:0.8rem;">
+                        ${optionsHtml}
+                    </select>
+                    <button class="btn-small btn-primary" onclick="triggerChapterUpdate('${cfg.key}', '${selectId}', this)">🔄 선택 갱신</button>
+                </div>
+                ` : `<div style="font-size:0.75rem; color:#94a3b8; padding-top:2px;">수동 수집 전용 (엑셀/텍스트 등록 탭 이용)</div>`}
+            `;
+            curriculumManageList.appendChild(item);
+        });
+    }
+
+    let crawlPollInterval = null;
+
+    function startCrawlProgressPolling() {
+        if (crawlPollInterval) clearInterval(crawlPollInterval);
+        crawlPollInterval = setInterval(async () => {
+            try {
+                const res = await fetch("/api/workspace/crawl_status");
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.ok && data.status) {
+                    const st = data.status;
+                    if (st.active) {
+                        const pctStr = st.percent > 0 ? ` (${st.percent}%)` : "";
+                        const stepStr = st.total_steps > 0 ? `[${st.current_step}/${st.total_steps}] ` : "";
+                        showToast(`⏳ ${stepStr}${st.current_name || st.message}${pctStr}`);
+                    } else if (st.percent === 100) {
+                        clearInterval(crawlPollInterval);
+                        crawlPollInterval = null;
+                    }
+                }
+            } catch (e) {}
+        }, 1000);
+    }
+
+    window.triggerChapterUpdate = async (currKey, selectId, btnElem) => {
+        const selectElem = document.getElementById(selectId);
+        const chapterVal = selectElem ? selectElem.value : "all";
+        const chapterLabel = selectElem && selectElem.selectedIndex >= 0 ? selectElem.options[selectElem.selectedIndex].text : "전체";
+
+        const originalText = btnElem ? btnElem.textContent : "🔄 선택 갱신";
+        if (btnElem) {
+            btnElem.disabled = true;
+            btnElem.textContent = "갱신 중...";
+        }
+
+        showToast(`🚀 ${chapterLabel} 문제 목록 갱신을 시작합니다...`);
+        startCrawlProgressPolling();
+
+        try {
+            let res, data;
+            if (currKey === "prog1" && chapterVal !== "all") {
+                // Chapter-specific update via /update_problems
+                res = await fetch("/update_problems", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chapter: chapterVal })
+                });
+            } else {
+                // Full curriculum crawl via Playwright / trigger_crawl
+                res = await fetch("/api/workspace/trigger_crawl", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ curriculum_key: currKey, chapter: chapterVal })
+                });
+            }
+
+            data = await res.json().catch(() => ({}));
+            if (res.ok && (data.ok || data.message)) {
+                showToast(`✅ ${data.message || `${chapterLabel} 문제 목록을 갱신했습니다.`}`);
+                await loadCurriculums();
+                triggerCatalogSearch();
+            } else {
+                showToast(`❌ ${data.error || "갱신에 실패했습니다."}`, true);
+            }
+        } catch (e) {
+            showToast("요청 중 오류가 발생했습니다.", true);
+        } finally {
+            if (crawlPollInterval) {
+                clearInterval(crawlPollInterval);
+                crawlPollInterval = null;
+            }
+            if (btnElem) {
+                btnElem.disabled = false;
+                btnElem.textContent = originalText;
+            }
+        }
+    };
+
+    btnSubmitBatchAdd?.addEventListener("click", async () => {
+        const currKey = document.getElementById("batch-curr-select")?.value || "prog1";
+        const major = document.getElementById("batch-major-input")?.value || "기타 단원";
+        const sub = document.getElementById("batch-sub-input")?.value || "일반";
+        const rawText = document.getElementById("batch-raw-text")?.value || "";
+
+        if (!rawText.trim()) {
+            showToast("붙여넣을 문제 텍스트를 입력하세요.", true);
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/workspace/batch_add_problems", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    curriculum_key: currKey,
+                    major: major,
+                    sub: sub,
+                    raw_text: rawText
+                })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                showToast("✅ " + data.message);
+                document.getElementById("batch-raw-text").value = "";
+                catalogManageModal?.classList.remove("show");
+                await loadCurriculums();
+                triggerCatalogSearch();
+            } else {
+                showToast("❌ " + (data.error || "일괄 등록 실패"), true);
+            }
+        } catch (e) {
+            showToast("일괄 등록 중 오류가 발생했습니다.", true);
+        }
+    });
+
     // 5. Select Student
     window.selectStudent = (displayId) => {
         selectedStudentId = displayId;
@@ -190,9 +439,10 @@ document.addEventListener("DOMContentLoaded", () => {
         let q = query.trim();
         const currKey = curriculumSelect ? curriculumSelect.value : "prog1";
         const chapterVal = chapterFilterSelect ? chapterFilterSelect.value : "all";
+        const subVal = subChapterFilterSelect ? subChapterFilterSelect.value : "all";
 
         // If query is empty but chapter filter or curriculum is set, search all in that chapter
-        if (q.length < 2 && chapterVal === "all" && !q) {
+        if (q.length < 2 && chapterVal === "all" && subVal === "all" && !q) {
             q = "ALL";
         }
 
@@ -201,9 +451,10 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const displayIdParam = selectedStudentId ? `&display_id=${encodeURIComponent(selectedStudentId)}` : "";
             const chapterParam = chapterVal !== "all" ? `&chapter=${encodeURIComponent(chapterVal)}` : "";
+            const subParam = subVal !== "all" ? `&sub=${encodeURIComponent(subVal)}` : "";
             const currParam = `&curriculum=${encodeURIComponent(currKey)}`;
 
-            const res = await fetch(`/api/workspace/search_problems?q=${encodeURIComponent(q)}&limit=80${currParam}${chapterParam}${displayIdParam}`);
+            const res = await fetch(`/api/workspace/search_problems?q=${encodeURIComponent(q)}&limit=80${currParam}${chapterParam}${subParam}${displayIdParam}`);
             if (!res.ok) throw new Error("search failed");
             const data = await res.json();
             const problems = data.problems || [];

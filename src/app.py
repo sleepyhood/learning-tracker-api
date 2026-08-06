@@ -291,6 +291,8 @@ def append_homework_log(user_uuid: str, payload: dict) -> dict:
 # app = Flask(__name__)
 app = Flask(__name__, static_folder="static")
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)  # ✅ 여기에 바로 설정
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 
 if SESSION_COOKIE_DOMAIN:
     app.config["SESSION_COOKIE_DOMAIN"] = SESSION_COOKIE_DOMAIN
@@ -2303,57 +2305,261 @@ def _build_micro_registry(raw_json: dict) -> dict:
     registry = {}
     if not isinstance(raw_json, dict):
         return registry
-    for major_ch, chapter_groups in raw_json.items():
-        if not isinstance(chapter_groups, dict):
+    for key, value in raw_json.items():
+        if not isinstance(value, dict):
             continue
-        for group_id, group_data in chapter_groups.items():
-            if not isinstance(group_data, dict):
-                continue
-            sub_title = group_data.get("title", "")
-            problem_names = group_data.get("problem_names", {})
-            for prob_id, prob_title in problem_names.items():
-                concept = ""
-                if "[" in prob_title and "]" in prob_title:
-                    concept = prob_title.split("[")[1].split("]")[0]
-                registry[prob_id] = {
-                    "id": prob_id,
-                    "title": prob_title,
-                    "concept": concept,
-                    "major": major_ch,
-                    "sub": sub_title
-                }
+        # Case A: Item is already a Micro-registry entry (top-level problem ID)
+        if "title" in value and ("major" in value or "concept" in value or "id" in value):
+            prob_id = value.get("id") or key
+            registry[prob_id] = {
+                "id": prob_id,
+                "title": value.get("title", prob_id),
+                "concept": value.get("concept", ""),
+                "major": value.get("major", "기타"),
+                "sub": value.get("sub", "일반")
+            }
+        # Case B: 3-level tree format (major_ch -> group_id -> problem_names)
+        else:
+            major_ch = key
+            for group_id, group_data in value.items():
+                if not isinstance(group_data, dict):
+                    continue
+                sub_title = group_data.get("title", "")
+                problem_names = group_data.get("problem_names", {})
+                if isinstance(problem_names, dict):
+                    for prob_id, prob_title in problem_names.items():
+                        concept = ""
+                        if "[" in prob_title and "]" in prob_title:
+                            concept = prob_title.split("[")[1].split("]")[0]
+                        registry[prob_id] = {
+                            "id": prob_id,
+                            "title": prob_title,
+                            "concept": concept,
+                            "major": major_ch,
+                            "sub": sub_title
+                        }
     return registry
 
 
-CURRICULUM_FILES = {
-    "prog1": "all_problems.json",
-    "prog2": "prog2_problems.json",
-    "block": "block_problems.json",
-    "external": "external_problems.json",
-}
+CURRICULUM_CONFIG_FILE = os.path.join(PROBLEM_DIR, "curriculum_config.json")
 
-@app.route("/api/workspace/curriculums")
+def _load_curriculum_configs() -> list:
+    if os.path.exists(CURRICULUM_CONFIG_FILE):
+        try:
+            with open(CURRICULUM_CONFIG_FILE, encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return data
+        except Exception:
+            pass
+    return [
+        {"key": "prog1", "name": "💻 프로그래밍 I (기초/기본)", "url": "http://edu.doingcoding.com/p101", "file": "all_problems.json"},
+        {"key": "prog2", "name": "💻 프로그래밍 II (심화)", "url": "http://edu.doingcoding.com/p102", "file": "prog2_problems.json"},
+        {"key": "block", "name": "🧩 블록코딩 활동", "url": "", "file": "block_problems.json"},
+        {"key": "external", "name": "📘 외부 교재 / 자격증", "url": "", "file": "external_problems.json"}
+    ]
+
+def _save_curriculum_configs(configs: list):
+    os.makedirs(PROBLEM_DIR, exist_ok=True)
+    with open(CURRICULUM_CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(configs, f, ensure_ascii=False, indent=2)
+
+
+@app.route("/api/workspace/curriculums", methods=["GET", "POST"])
 def api_workspace_curriculums():
     s, err = ensure_admin_or_403()
     if err: return err
 
+    if request.method == "POST":
+        payload = request.get_json(force=True) or {}
+        configs = payload.get("configs", [])
+        if configs and isinstance(configs, list):
+            _save_curriculum_configs(configs)
+            return jsonify({"ok": True, "message": "설정이 저장되었습니다."})
+        return jsonify({"ok": False, "error": "Invalid configs data"}), 400
+
+    configs = _load_curriculum_configs()
     results = []
-    for key, filename in CURRICULUM_FILES.items():
+    for cfg in configs:
+        key = cfg.get("key")
+        filename = cfg.get("file", f"{key}_problems.json")
         fpath = os.path.join(PROBLEM_DIR, filename)
-        chapters = []
+        chapters_tree = {} # major -> list of subs
+
+        # Pre-populate chapters from config if available
+        if cfg.get("chapters") and isinstance(cfg.get("chapters"), list):
+            for ch_def in cfg.get("chapters"):
+                if isinstance(ch_def, dict) and "name" in ch_def:
+                    m_name = ch_def["name"]
+                    if m_name not in chapters_tree:
+                        chapters_tree[m_name] = set()
+
         if os.path.exists(fpath):
             try:
                 with open(fpath, encoding="utf-8") as f:
                     pdata = json.load(f)
-                    chapters = list(pdata.keys())
-            except Exception:
-                pass
+                    micro = _build_micro_registry(pdata)
+                    for prob_id, item in micro.items():
+                        if isinstance(item, dict):
+                            mj = item.get("major", "기타")
+                            sb = item.get("sub", "일반")
+                            if mj not in chapters_tree:
+                                chapters_tree[mj] = set()
+                            if sb:
+                                chapters_tree[mj].add(sb)
+            except Exception as e:
+                print(f"[curriculums] Error loading {filename}: {e}")
+        
+        # Convert sets to sorted lists
+        chapters_data = []
+        for mj, subs in chapters_tree.items():
+            chapters_data.append({
+                "major": mj,
+                "subs": sorted(list(subs))
+            })
+
         results.append({
             "key": key,
+            "name": cfg.get("name", key),
+            "url": cfg.get("url", ""),
             "filename": filename,
-            "chapters": chapters
+            "chapters": chapters_data
         })
     return jsonify({"ok": True, "curriculums": results})
+
+
+CRAWL_STATUS = {
+    "active": False,
+    "curriculum": "",
+    "current_step": 0,
+    "total_steps": 0,
+    "current_name": "",
+    "message": "",
+    "percent": 0
+}
+
+def _update_crawl_progress(step: int, total: int, name: str, msg: str):
+    global CRAWL_STATUS
+    pct = int((step / total) * 100) if total > 0 else 0
+    CRAWL_STATUS.update({
+        "active": True,
+        "current_step": step,
+        "total_steps": total,
+        "current_name": name,
+        "message": msg,
+        "percent": pct
+    })
+
+@app.route("/api/workspace/crawl_status")
+def api_workspace_crawl_status():
+    s, err = ensure_admin_or_403()
+    if err: return err
+    return jsonify({"ok": True, "status": CRAWL_STATUS})
+
+
+@app.route("/api/workspace/trigger_crawl", methods=["POST"])
+def api_workspace_trigger_crawl():
+    s, err = ensure_admin_or_403()
+    if err: return err
+
+    global CRAWL_STATUS
+    payload = request.get_json(force=True) or {}
+    curr_key = payload.get("curriculum_key", "prog2")
+    configs = _load_curriculum_configs()
+    target_cfg = next((c for c in configs if c.get("key") == curr_key), None)
+    
+    if not target_cfg or not target_cfg.get("url"):
+        return jsonify({"ok": False, "error": "크롤링 대상 URL이 설정되어 있지 않습니다."}), 400
+
+    chapter_token = payload.get("chapter")
+    ch_slug = str(chapter_token).strip() if (chapter_token and str(chapter_token).lower() != "all") else None
+
+    CRAWL_STATUS.update({
+        "active": True,
+        "curriculum": target_cfg.get("name", curr_key),
+        "current_step": 0,
+        "total_steps": 1,
+        "current_name": "준비 중...",
+        "message": "Playwright 크롤러를 초기화 중입니다...",
+        "percent": 0
+    })
+
+    try:
+        from utils.playwright_crawler import do_playwright_crawling
+        out_file = target_cfg.get("file", f"{curr_key}_problems.json")
+        out_path = do_playwright_crawling(
+            target_url=target_cfg.get("url"),
+            output_filename=out_file,
+            major_name=target_cfg.get("name"),
+            headless=True,
+            chapter_slug=ch_slug,
+            progress_callback=_update_crawl_progress
+        )
+        CRAWL_STATUS["active"] = False
+        CRAWL_STATUS["percent"] = 100
+        CRAWL_STATUS["message"] = "크롤링 완료"
+        return jsonify({"ok": True, "message": "크롤링이 성공적으로 완료되었습니다.", "out_path": out_path})
+    except Exception as e:
+        CRAWL_STATUS["active"] = False
+        CRAWL_STATUS["message"] = f"오류 발생: {str(e)}"
+        return jsonify({"ok": False, "error": f"크롤링 오류: {str(e)}"}), 500
+
+
+@app.route("/api/workspace/batch_add_problems", methods=["POST"])
+def api_workspace_batch_add_problems():
+    s, err = ensure_admin_or_403()
+    if err: return err
+
+    payload = request.get_json(force=True) or {}
+    curr_key = payload.get("curriculum_key", "prog1")
+    major_name = (payload.get("major") or "기타 단원").strip()
+    sub_name = (payload.get("sub") or "일반").strip()
+    raw_text = (payload.get("raw_text") or "").strip()
+
+    if not raw_text:
+        return jsonify({"ok": False, "error": "붙여넣을 문제 텍스트가 없습니다."}), 400
+
+    configs = _load_curriculum_configs()
+    target_cfg = next((c for c in configs if c.get("key") == curr_key), None)
+    out_file = target_cfg.get("file", "all_problems.json") if target_cfg else "all_problems.json"
+    out_path = os.path.join(PROBLEM_DIR, out_file)
+
+    # Load existing
+    registry = {}
+    if os.path.exists(out_path):
+        try:
+            with open(out_path, encoding="utf-8") as f:
+                pdata = json.load(f)
+                registry = _build_micro_registry(pdata) if any("problem_names" in str(v) for v in pdata.values()) else pdata
+        except Exception:
+            registry = {}
+
+    added_count = 0
+    lines = raw_text.splitlines()
+    for line in lines:
+        line = line.strip()
+        if not line: continue
+        parts = line.split(maxsplit=1)
+        prob_id = parts[0].strip()
+        prob_title = parts[1].strip() if len(parts) > 1 else prob_id
+        concept = ""
+        if "[" in prob_title and "]" in prob_title:
+            concept = prob_title.split("[")[1].split("]")[0]
+
+        registry[prob_id] = {
+            "id": prob_id,
+            "title": prob_title,
+            "concept": concept,
+            "major": major_name,
+            "sub": sub_name
+        }
+        added_count += 1
+
+    os.makedirs(PROBLEM_DIR, exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(registry, f, ensure_ascii=False, indent=2)
+
+    return jsonify({"ok": True, "message": f"{added_count}개 문제가 일괄 등록되었습니다."})
 
 
 @app.route("/api/workspace/search_problems")
@@ -2363,13 +2569,16 @@ def api_workspace_search_problems():
         return err
 
     q = (request.args.get("q") or "").strip().upper()
-    limit = int(request.args.get("limit", 60))
+    limit = int(request.args.get("limit", 80))
     display_id = (request.args.get("display_id") or "").strip()
     curr_key = request.args.get("curriculum", "prog1").strip()
     chapter_filter = request.args.get("chapter", "").strip()
+    sub_filter = request.args.get("sub", "").strip()
 
-    # Determine problem JSON file
-    fname = CURRICULUM_FILES.get(curr_key, "all_problems.json")
+    # Determine problem JSON file from config
+    configs = _load_curriculum_configs()
+    target_cfg = next((c for c in configs if c.get("key") == curr_key), None)
+    fname = target_cfg.get("file", "all_problems.json") if target_cfg else "all_problems.json"
     fpath = os.path.join(PROBLEM_DIR, fname)
     if not os.path.exists(fpath):
         fpath = PROBLEM_FILE
@@ -2380,8 +2589,11 @@ def api_workspace_search_problems():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
-    # Build Micro-Registry
-    micro_registry = _build_micro_registry(raw_problems)
+    # Build Micro-Registry if 3-level format
+    if any("problem_names" in str(v) for v in raw_problems.values()):
+        micro_registry = _build_micro_registry(raw_problems)
+    else:
+        micro_registry = raw_problems
 
     # Build student status map if display_id provided
     user_status_map = {}
@@ -2403,7 +2615,7 @@ def api_workspace_search_problems():
                             if legacy_code and raw_st is not None:
                                 lc_status[legacy_code] = _status_label_from_raw(raw_st)
                 
-                # Fallback overlay via legacy_map mapping (server_id -> legacy_code)
+                # Fallback overlay via legacy_map mapping
                 raw_status_map = _build_user_status_map(oi)
                 legacy_map = resolve_legacy_map_dict()
                 for legacy_code, server_id in legacy_map.items():
@@ -2411,7 +2623,7 @@ def api_workspace_search_problems():
                     if raw is not None and legacy_code not in lc_status:
                         lc_status[legacy_code] = _status_label_from_raw(raw)
                         
-                # Overlay homework statuses (take precedence)
+                # Overlay homework statuses
                 hw_status_map = _latest_homework_status_map(doc)
                 for lc, st in hw_status_map.items():
                     lc_status[lc] = st
@@ -2420,19 +2632,25 @@ def api_workspace_search_problems():
 
     results = []
     for prob_id, item in micro_registry.items():
-        major_ch = item["major"]
+        if not isinstance(item, dict):
+            continue
+        major_ch = item.get("major", "")
+        sub_ch = item.get("sub", "")
+
         if chapter_filter and chapter_filter != "all" and chapter_filter != major_ch:
             continue
+        if sub_filter and sub_filter != "all" and sub_filter != sub_ch:
+            continue
         
-        match_q = not q or q == "ALL" or (q in prob_id.upper() or q in item["title"].upper() or q in item["concept"].upper())
+        match_q = not q or q == "ALL" or (q in prob_id.upper() or q in (item.get("title") or "").upper() or q in (item.get("concept") or "").upper())
         if match_q:
             status = user_status_map.get(prob_id, "unsolved") if user_status_map else "unsolved"
             results.append({
                 "id": prob_id,
                 "legacy_code": prob_id,
-                "title": item["title"],
-                "concept": item["concept"],
-                "group": item["sub"],
+                "title": item.get("title", prob_id),
+                "concept": item.get("concept", ""),
+                "group": sub_ch,
                 "major_chapter": major_ch,
                 "status": status,
             })
