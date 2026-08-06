@@ -424,7 +424,7 @@
   },
   "leo0719": {
     "display_id": "leo0719",
-    "name": "leo0719",
+    "name": "전서준",
     "birth_md": "",
     "accounts": [
       "leo0719"
@@ -649,7 +649,7 @@
   },
   "이성현20110808": {
     "display_id": "이성현20110808",
-    "name": "이성현20110808",
+    "name": "이성현",
     "birth_md": "",
     "accounts": [
       "이성현20110808"
@@ -1070,15 +1070,6 @@
     ],
     "user_uuid": "a4b5f896-fa08-4854-a318-972cacf962ad"
   },
-  "김재진0530": {
-    "display_id": "김재진0530",
-    "name": "김재진0530",
-    "birth_md": "",
-    "accounts": [
-      "김재진0530"
-    ],
-    "user_uuid": "9224393c-a0b8-40e9-b6d3-5ed5f058b858"
-  },
   "임현진121407": {
     "display_id": "임현진121407",
     "name": "임현진121407",
@@ -1126,12 +1117,17 @@
   },
   "정시원0222": {
     "display_id": "정시원0222",
-    "name": "정시원0222",
+    "name": "정시원",
     "birth_md": "",
     "accounts": [
-      "정시원0222"
+      {
+        "type": "academy",
+        "label": "학원",
+        "username": "정시원0222"
+      }
     ],
-    "user_uuid": "334a628c-c56e-4f92-aa73-59854a966a9a"
+    "user_uuid": "334a628c-c56e-4f92-aa73-59854a966a9a",
+    "note": "정시원02221"
   },
   "김준수0730": {
     "display_id": "김준수0730",
@@ -1306,7 +1302,7 @@
   },
   "백건우0509": {
     "display_id": "백건우0509",
-    "name": "백건우0509",
+    "name": "백건우",
     "birth_md": "",
     "accounts": [
       "백건우0509"
@@ -1333,7 +1329,7 @@
   },
   "jeremy0228": {
     "display_id": "jeremy0228",
-    "name": "jeremy0228",
+    "name": "김윤우",
     "birth_md": "",
     "accounts": [
       "jeremy0228"
@@ -1360,7 +1356,7 @@
   },
   "전서현1122": {
     "display_id": "전서현1122",
-    "name": "전서현1122",
+    "name": "전서현",
     "birth_md": "",
     "accounts": [
       "전서현1122"
@@ -1477,7 +1473,7 @@
   },
   "강지후0419": {
     "display_id": "강지후0419",
-    "name": "강지후0419",
+    "name": "강지후",
     "birth_md": "",
     "accounts": [
       "강지후0419"
@@ -1528,5 +1524,23 @@
       "홍준기"
     ],
     "user_uuid": "2fad3d6f-0c33-430e-91d8-e6537ab3ec83"
+  },
+  "김재진0530": {
+    "display_id": "김재진0530",
+    "name": "김재진0530",
+    "birth_md": "",
+    "accounts": [
+      "김재진0530"
+    ],
+    "user_uuid": "9224393c-a0b8-40e9-b6d3-5ed5f058b858"
+  },
+  "test_user": {
+    "display_id": "test_user",
+    "name": "test_user",
+    "birth_md": "",
+    "accounts": [
+      "test_user"
+    ],
+    "user_uuid": "27d94421-b5c2-4fd4-9ade-bcf3e9d0be3d"
   }
 }

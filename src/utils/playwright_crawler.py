@@ -56,6 +56,17 @@ def parse_concept_tag(title):
     return ""
 
 
+PROG1_CHAPTERS = [
+    {"slug": "p101", "name": "1. 기초문법1"},
+    {"slug": "p102", "name": "2. 기초문법2"},
+    {"slug": "p201", "name": "3. 알고리즘 초급"},
+    {"slug": "p202", "name": "4. 알고리즘 중급1"},
+    {"slug": "p203", "name": "5. 알고리즘 중급2"},
+    {"slug": "p206", "name": "6. 알고리즘 중급3"},
+    {"slug": "p204", "name": "7. 알고리즘 고급1"},
+    {"slug": "p205", "name": "8. 알고리즘 고급2"},
+]
+
 PROG2_CHAPTERS = [
     {"slug": "AL100", "name": "1. 알고리즘 기초"},
     {"slug": "STR101", "name": "2. 자료구조 브론즈1"},
@@ -80,7 +91,7 @@ def do_playwright_crawling(
 ) -> str:
     """
     Crawls target curriculum URLs using Playwright Headless Browser.
-    Supports single URL crawl or crawling all PROG2 major chapter slugs sequentially.
+    Supports single URL crawl or crawling all major chapter slugs sequentially.
     """
     try:
         from playwright.sync_api import sync_playwright
@@ -108,18 +119,23 @@ def do_playwright_crawling(
     tasks = []
     base_domain = BASE_URL.rstrip('/') if BASE_URL else "http://edu.doingcoding.com"
 
-    if chapter_slug:
-        # Find matching chapter
-        found = next((ch for ch in PROG2_CHAPTERS if ch["slug"].upper() == chapter_slug.upper() or ch["name"].startswith(chapter_slug)), None)
-        c_name = found["name"] if found else major_name
-        slug = found["slug"] if found else chapter_slug
-        tasks.append((f"{base_domain}/{slug}", c_name))
-    elif target_url and "p102" not in target_url and not target_url.endswith("/p102"):
-        tasks.append((target_url, major_name))
+    if chapter_slug and str(chapter_slug).lower() != "all":
+        # Specific chapter requested
+        found = next((ch for ch in (PROG1_CHAPTERS + PROG2_CHAPTERS) if ch["slug"].upper() == chapter_slug.upper() or ch["name"].startswith(chapter_slug)), None)
+        if found:
+            tasks.append((f"{base_domain}/{found['slug']}", found["name"]))
+        elif target_url:
+            tasks.append((target_url, major_name))
+        else:
+            tasks.append((f"{base_domain}/{chapter_slug}", major_name))
     else:
-        # Full PROG2 crawl: visit all 10 chapter URLs!
-        for ch in PROG2_CHAPTERS:
-            tasks.append((f"{base_domain}/{ch['slug']}", ch["name"]))
+        # FULL CURRICULUM CRAWL ("all")
+        if target_url and "p101" in target_url:
+            for ch in PROG1_CHAPTERS:
+                tasks.append((f"{base_domain}/{ch['slug']}", ch["name"]))
+        else:
+            for ch in PROG2_CHAPTERS:
+                tasks.append((f"{base_domain}/{ch['slug']}", ch["name"]))
 
     print(f"🚀 [Playwright] 총 {len(tasks)}개 단원 수집 시작...")
 
@@ -142,40 +158,59 @@ def do_playwright_crawling(
 
         for idx, (url, m_name) in enumerate(tasks, 1):
             if progress_callback:
-                progress_callback(idx, len(tasks), m_name, f"[{idx}/{len(tasks)}] '{m_name}' 페이지 수집 중...")
+                progress_callback(idx, len(tasks), m_name, f"[{idx}/{len(tasks)}] '{m_name}' 수집 중...")
             print(f"🌐 페이지 이동 중... [{idx}/{len(tasks)}] [{m_name}] {url}")
             try:
-                page.goto(url, wait_until="networkidle", timeout=30000)
-                time.sleep(1.5)
+                page.goto(url, wait_until="domcontentloaded", timeout=15000)
+                time.sleep(1.0)
 
                 sub_buttons = page.query_selector_all("button")
-                sub_titles = []
+                clickable_buttons = []
                 for btn in sub_buttons:
                     txt = (btn.text_content() or "").strip()
-                    if txt and ("Lv" in txt or "단원" in txt or "장" in txt or "기초" in txt or "심화" in txt):
-                        sub_titles.append(txt)
+                    if txt and any(k in txt for k in ["Lv", "단원", "장", "기초", "심화", "출력", "변수", "조건", "반복", "배열", "포인터", "문자열"]):
+                        clickable_buttons.append((btn, txt))
 
-                rows = page.query_selector_all("table tbody tr")
-                print(f"   📊 [{m_name}] 수집된 문제 행: {len(rows)}개")
-
-                for row in rows:
-                    tds = row.query_selector_all("td")
-                    if len(tds) >= 2:
-                        prob_id = tds[0].text_content().strip()
-                        prob_title = tds[1].text_content().strip()
-
-                        if prob_id and prob_title:
-                            concept = parse_concept_tag(prob_title)
-                            sub_name = sub_titles[0] if sub_titles else "주요 문제"
-
-                            micro_registry[prob_id] = {
-                                "id": prob_id,
-                                "title": prob_title,
-                                "concept": concept,
-                                "major": m_name,
-                                "sub": sub_name
-                            }
-                            scraped_count += 1
+                if clickable_buttons:
+                    for b_elem, b_txt in clickable_buttons:
+                        try:
+                            b_elem.click()
+                            time.sleep(0.6)
+                        except Exception:
+                            pass
+                        rows = page.query_selector_all("table tbody tr")
+                        for row in rows:
+                            tds = row.query_selector_all("td")
+                            if len(tds) >= 2:
+                                prob_id = tds[0].text_content().strip()
+                                prob_title = tds[1].text_content().strip()
+                                if prob_id and prob_title:
+                                    concept = parse_concept_tag(prob_title)
+                                    micro_registry[prob_id] = {
+                                        "id": prob_id,
+                                        "title": prob_title,
+                                        "concept": concept,
+                                        "major": m_name,
+                                        "sub": b_txt
+                                    }
+                                    scraped_count += 1
+                else:
+                    rows = page.query_selector_all("table tbody tr")
+                    for row in rows:
+                        tds = row.query_selector_all("td")
+                        if len(tds) >= 2:
+                            prob_id = tds[0].text_content().strip()
+                            prob_title = tds[1].text_content().strip()
+                            if prob_id and prob_title:
+                                concept = parse_concept_tag(prob_title)
+                                micro_registry[prob_id] = {
+                                    "id": prob_id,
+                                    "title": prob_title,
+                                    "concept": concept,
+                                    "major": m_name,
+                                    "sub": "주요 문제"
+                                }
+                                scraped_count += 1
             except Exception as err:
                 print(f"   ⚠️ [{m_name}] 수집 중 오류: {err}")
 

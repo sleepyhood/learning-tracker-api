@@ -1,10 +1,29 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Initial State
-    let students = [];
+    // 1. Initialize Modules (Phase 1)
+    if (window.WorkspaceStudents) {
+        window.WorkspaceStudents.init();
+        window.WorkspaceStudents.loadStudents();
+    }
+
+    // Legacy State Compatibility Wrappers
+    Object.defineProperty(window, "students", {
+        get: () => (window.WorkspaceStudents ? window.WorkspaceStudents.students : []),
+        set: (val) => { if (window.WorkspaceStudents) window.WorkspaceStudents.students = val; }
+    });
+    Object.defineProperty(window, "selectedStudentId", {
+        get: () => (window.WorkspaceStudents ? window.WorkspaceStudents.selectedStudentId : null),
+        set: (val) => { if (window.WorkspaceStudents) window.WorkspaceStudents.selectedStudentId = val; }
+    });
+    Object.defineProperty(window, "currentWeekday", {
+        get: () => (window.WorkspaceStudents ? window.WorkspaceStudents.currentWeekday : "all"),
+        set: (val) => { if (window.WorkspaceStudents) window.WorkspaceStudents.currentWeekday = val; }
+    });
+
+    window.loadStudents = (weekday = "all") => window.WorkspaceStudents && window.WorkspaceStudents.loadStudents(weekday);
+    window.renderStudents = () => window.WorkspaceStudents && window.WorkspaceStudents.renderStudents();
+    window.updateSlotDropdown = () => window.WorkspaceStudents && window.WorkspaceStudents.updateSlotDropdown();
+
     let basket = [];
-    let allSlots = [];
-    let selectedStudentId = null;
-    let currentWeekday = "all";
     let searchDebounceTimer = null;
 
     // Elements
@@ -13,7 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const problemSearchInput = document.getElementById("problem-search");
     const basketCount = document.getElementById("basket-count");
     const basketItemsContainer = document.getElementById("basket-items");
-    const weekdayTabs = document.querySelectorAll(".tab-btn");
 
     // Modal Elements
     const modal = document.getElementById("register-modal");
@@ -22,82 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnSubmitRegister = document.getElementById("btn-submit-register");
     const regSlotSelect = document.getElementById("reg-slot");
 
-    // 2. Tab Events
-    weekdayTabs.forEach(tab => {
-        tab.addEventListener("click", (e) => {
-            weekdayTabs.forEach(t => t.classList.remove("active"));
-            e.target.classList.add("active");
-            currentWeekday = e.target.getAttribute("data-weekday");
-            loadStudents(currentWeekday);
-        });
-    });
-
-    // 3. Load Students & Slots
-    async function loadStudents(weekday = "all") {
-        try {
-            const res = await fetch(`/api/workspace/schedule_students?weekday=${weekday}`);
-            if (!res.ok) throw new Error("Failed to load students");
-            const data = await res.json();
-            students = data.students || [];
-            allSlots = data.all_slots || [];
-            
-            updateSlotDropdown();
-            renderStudents();
-        } catch (e) {
-            showToast("수강생을 불러오는데 실패했습니다.", true);
-            console.error(e);
-        }
-    }
-
-    function updateSlotDropdown() {
-        regSlotSelect.innerHTML = "<option value=''>슬롯을 선택하세요</option>";
-        const weekdays = ["월", "화", "수", "목", "금", "토", "일"];
-        allSlots.forEach(slot => {
-            let w = parseInt(slot.weekday);
-            let wLabel = (w >= 0 && w <= 6) ? `${weekdays[w]}요일` : "기타/일정불확실";
-            const opt = document.createElement("option");
-            opt.value = slot.id;
-            opt.textContent = `[${wLabel}] ${slot.label}`;
-            regSlotSelect.appendChild(opt);
-        });
-    }
-
-    // 4. Render Students
-    function renderStudents() {
-        gridContainer.innerHTML = "";
-        if (students.length === 0) {
-            gridContainer.innerHTML = "<div class='problem-empty-state'>선택한 요일에 해당하는 학생이 없습니다.</div>";
-            return;
-        }
-
-        students.forEach(student => {
-            const card = document.createElement("div");
-            card.className = `student-card ${selectedStudentId === student.display_id ? 'selected' : ''}`;
-            card.onclick = () => selectStudent(student.display_id);
-
-            let badgesHTML = "";
-            if (student.slot_label) {
-                badgesHTML += `<span class="student-accounts" style="background: rgba(52,199,89,0.1); color: var(--success-color);">${student.slot_label}</span>`;
-            }
-            if (student.note) {
-                badgesHTML += `<span class="student-accounts" style="background: rgba(255,149,0,0.1); color: var(--warning-color);">${student.note}</span>`;
-            }
-
-            card.innerHTML = `
-                <div class="student-header">
-                    <div class="student-info">
-                        <span class="student-name">${student.name} <span class="student-display-id">(${student.display_id})</span></span>
-                        <div style="display:flex; gap: 4px; margin-top: 4px;">${badgesHTML}</div>
-                    </div>
-                </div>
-                <div class="student-actions" style="margin-top: 12px;">
-                    <button class="btn-small btn-primary" onclick="generateFeedback('${student.display_id}', event)">✨ AI 피드백 생성</button>
-                    <button class="btn-small btn-secondary" onclick="assignBasketToStudent('${student.display_id}', event)">➕ 장바구니 할당</button>
-                </div>
-            `;
-            gridContainer.appendChild(card);
-        });
-    }
 
     // Multi-Curriculum & Chapter Filter Elements & Functions
     const curriculumSelect = document.getElementById("curriculum-select");
@@ -117,6 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnSubmitBatchAdd = document.getElementById("btn-submit-batch-add");
 
     let curriculumsData = [];
+    let lastSearchTree = {};
     let selectedTag = "";
 
     async function loadCurriculums() {
@@ -132,44 +75,80 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    function updateChapterDropdown() {
+    function updateChapterDropdown(tree = lastSearchTree) {
         if (!chapterFilterSelect) return;
         const currKey = curriculumSelect ? curriculumSelect.value : "prog1";
         const currObj = curriculumsData.find(c => c.key === currKey);
+        const savedVal = chapterFilterSelect.value || "all";
 
-        chapterFilterSelect.innerHTML = `<option value="all">전체 대단원 목차</option>`;
-        if (subChapterFilterSelect) subChapterFilterSelect.innerHTML = `<option value="all">전체 소단원</option>`;
+        const majorSet = new Set();
+
+        if (tree && typeof tree === "object") {
+            Object.keys(tree).forEach(m => {
+                if (m && m !== "undefined") majorSet.add(m);
+            });
+        }
 
         if (currObj && currObj.chapters) {
             currObj.chapters.forEach(ch => {
-                const opt = document.createElement("option");
                 const majorName = typeof ch === "object" ? (ch.major || ch) : ch;
-                if (majorName && majorName !== "undefined") {
-                    opt.value = majorName;
-                    opt.textContent = majorName;
-                    chapterFilterSelect.appendChild(opt);
-                }
+                if (majorName && majorName !== "undefined") majorSet.add(majorName);
             });
+        }
+
+        chapterFilterSelect.innerHTML = `<option value="all">전체 대단원 목차</option>`;
+        if (subChapterFilterSelect && savedVal === "all") {
+            subChapterFilterSelect.innerHTML = `<option value="all">전체 소단원</option>`;
+        }
+
+        majorSet.forEach(majorName => {
+            const opt = document.createElement("option");
+            opt.value = majorName;
+            opt.textContent = majorName;
+            chapterFilterSelect.appendChild(opt);
+        });
+
+        if (Array.from(chapterFilterSelect.options).some(o => o.value === savedVal)) {
+            chapterFilterSelect.value = savedVal;
         }
     }
 
-    function updateSubChapterDropdown() {
+    function updateSubChapterDropdown(tree = lastSearchTree) {
         if (!subChapterFilterSelect) return;
         const currKey = curriculumSelect ? curriculumSelect.value : "prog1";
         const currObj = curriculumsData.find(c => c.key === currKey);
         const selectedMajor = chapterFilterSelect ? chapterFilterSelect.value : "all";
+        const savedSubVal = subChapterFilterSelect.value || "all";
 
         subChapterFilterSelect.innerHTML = `<option value="all">전체 소단원</option>`;
-        if (selectedMajor === "all" || !currObj || !currObj.chapters) return;
+        if (selectedMajor === "all") return;
 
-        const majorObj = currObj.chapters.find(ch => (typeof ch === "object" ? ch.major : ch) === selectedMajor);
-        if (majorObj && typeof majorObj === "object" && majorObj.subs) {
-            majorObj.subs.forEach(subName => {
-                const opt = document.createElement("option");
-                opt.value = subName;
-                opt.textContent = subName;
-                subChapterFilterSelect.appendChild(opt);
+        const subSet = new Set();
+
+        if (tree && tree[selectedMajor] && Array.isArray(tree[selectedMajor])) {
+            tree[selectedMajor].forEach(subName => {
+                if (subName) subSet.add(subName);
             });
+        }
+
+        if (currObj && currObj.chapters) {
+            const majorObj = currObj.chapters.find(ch => (typeof ch === "object" ? ch.major : ch) === selectedMajor);
+            if (majorObj && typeof majorObj === "object" && majorObj.subs) {
+                majorObj.subs.forEach(subName => {
+                    if (subName) subSet.add(subName);
+                });
+            }
+        }
+
+        subSet.forEach(subName => {
+            const opt = document.createElement("option");
+            opt.value = subName;
+            opt.textContent = subName;
+            subChapterFilterSelect.appendChild(opt);
+        });
+
+        if (Array.from(subChapterFilterSelect.options).some(o => o.value === savedSubVal)) {
+            subChapterFilterSelect.value = savedSubVal;
         }
     }
 
@@ -452,14 +431,21 @@ document.addEventListener("DOMContentLoaded", () => {
             const displayIdParam = selectedStudentId ? `&display_id=${encodeURIComponent(selectedStudentId)}` : "";
             const chapterParam = chapterVal !== "all" ? `&chapter=${encodeURIComponent(chapterVal)}` : "";
             const subParam = subVal !== "all" ? `&sub=${encodeURIComponent(subVal)}` : "";
-            const currParam = `&curriculum=${encodeURIComponent(currKey)}`;
+            const currParam = `&curriculum=${encodeURIComponent(currKey)}&curr=${encodeURIComponent(currKey)}`;
+
 
             const res = await fetch(`/api/workspace/search_problems?q=${encodeURIComponent(q)}&limit=80${currParam}${chapterParam}${subParam}${displayIdParam}`);
-            if (!res.ok) throw new Error("search failed");
             const data = await res.json();
             const problems = data.problems || [];
 
+            if (data.tree) {
+                lastSearchTree = data.tree;
+                updateChapterDropdown(data.tree);
+                updateSubChapterDropdown(data.tree);
+            }
+
             problemListContainer.innerHTML = "";
+
 
             if (problems.length === 0) {
                 problemListContainer.innerHTML = `<div class='problem-empty-state'>"${query}" 검색 결과 없음</div>`;
@@ -497,9 +483,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const safeP = JSON.stringify(p).replace(/"/g, "&quot;");
                 item.innerHTML = `
-                    <span class="problem-status-icon" style="font-size:0.72rem;color:#86868b;flex-shrink:0;min-width:80px;">${statusIcon}${p.legacy_code}</span>
-                    <span class="problem-title" style="font-size:0.87rem;">${p.title}</span>
-                    <button class="btn-small btn-primary" style="flex-shrink:0;padding:3px 8px;font-size:0.78rem;${isSolved ? 'background:#34c759;' : ''}" onclick="event.stopPropagation(); addToBasket(${safeP})">${inBasket ? "✓" : "+"}</button>
+                    <span class="problem-status-icon" style="flex-shrink:0;min-width:75px;font-size:0.75rem;">${statusIcon}${p.legacy_code}</span>
+                    <span class="problem-title">${p.title}</span>
+                    <button class="btn-small btn-primary" style="flex-shrink:0;padding:2px 7px;font-size:0.75rem;border-radius:4px;${isSolved ? 'background:#34c759;' : ''}" onclick="event.stopPropagation(); addToBasket(${safeP})">${inBasket ? "✓" : "+"}</button>
                 `;
                 item.onclick = () => addToBasket(p);
                 problemListContainer.appendChild(item);
@@ -561,6 +547,19 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
+    // 1-Click Batch Homework Apply Handler for Selected Student
+    document.getElementById("btn-apply-basket")?.addEventListener("click", () => {
+        if (!selectedStudentId) {
+            showToast("⚠️ 먼저 우측 수강생 보드에서 숙제를 지정할 학생 카드를 클릭해 주세요!", true);
+            return;
+        }
+        if (basket.length === 0) {
+            showToast("🛒 숙제 바구니가 비어 있습니다. 카탈로그에서 문제를 선택해 담아주세요.", true);
+            return;
+        }
+        assignBasketToStudent(selectedStudentId);
+    });
+
     function renderBasket() {
         basketCount.innerText = basket.length;
         basketItemsContainer.innerHTML = "";
@@ -601,9 +600,9 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     window.assignBasketToStudent = async (displayId, event) => {
-        event.stopPropagation();
+        if (event) event.stopPropagation();
         if (basket.length === 0) {
-            showToast("바구니가 비어 있습니다.", true);
+            showToast("🛒 숙제 바구니가 비어 있습니다.", true);
             return;
         }
 
@@ -912,6 +911,128 @@ document.addEventListener("DOMContentLoaded", () => {
 
         return lines.join("\n");
     }
+
+    // 10. Account Management Modal Functions (P1: 1:N 계정 매핑 및 정보 관리)
+    const ammModal = document.getElementById("account-manage-modal");
+    const ammStudentName = document.getElementById("amm-student-name");
+    const ammNameInput = document.getElementById("amm-name");
+    const ammDisplayIdInput = document.getElementById("amm-display-id");
+    const ammAccountsContainer = document.getElementById("amm-accounts-container");
+    const btnAddAccountInput = document.getElementById("btn-add-account-input");
+    const btnSaveAmmStudent = document.getElementById("btn-save-amm-student");
+    const btnDeleteStudent = document.getElementById("btn-delete-student");
+    const btnCloseAmm = document.getElementById("btn-close-amm");
+    const btnCloseAmmCancel = document.getElementById("btn-close-amm-cancel");
+
+    let currentEditingDisplayId = null;
+
+    function renderAccountInputRow(accObj = {}) {
+        let accType = "academy";
+        let username = "";
+        if (typeof accObj === "object" && accObj !== null) {
+            accType = accObj.type || "academy";
+            username = accObj.username || "";
+        } else {
+            username = String(accObj || "");
+        }
+
+        const row = document.createElement("div");
+        row.className = "amm-acc-row";
+        row.style.cssText = "display: flex; gap: 6px; align-items: center; margin-bottom: 6px;";
+        row.innerHTML = `
+            <select class="amm-acc-type" style="padding: 6px; font-size: 0.82rem; border: 1px solid var(--panel-border); border-radius: 6px; background: white;">
+                <option value="academy" ${accType === 'academy' ? 'selected' : ''}>🏫 학원사이트</option>
+                <option value="scratch" ${accType === 'scratch' ? 'selected' : ''}>🧩 스크래치</option>
+                <option value="goorm" ${accType === 'goorm' ? 'selected' : ''}>☁️ 구름</option>
+                <option value="etc" ${accType === 'etc' ? 'selected' : ''}>📘 기타/포털</option>
+            </select>
+            <input type="text" class="amm-acc-input" value="${username}" placeholder="아이디/계정 입력" style="flex: 1; padding: 6px; font-size: 0.85rem; border: 1px solid var(--panel-border); border-radius: 6px;">
+            <button type="button" class="btn-small btn-ghost" onclick="this.parentElement.remove()" style="color: var(--danger-color); padding: 4px 8px;">✕</button>
+        `;
+        ammAccountsContainer.appendChild(row);
+    }
+
+    window.openAccountManageModal = (displayId, event) => {
+        if (event) event.stopPropagation();
+        const student = students.find(s => s.display_id === displayId);
+        if (!student) return;
+
+        currentEditingDisplayId = displayId;
+        ammStudentName.textContent = student.name;
+        ammNameInput.value = student.name;
+        ammDisplayIdInput.value = student.display_id || "";
+        ammAccountsContainer.innerHTML = "";
+
+        const accounts = student.accounts && student.accounts.length > 0 ? student.accounts : [{ type: "academy", username: student.display_id }];
+        accounts.forEach(acc => renderAccountInputRow(acc));
+
+        ammModal.classList.add("show");
+    };
+
+    btnAddAccountInput?.addEventListener("click", () => {
+        renderAccountInputRow({});
+    });
+
+    const closeAmmModal = () => ammModal.classList.remove("show");
+    btnCloseAmm?.addEventListener("click", closeAmmModal);
+    btnCloseAmmCancel?.addEventListener("click", closeAmmModal);
+
+    btnSaveAmmStudent?.addEventListener("click", async () => {
+        if (!currentEditingDisplayId) return;
+
+        const updatedName = ammNameInput.value.trim();
+        const updatedDisplayId = ammDisplayIdInput.value.trim();
+        const rows = ammAccountsContainer.querySelectorAll(".amm-acc-row");
+        const updatedAccounts = Array.from(rows).map(row => {
+            const typeSelect = row.querySelector(".amm-acc-type");
+            const inputVal = row.querySelector(".amm-acc-input");
+            return {
+                type: typeSelect ? typeSelect.value : "academy",
+                username: inputVal ? inputVal.value.trim() : ""
+            };
+        }).filter(a => a.username);
+
+        try {
+            const res = await fetch("/api/workspace/update_student_accounts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    display_id: currentEditingDisplayId,
+                    name: updatedName,
+                    note: updatedDisplayId,
+                    accounts: updatedAccounts
+                })
+            });
+
+            if (!res.ok) throw new Error("Update failed");
+            showToast(`[${updatedName}] 계정 연동 및 비고 메모 정보가 업데이트되었습니다.`);
+            closeAmmModal();
+            loadStudents(currentWeekday);
+        } catch (e) {
+            showToast("계정 연동 저장에 실패했습니다.", true);
+        }
+    });
+
+    btnDeleteStudent?.addEventListener("click", async () => {
+        if (!currentEditingDisplayId) return;
+        if (!confirm(`정말로 수강생 [${ammNameInput.value}]을(를) 보드에서 삭제하시겠습니까?`)) return;
+
+        try {
+            const res = await fetch("/api/workspace/delete_student", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ display_id: currentEditingDisplayId })
+            });
+
+            if (!res.ok) throw new Error("Delete failed");
+            showToast(`수강생이 삭제되었습니다.`);
+            closeAmmModal();
+            if (selectedStudentId === currentEditingDisplayId) selectedStudentId = null;
+            loadStudents(currentWeekday);
+        } catch (e) {
+            showToast("수강생 삭제 실패", true);
+        }
+    });
 
     // Init
     loadCurriculums();

@@ -557,14 +557,9 @@ def ensure_user_cache_or_404(user_path: str, problem_file: str, username: str):
 
 def resolve_legacy_map_dict():
     """레거시→서버ID 맵을 dict로 로드(없으면 빈 dict)"""
-    try:
-        from app import LEGACY_TO_SERVER_FILE
+    from config import LEGACY_TO_SERVER_FILE, PROBLEM_DIR
 
-        path = LEGACY_TO_SERVER_FILE
-    except NameError:
-        from app import PROBLEM_DIR
-
-        path = os.path.join(PROBLEM_DIR, "server_legacy_map_reverse.json")
+    path = LEGACY_TO_SERVER_FILE or os.path.join(PROBLEM_DIR, "server_legacy_map_reverse.json")
     if os.path.exists(path):
         with open(path, encoding="utf-8") as f:
             return json.load(f)
