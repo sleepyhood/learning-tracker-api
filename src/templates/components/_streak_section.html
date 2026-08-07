@@ -1,0 +1,47 @@
+<section class="streak-section">
+  <div class="streak-header">
+    <div class="streak-head-left">
+      <div class="streak-title">최근 학습 스트릭</div>
+      <div class="streak-summary-row">
+        <span id="streak-summary" class="streak-summary">일별 제출 수 기준</span>
+        <span id="streak-compare" class="streak-compare neutral">비교 준비 중</span>
+      </div>
+    </div>
+
+    <div class="streak-controls">
+      <button
+        id="streak-active-only-toggle"
+        type="button"
+        class="btn-secondary streak-filter-toggle"
+        aria-pressed="false"
+      >
+        활동일만
+      </button>
+      <button class="streak-btn btn-quiet" data-days="7">7일</button>
+      <button class="streak-btn btn-quiet" data-days="30">30일</button>
+      <button class="streak-btn btn-quiet" data-days="90">90일</button>
+    </div>
+  </div>
+
+  <div class="streak-container">
+    <div id="streak-grid" class="streak-grid">
+      {% for day in streak_data %}
+      <div
+        class="streak-cell{% if day.weekday in ['토', '일'] %} weekend{% endif %}"
+        data-count="{{ day.count }}"
+        {% if day.details %}
+        data-details="{{ day.details | tojson | forceescape }}"
+        {% endif %}
+      >
+        <div class="date-info">
+          <div class="date-full">{{ day.date.replace('-', '/') if day.date else '-' }} ({{ day.weekday }})</div>
+        </div>
+        <div class="count-wrap">
+          <span class="count">{{ day.count }}</span>
+          <span class="count-label">제출</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>

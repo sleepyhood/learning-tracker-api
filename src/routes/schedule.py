@@ -242,35 +242,100 @@ def update_problems():
 
 @schedule_bp.route("/api/streak")
 def api_streak():
-    s, err = ensure_admin_or_403()
+    s, err = ensure_login_or_redirect()
     if err:
-        return err
+        return jsonify({"error": "Unauthorized"}), 401
 
-    username = request.args.get("username", "").strip()
-    days = request.args.get("days", "365")
+    username = request.args.get("username", "").strip() or request.args.get("viewUsername", "").strip()
+    days = request.args.get("days", "7")
     try:
         days = int(days)
     except ValueError:
-        days = 365
+        days = 7
+
+    # username이 UUID인 경우 실제 username으로 역변환
+    if not username or (len(username) == 36 and "-" in username):
+        # UUID로 들어왔거나 비어있으면 doc에서 username 꺼내기
+        uuid_key = username or ""
+        try:
+            from utils.utils_user_doc import load_doc_by_any
+            doc = load_doc_by_any(uuid_key) if uuid_key else {}
+            username = (doc.get("profile") or {}).get("student_id") or (doc.get("profile") or {}).get("username") or ""
+        except Exception:
+            pass
+
+    if not username:
+        try:
+            me_json = fetch_profile(s, username=None)
+            if isinstance(me_json, dict):
+                username = me_json.get("data", {}).get("user", {}).get("username", "")
+        except Exception:
+            pass
 
     if not username:
         return jsonify({"error": "username parameter is required"}), 400
 
-    u = resolve_uuid(username)
-    data, ok = ensure_user_cache_or_404(u, s, max_age_seconds=600)
-    if not ok:
-        return jsonify({"error": f"Failed to fetch user data for {username}"}), 500
+    # fetch_submissions_window: create_time이 포함된 실제 제출 로그 리스트 취득
+    try:
+        fetch_days = max(days, 30)  # 최소 30일치 가져와 streak 범위 확보
+        submissions = fetch_submissions_window(s, username, myself=0, days=fetch_days, limit=200)
+        filtered = filter_main_account_submissions(submissions, username)
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch submissions for {username}: {e}"}), 500
 
-    submissions = data.get("submissions", [])
-    streak_info = generate_streak_data(submissions, days=days)
+    streak_info = generate_streak_data(filtered, days=days)
     return jsonify(streak_info)
+
+
+@schedule_bp.route("/api/submission_code")
+def api_submission_code():
+    """DoingCoding 제출 상세 코드를 프록시하여 반환."""
+    s, err = ensure_login_or_redirect()
+    if err:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    sub_id = request.args.get("id", "").strip()
+    if not sub_id:
+        return jsonify({"error": "id parameter is required"}), 400
+
+    try:
+        resp = s.get(f"{BASE_URL}/api/submission", params={"id": sub_id}, timeout=10)
+        if not resp.ok:
+            return jsonify({"error": f"upstream error {resp.status_code}"}), resp.status_code
+
+        # DoingCoding이 HTML 에러 페이지를 돌려줄 경우 방어
+        ct = resp.headers.get("content-type", "")
+        if "application/json" not in ct:
+            return jsonify({"error": f"upstream returned non-JSON ({ct[:40]}): {resp.text[:80]}"}), 502
+
+        try:
+            payload = resp.json()
+        except Exception:
+            return jsonify({"error": f"upstream response is not valid JSON: {resp.text[:80]}"}), 502
+
+        upstream_error = payload.get("error")
+        if upstream_error:
+            return jsonify({"error": f"upstream error: {upstream_error}"}), 403
+
+        data = payload.get("data") or {}
+        code = data.get("code")
+        if code is None:
+            return jsonify({"error": "code not available (not shared or no permission)"}), 404
+        return jsonify({
+            "id": sub_id,
+            "code": code,
+            "language": data.get("language", ""),
+            "result": data.get("result"),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @schedule_bp.route("/proxy/user_rank")
 def proxy_user_rank():
     s, err = ensure_admin_or_403()
     if err:
-        return err
+        return jsonify({"error": "Forbidden"}), 403
 
     page = request.args.get("page", "1")
     url = f"{BASE_URL}/user_rank?page={page}"
@@ -298,8 +363,9 @@ def index():
         return redir
 
     days = int(request.args.get("days", 7))
+    curr_key = request.args.get("curr", "prog1")
     me_json = fetch_profile(s, username=None)
-    vm = build_dashboard_viewmodel(s, me_json, is_me=True, days=days)
+    vm = build_dashboard_viewmodel(s, me_json, is_me=True, days=days, curr_key=curr_key)
     vm["streak_days"] = days
     my_name = me_json.get("data", {}).get("user", {}).get("username") if isinstance(me_json, dict) else ""
     my_uuid = resolve_uuid(my_name) if my_name else ""
@@ -329,7 +395,8 @@ def user_dashboard(username):
         return f"❌ 사용자 정보를 불러오지 못했습니다: {e}", 500
 
     days = int(request.args.get("days", 7))
-    vm = build_dashboard_viewmodel(s, other_json, is_me=False, days=days)
+    curr_key = request.args.get("curr", "prog1")
+    vm = build_dashboard_viewmodel(s, other_json, is_me=False, days=days, curr_key=curr_key)
     vm["streak_days"] = days
 
     other_name = other_json.get("data", {}).get("user", {}).get("username") if isinstance(other_json, dict) else username
@@ -371,7 +438,7 @@ def user_chapter_workspace(username, chapter):
         role_ctx=role_ctx,
     )
     return render_template(
-        "user_chapter_workspace.html",
+        "chapter_workspace.html",
         username=username,
         user_uuid=u,
         chapter=chapter,
@@ -403,11 +470,23 @@ def user_chapter_view(username, chapter):
         problems_dict=data.get("problems_dict", {}),
         role_ctx=role_ctx,
     )
+
+    all_chapters = vm.get("progress_data", [])
+    target_ch = next((c for c in all_chapters if c.get("chapter") == chapter), None)
+    if not target_ch:
+        ch_num = chapter.split(".")[0].strip()
+        target_ch = next((c for c in all_chapters if str(c.get("chapter", "")).startswith(ch_num + ".")), None)
+
+    chapter_name = target_ch.get("chapter", chapter) if target_ch else chapter
+    groups_progress = target_ch.get("groups", []) if target_ch else []
+
     return render_template(
-        "user_chapter_view.html",
+        "chapter_detail.html",
         username=username,
         user_uuid=u,
         chapter=chapter,
+        chapter_name=chapter_name,
+        progress_data=groups_progress,
         vm=vm,
         role_ctx=role_ctx,
     )
@@ -436,12 +515,43 @@ def user_chapter_group_view(username, chapter, group_id):
         problems_dict=data.get("problems_dict", {}),
         role_ctx=role_ctx,
     )
+
+    group_title = group_id
+    problem_names = []
+    try:
+        from config import PROBLEM_FILE
+        from urllib.parse import quote
+        from utils.summarizer import summarize_user_chapter_group
+
+        with open(PROBLEM_FILE, "r", encoding="utf-8") as f:
+            all_problems = json.load(f)
+
+        real_chapter = chapter
+        if real_chapter not in all_problems:
+            ch_num = chapter.split(".")[0].strip()
+            real_chapter = next((ch_k for ch_k in all_problems.keys() if ch_k.startswith(ch_num + ".")), chapter)
+
+        group_res = summarize_user_chapter_group(
+            data.get("problems_dict") or data,
+            all_problems,
+            real_chapter,
+            group_id,
+            legacy_map=resolve_legacy_map_dict()
+        )
+        group_title = group_res.get("group_title", group_id)
+        problem_names = group_res.get("problem_names", [])
+    except Exception as e:
+        print(f"[user_chapter_group_view] Error: {e}")
+
     return render_template(
-        "user_chapter_group_view.html",
+        "group_detail.html",
         username=username,
         user_uuid=u,
         chapter=chapter,
         group_id=group_id,
+        group_title=group_title,
+        problem_names=problem_names,
+        chapter_url_html=f"http://edu.doingcoding.com/user/{username}/chapter/{quote(chapter)}",
         vm=vm,
         role_ctx=role_ctx,
     )

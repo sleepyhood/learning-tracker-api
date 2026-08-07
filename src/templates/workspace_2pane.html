@@ -358,8 +358,8 @@
                     
                     <!-- 엑셀 일괄 붙여넣기 박스 (토글) -->
                     <div id="meta-tsv-import-box" style="display: none; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px dashed var(--panel-border);">
-                        <div style="font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">📋 엑셀에서 복사한 탭 구분(TSV) 붙여넣기 (형식: [문제ID] [학습목표] [개념])</div>
-                        <textarea id="meta-tsv-text" rows="4" style="width: 100%; font-family: monospace; font-size: 0.8rem; padding: 6px; border-radius: 6px; border: 1px solid var(--panel-border);" placeholder="STRLv01001&#t;반복문으로 문자열 역순 출력 원리 체득&#t;문자열 인덱싱"></textarea>
+                        <div style="font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">📋 엑셀 탭 구분(TSV) 일괄 붙여넣기 (포맷: [문제ID] \t [학습목표] \t [개념] \t [C언어코드] \t [Python코드])</div>
+                        <textarea id="meta-tsv-text" rows="4" style="width: 100%; font-family: monospace; font-size: 0.8rem; padding: 6px; border-radius: 6px; border: 1px solid var(--panel-border);" placeholder="STRLv01001&#t;반복문으로 문자열 역순 출력 원리 체득&#t;문자열 인덱싱&#t;#include <stdio.h>...&#t;print(s[::-1])"></textarea>
                         <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;">
                             <button id="btn-cancel-tsv-import" class="btn-small btn-secondary">취소</button>
                             <button id="btn-submit-tsv-import" class="btn-small btn-primary">💾 1초 일괄 적용</button>
@@ -377,26 +377,36 @@
                     </div>
                 </div>
 
-                <!-- 탭 3: 엑셀/텍스트 일괄 등록 -->
-                <div id="manage-tab-content-batch" style="display: none; flex-direction: column; gap: 10px;">
-                    <div style="display: flex; gap: 8px;">
-                        <select id="batch-curr-select" style="padding: 6px; border-radius: 6px; border: 1px solid var(--panel-border); font-size: 0.85rem;">
-                            <option value="prog1">💻 프로그래밍 I</option>
-                            <option value="prog2">💻 프로그래밍 II</option>
-                            <option value="block">🧩 블록코딩</option>
-                            <option value="external">📘 외부교재</option>
-                        </select>
-                        <input type="text" id="batch-major-input" placeholder="대단원 (예: 1. 기초문법1)" style="flex: 1; padding: 6px; border-radius: 6px; border: 1px solid var(--panel-border); font-size: 0.85rem;">
-                        <input type="text" id="batch-sub-input" placeholder="소단원 (예: Lv1 출력)" style="flex: 1; padding: 6px; border-radius: 6px; border: 1px solid var(--panel-border); font-size: 0.85rem;">
+                <!-- 💻 다중 언어 정답 코드 뷰어 & 에디터 모달 -->
+                <div id="solution-code-modal" class="modal-overlay">
+                    <div class="modal-content" style="width: 640px; max-width: 95%; max-height: 90vh;">
+                        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700;">
+                                💻 정답 코드 (답안지): <span id="scm-prob-id" style="color: var(--accent-color); font-family: monospace;">-</span>
+                            </h3>
+                            <button class="btn-small btn-ghost" id="btn-close-scm">✕</button>
+                        </div>
+                        <div class="modal-body" style="gap: 10px; margin-top: 6px;">
+                            <div style="font-size: 0.85rem; font-weight: 600; color: #334155;" id="scm-prob-title">문제 제목</div>
+                            
+                            <!-- 언어 탭 토글 바 -->
+                            <div id="scm-lang-tabs" style="display: flex; gap: 6px; border-bottom: 2px solid var(--panel-border); padding-bottom: 6px;">
+                                <button type="button" class="btn-small btn-secondary scm-lang-btn active" data-lang="c" style="padding: 3px 10px; font-weight: 700;">💻 C언어</button>
+                                <button type="button" class="btn-small btn-secondary scm-lang-btn" data-lang="python" style="padding: 3px 10px;">🐍 Python</button>
+                                <button type="button" class="btn-small btn-secondary scm-lang-btn" data-lang="java" style="padding: 3px 10px;">☕ Java</button>
+                                <button type="button" class="btn-small btn-secondary scm-lang-btn" data-lang="cpp" style="padding: 3px 10px;">⚡ C++</button>
+                            </div>
+
+                            <textarea id="scm-code-text" rows="12" style="width: 100%; font-family: Consolas, Monaco, monospace; font-size: 0.83rem; background: #0f172a; color: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #334155; line-height: 1.4;" placeholder="// 여기에 정답 코드를 입력하거나 확인하세요..."></textarea>
+                        </div>
+                        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                            <button class="btn-small btn-secondary" id="btn-copy-scm-code">📋 클립보드 복사</button>
+                            <div style="display: flex; gap: 6px;">
+                                <button class="btn-secondary" id="btn-close-scm-cancel">닫기</button>
+                                <button class="btn-primary" id="btn-save-scm-code">💾 정답 코드 저장</button>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label style="font-size: 0.85rem; font-weight: 700;">엑셀 / 텍스트 목록 붙여넣기 (1줄당 1문항: [ID] [제목])</label>
-                        <textarea id="batch-raw-text" rows="6" placeholder="예시:
-STRLv01001 01. [문자열-심화1] 문자열 역순 출력
-STRLv01002 02. [문자열-심화2] 단어 단위 분리
-STRLv01003 03. [문자열-심화3] 아스키 연산" style="width: 100%; font-family: monospace; font-size: 0.82rem; margin-top: 4px; padding: 8px; border-radius: 6px; border: 1px solid var(--panel-border);"></textarea>
-                    </div>
-                    <button id="btn-submit-batch-add" class="btn-primary" style="padding: 8px;">💾 1초 일괄 등록 및 저장</button>
                 </div>
             </div>
         </div>

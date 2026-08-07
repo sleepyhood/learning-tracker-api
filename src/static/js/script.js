@@ -647,17 +647,27 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-function showToast(message, duration = 3000) {
+function showToast(message, duration = 2400) {
+  document.querySelectorAll(".toast").forEach((el) => el.remove());
+
   const toast = document.createElement("div");
   toast.textContent = message;
-  toast.classList.add("toast", "show");
-  document.body.appendChild(toast); // ✅ DOM에 추가
+  toast.className = "toast";
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.add("show");
+  });
 
   setTimeout(() => {
     toast.classList.remove("show");
-    toast.addEventListener("transitionend", () => {
-      toast.remove(); // ✅ 사라진 후 DOM에서 제거
-    });
+    const removeToast = () => {
+      if (toast.parentNode) {
+        toast.remove();
+      }
+    };
+    toast.addEventListener("transitionend", removeToast, { once: true });
+    setTimeout(removeToast, 400);
   }, duration);
 }
 
@@ -769,12 +779,16 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   fetch("/proxy/user_rank")
-    .then((res) => res.json())
+    .then((res) => {
+      if (!res.ok) return null;
+      return res.json().catch(() => null);
+    })
     .then((data) => {
+      if (!data) return;
       usernameList = Array.isArray(data.usernames) ? data.usernames : [];
       updateSuggestions();
     })
-    .catch((err) => console.error("Error:", err));
+    .catch((err) => console.error("Error fetching user_rank:", err));
 
   searchInput.addEventListener("input", () => {
     if (debounceTimer) clearTimeout(debounceTimer);
@@ -854,12 +868,13 @@ async function highlightTodaySolvedProblems() {
   if (!username) return;
 
   try {
-    const res = await fetch(`/api/streak?viewMode=user&viewUsername=${encodeURIComponent(username)}&days=1`);
+    const res = await fetch(`/api/streak?viewMode=user&viewUsername=${encodeURIComponent(username)}&username=${encodeURIComponent(username)}&days=1`);
     if (!res.ok) return;
     const data = await res.json();
-    if (!data.streak_data || data.streak_data.length === 0) return;
+    const streakList = Array.isArray(data) ? data : (data.streak_data || []);
+    if (!streakList || streakList.length === 0) return;
     
-    const todayDetails = data.streak_data[0].details || [];
+    const todayDetails = streakList[0].details || [];
     const todaySolvedPids = new Set(todayDetails.map(item => String(item.problem)));
 
     if (todaySolvedPids.size === 0) return;

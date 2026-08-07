@@ -21,10 +21,16 @@ def _load_title_map():
         with open(PROBLEM_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
         m = {}
-        for _, category_data in data.items():
-            for _, chapter_data in category_data.items():
-                for pid, title in chapter_data.get("problem_names", {}).items():
-                    m[str(pid)] = title
+        if isinstance(data, dict) and data.get("_schema_version") == 2:
+            for pid, p_info in data.get("problems", {}).items():
+                m[str(pid)] = p_info.get("title", "")
+        else:
+            for _, category_data in data.items():
+                if isinstance(category_data, dict):
+                    for _, chapter_data in category_data.items():
+                        if isinstance(chapter_data, dict):
+                            for pid, title in chapter_data.get("problem_names", {}).items():
+                                m[str(pid)] = title
         _problem_title_map = m
     return _problem_title_map
 
@@ -35,15 +41,27 @@ def _load_problem_meta_map():
         with open(PROBLEM_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
         m = {}
-        for _, category_data in data.items():
-            for _, chapter_data in category_data.items():
-                chapter_id = chapter_data.get("chapter_id")
-                chapter_title = chapter_data.get("title")
-                for pid in chapter_data.get("problem_names", {}).keys():
-                    m[str(pid)] = {
-                        "chapter_id": chapter_id,
-                        "chapter_title": chapter_title,
-                    }
+        if isinstance(data, dict) and data.get("_schema_version") == 2:
+            groups = data.get("groups", {})
+            for pid, p_info in data.get("problems", {}).items():
+                gid = p_info.get("group_id")
+                g_info = groups.get(gid, {})
+                m[str(pid)] = {
+                    "chapter_id": g_info.get("chapter_code"),
+                    "chapter_title": g_info.get("title"),
+                }
+        else:
+            for _, category_data in data.items():
+                if isinstance(category_data, dict):
+                    for _, chapter_data in category_data.items():
+                        if isinstance(chapter_data, dict):
+                            chapter_id = chapter_data.get("chapter_id")
+                            chapter_title = chapter_data.get("title")
+                            for pid in chapter_data.get("problem_names", {}).keys():
+                                m[str(pid)] = {
+                                    "chapter_id": chapter_id,
+                                    "chapter_title": chapter_title,
+                                }
         _problem_meta_map = m
     return _problem_meta_map
 
@@ -56,11 +74,11 @@ def generate_streak_data(submissions, days: int = 7):
     kst = ZoneInfo("Asia/Seoul")
     title_map = _load_title_map()
     problem_meta_map = _load_problem_meta_map()
-
-    # 문제별 '최초 정답'만 카운트 (기존 로직 유지)
     first_corrects = dict()  # problem_id(str) -> info
 
     for rec in submissions:
+        if not isinstance(rec, dict):
+            continue
         if rec.get("result") != 0:
             continue
 
@@ -69,7 +87,14 @@ def generate_streak_data(submissions, days: int = 7):
             pid = pid.get("_id") or pid.get("id") or str(pid)
         pid = str(pid)
 
-        dt_utc = datetime.fromisoformat(rec["create_time"].replace("Z", "+00:00"))
+        create_time_raw = rec.get("create_time")
+        if not create_time_raw or not isinstance(create_time_raw, str):
+            continue
+
+        try:
+            dt_utc = datetime.fromisoformat(create_time_raw.replace("Z", "+00:00"))
+        except Exception:
+            continue
         dt_kst = dt_utc.astimezone(kst)
         date_str = dt_kst.strftime("%Y-%m-%d")
 
@@ -97,6 +122,7 @@ def generate_streak_data(submissions, days: int = 7):
                 "problem": pid,
                 "title": title_map.get(pid, pid),
                 "server_sub_id": rec.get("id"),
+                "show_link": rec.get("show_link", True),
                 "problem_url": problem_url,
                 "chapter_url": chapter_url,
             }
@@ -112,11 +138,11 @@ def generate_streak_data(submissions, days: int = 7):
                 "language": info["language"],
                 "time": info["time"],
                 "server_sub_id": info["server_sub_id"],
+                "show_link": info.get("show_link", True),
                 "problem_url": info.get("problem_url"),
                 "chapter_url": info.get("chapter_url"),
             }
         )
-
     # 연속 days일 생성
     today = datetime.now(tz=kst).date()
     streak_data = []
@@ -129,7 +155,7 @@ def generate_streak_data(submissions, days: int = 7):
                 "date": day.strftime("%m-%d"),
                 "weekday": ["월", "화", "수", "목", "금", "토", "일"][day.weekday()],
                 "count": len(problems),
-                "details": problems,  # 각 문제의 server_sub_id는 여기에 있음
+                "details": problems,
             }
         )
     return streak_data

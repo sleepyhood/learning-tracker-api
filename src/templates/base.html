@@ -1,4 +1,4 @@
-﻿<!-- templates/base.html -->
+<!-- templates/base.html -->
 
 <!--
 
@@ -81,30 +81,26 @@
 
     <script>
 
-      function showToast(message, duration = 3000) {
+      function showToast(message, duration = 2400) {
+        document.querySelectorAll(".toast").forEach((el) => el.remove());
 
-        const toast = document.getElementById("toast");
-
+        const toast = document.createElement("div");
         toast.textContent = message;
+        toast.className = "toast";
+        document.body.appendChild(toast);
 
-        toast.classList.add("show");
-
-        document.body.appendChild(toast); // ✅ DOM에 추가
-
-
+        requestAnimationFrame(() => {
+          toast.classList.add("show");
+        });
 
         setTimeout(() => {
-
           toast.classList.remove("show");
-
-          toast.addEventListener("transitionend", () => {
-
-            toast.remove(); // ✅ 사라진 후 DOM에서 제거
-
-          });
-
+          const removeToast = () => {
+            if (toast.parentNode) toast.remove();
+          };
+          toast.addEventListener("transitionend", removeToast, { once: true });
+          setTimeout(removeToast, 400);
         }, duration);
-
       }
 
 

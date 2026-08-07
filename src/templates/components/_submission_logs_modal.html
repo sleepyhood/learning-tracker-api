@@ -1,0 +1,600 @@
+<!-- 학생 제출 로그 팝업 모달 컴포넌트 -->
+<style>
+  .sub-logs-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10005;
+    animation: sub-logs-fadeIn 0.2s ease-out;
+  }
+  @keyframes sub-logs-fadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .sub-logs-card {
+    background: #ffffff;
+    border-radius: 20px;
+    width: 540px;
+    max-width: 92%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+  .sub-logs-header {
+    padding: 18px 24px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .sub-logs-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sub-logs-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+  }
+  .sub-logs-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: #e2e8f0;
+    color: #475569;
+  }
+  .sub-logs-close {
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    cursor: pointer;
+    color: #94a3b8;
+    line-height: 1;
+    padding: 0;
+    transition: color 0.15s;
+  }
+  .sub-logs-close:hover {
+    color: #0f172a;
+  }
+  .sub-logs-toolbar {
+    padding: 12px 24px;
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .sub-logs-filter-group {
+    display: flex;
+    gap: 6px;
+  }
+  .sub-logs-filter-btn {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    padding: 5px 12px;
+    border-radius: 14px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .sub-logs-filter-btn:hover {
+    background: #f1f5f9;
+  }
+  .sub-logs-filter-btn.active {
+    background: #4338ca;
+    color: #ffffff;
+    border-color: #4338ca;
+  }
+  .sub-logs-action-btn {
+    background: #6c5ce7;
+    color: #ffffff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 3px 8px rgba(108, 92, 231, 0.25);
+    transition: all 0.15s ease;
+  }
+  .sub-logs-action-btn:hover {
+    background: #5b4bc4;
+    transform: translateY(-1px);
+  }
+  .sub-logs-body {
+    padding: 16px 24px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sub-log-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .sub-log-item:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  }
+  .sub-log-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .sub-log-item-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.35;
+    margin: 0;
+    word-break: break-word;
+  }
+  .sub-log-item-meta {
+    font-size: 0.78rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sub-log-score-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .sub-log-score-badge.pass {
+    background: #dcfce7;
+    color: #15803d;
+  }
+  .sub-log-score-badge.partial {
+    background: #fef9c3;
+    color: #a16207;
+  }
+  .sub-log-score-badge.fail {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+  .sub-log-item-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 6px;
+    border-top: 1px dashed #e2e8f0;
+  }
+  .sub-log-links {
+    display: flex;
+    gap: 6px;
+  }
+  .sub-log-link-btn {
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #475569;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    transition: all 0.15s ease;
+  }
+  .sub-log-link-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+  .sub-log-link-btn.primary {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+  }
+  .sub-log-link-btn.primary:hover {
+    background: #dbeafe;
+  }
+  .sub-logs-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+  /* ── 코드 뷰어 ── */
+  .sub-log-code-toggle-btn {
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 8px;
+    color: #6366f1;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .sub-log-code-toggle-btn:hover {
+    background: #e0e7ff;
+    border-color: #a5b4fc;
+  }
+  .sub-log-code-toggle-btn.loading {
+    opacity: 0.6;
+    cursor: wait;
+  }
+  .sub-log-code-viewer {
+    display: none;
+    margin-top: 8px;
+    background: #0f172a;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #1e293b;
+  }
+  .sub-log-code-viewer.open {
+    display: block;
+    animation: codeSlideDown 0.2s ease-out;
+  }
+  @keyframes codeSlideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .sub-log-code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+  }
+  .sub-log-code-lang-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .sub-log-code-copy-btn {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #94a3b8;
+    background: transparent;
+    border: 1px solid #334155;
+    padding: 2px 7px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .sub-log-code-copy-btn:hover {
+    color: #e2e8f0;
+    border-color: #475569;
+  }
+  .sub-log-code-pre {
+    margin: 0;
+    padding: 12px 14px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: #e2e8f0;
+    white-space: pre;
+    tab-size: 4;
+  }
+  .sub-log-code-error {
+    padding: 12px 14px;
+    color: #f87171;
+    font-size: 0.78rem;
+  }
+</style>
+
+<div id="submissionLogsModal" class="sub-logs-overlay" style="display: none;">
+  <div class="sub-logs-card">
+    <div class="sub-logs-header">
+      <div class="sub-logs-title-wrap">
+        <h3 class="sub-logs-title">📊 학생 풀이 제출 로그</h3>
+        <span id="subLogsCountBadge" class="sub-logs-badge">총 0건</span>
+      </div>
+      <button class="sub-logs-close" onclick="closeSubmissionLogsModal()">×</button>
+    </div>
+
+    <div class="sub-logs-toolbar">
+      <div class="sub-logs-filter-group">
+        <button type="button" class="sub-logs-filter-btn active" data-days="1" onclick="switchSubLogsFilter(1, this)">오늘</button>
+        <button type="button" class="sub-logs-filter-btn" data-days="7" onclick="switchSubLogsFilter(7, this)">최근 7일</button>
+        <button type="button" class="sub-logs-filter-btn" data-days="30" onclick="switchSubLogsFilter(30, this)">최근 30일</button>
+      </div>
+
+      <button type="button" class="sub-logs-action-btn" onclick="triggerAiFeedbackFromLogs()">
+        🪄 AI 피드백 작성하기
+      </button>
+    </div>
+
+    <div id="subLogsBody" class="sub-logs-body">
+      <div class="sub-logs-empty">불러오는 중...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentSubLogsDays = 1;
+  let cachedSubLogs = [];
+
+  async function openSubmissionLogsModal(days = 1) {
+    currentSubLogsDays = days;
+    const modal = document.getElementById("submissionLogsModal");
+    if (!modal) return;
+
+    modal.style.display = "flex";
+    
+    // 필터 버튼 상태 업데이트
+    document.querySelectorAll(".sub-logs-filter-btn").forEach(btn => {
+      btn.classList.toggle("active", Number(btn.dataset.days) === days);
+    });
+
+    await loadSubmissionLogsData(days);
+  }
+
+  function closeSubmissionLogsModal() {
+    const modal = document.getElementById("submissionLogsModal");
+    if (modal) modal.style.display = "none";
+  }
+
+  // 모달 배경 클릭 시 닫기
+  document.getElementById("submissionLogsModal")?.addEventListener("mousedown", (e) => {
+    if (e.target.id === "submissionLogsModal") {
+      closeSubmissionLogsModal();
+    }
+  });
+
+  async function switchSubLogsFilter(days, btnEl) {
+    document.querySelectorAll(".sub-logs-filter-btn").forEach(b => b.classList.remove("active"));
+    btnEl?.classList.add("active");
+    currentSubLogsDays = days;
+    await loadSubmissionLogsData(days);
+  }
+
+  async function loadSubmissionLogsData(days) {
+    const bodyEl = document.getElementById("subLogsBody");
+    const countBadgeEl = document.getElementById("subLogsCountBadge");
+    if (!bodyEl) return;
+
+    bodyEl.innerHTML = `<div class="sub-logs-empty">제출 기록을 불러오는 중...</div>`;
+
+    const viewUsername = window.APP_CONFIG?.viewUsername || "";
+    const userUuid = window.APP_CONFIG?.userUuid || "";
+    const viewMode = window.APP_CONFIG?.viewMode || "me";
+    const queryUsername = viewUsername || userUuid;
+
+    try {
+      const res = await fetch(`/api/streak?viewMode=${viewMode}&viewUsername=${encodeURIComponent(queryUsername)}&username=${encodeURIComponent(queryUsername)}&days=${days}`);
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`API error (${res.status}): ${errText}`);
+      }
+      const data = await res.json();
+      
+      const streakData = Array.isArray(data) ? data : (data.streak_data || []);
+      let allItems = [];
+
+      // 모든 날짜의 details 수집 후 최신 순 정렬
+      streakData.forEach(dayObj => {
+        const details = dayObj.details || [];
+        details.forEach(item => {
+          allItems.push({
+            ...item,
+            dateStr: dayObj.date || "",
+            weekday: dayObj.weekday || ""
+          });
+        });
+      });
+
+      // 최신 제출 시간 기준 정렬
+      allItems.sort((a, b) => {
+        const timeA = `${a.dateStr} ${a.time || ""}`;
+        const timeB = `${b.dateStr} ${b.time || ""}`;
+        return timeB.localeCompare(timeA);
+      });
+
+      cachedSubLogs = allItems;
+      if (countBadgeEl) countBadgeEl.textContent = `총 ${allItems.length}건`;
+
+      renderSubmissionLogsList(allItems);
+    } catch (err) {
+      console.error("Failed to load submission logs:", err);
+      bodyEl.innerHTML = `<div class="sub-logs-empty">❌ 제출 기록을 가져오는데 실패했습니다.</div>`;
+    }
+  }
+
+  // 코드 뷰어 토글 (DOM 직접 조작, 클로저 방식)
+  async function toggleCodeView(btn, subId, lang) {
+    const article = btn.closest(".sub-log-item");
+    if (!article) return;
+    let viewer = article.querySelector(".sub-log-code-viewer");
+
+    // 이미 열려 있으면 닫기
+    if (viewer && viewer.classList.contains("open")) {
+      viewer.classList.remove("open");
+      btn.textContent = "💻 코드 보기";
+      return;
+    }
+
+    // 뷰어 없으면 생성
+    if (!viewer) {
+      viewer = document.createElement("div");
+      viewer.className = "sub-log-code-viewer";
+      article.appendChild(viewer);
+    }
+
+    // 아직 코드를 로드하지 않은 경우
+    if (!viewer.dataset.loaded) {
+      btn.textContent = "⏳ 불러오는 중...";
+      btn.classList.add("loading");
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`/api/submission_code?id=${encodeURIComponent(subId)}`);
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText.slice(0, 120)}`);
+        }
+        const json = await res.json();
+        if (json.error) {
+          viewer.innerHTML = `<div class="sub-log-code-error">⚠️ ${escapeHtml(json.error)}</div>`;
+        } else {
+          const code = json.code || "";
+          const langLabel = json.language || lang || "";
+          viewer.innerHTML = `
+            <div class="sub-log-code-header">
+              <span class="sub-log-code-lang-badge">${escapeHtml(langLabel)}</span>
+              <button type="button" class="sub-log-code-copy-btn" onclick="copyCodeFromViewer(this)">복사</button>
+            </div>
+            <pre class="sub-log-code-pre">${escapeHtml(code)}</pre>
+          `;
+        }
+        viewer.dataset.loaded = "1";
+      } catch (e) {
+        viewer.innerHTML = `<div class="sub-log-code-error">⚠️ 네트워크 오류: ${escapeHtml(String(e))}</div>`;
+      } finally {
+        btn.classList.remove("loading");
+        btn.disabled = false;
+      }
+    }
+
+    viewer.classList.add("open");
+    btn.textContent = "🔼 코드 닫기";
+  }
+
+  function copyCodeFromViewer(copyBtn) {
+    const pre = copyBtn.closest(".sub-log-code-viewer")?.querySelector(".sub-log-code-pre");
+    if (!pre) return;
+    const text = pre.textContent;
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.top = "-9999px";
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand("copy"); ta.remove();
+    }
+    copyBtn.textContent = "✓ 복사됨";
+    setTimeout(() => { copyBtn.textContent = "복사"; }, 1800);
+  }
+
+  function renderSubmissionLogsList(items) {
+    const bodyEl = document.getElementById("subLogsBody");
+    if (!bodyEl) return;
+
+    if (!items || items.length === 0) {
+      bodyEl.innerHTML = `<div class="sub-logs-empty">선택한 기간 동안의 제출 내역이 없습니다.</div>`;
+      return;
+    }
+
+    const html = items.map((p, idx) => {
+      const title = p.title || p.problem || "제목 없음";
+      const score = Number(p.score ?? 0);
+      const timeStr = p.time || "-";
+      const dateStr = p.dateStr ? p.dateStr.replace("-", "/") : "";
+      const lang = p.language || "";
+      const serverSubId = p.server_sub_id || "";
+      const showLink = p.show_link !== false;  // 기본 true
+      const problemUrl = p.problem_url || (p.problem ? `http://edu.doingcoding.com/problem/${encodeURIComponent(String(p.problem))}` : "");
+
+      let badgeClass = "fail", badgeText = `오답 (${score}점)`;
+      if (score === 100)     { badgeClass = "pass";    badgeText = "정답 (100점)"; }
+      else if (score > 0)    { badgeClass = "partial"; badgeText = `부분점수 (${score}점)`; }
+
+      const codeBtn = (serverSubId && showLink)
+        ? `<button type="button" class="sub-log-code-toggle-btn"
+             onclick="toggleCodeView(this, '${escapeHtml(serverSubId)}', '${escapeHtml(lang)}')"
+           >💻 코드 보기</button>`
+        : "";
+
+      return `
+        <article class="sub-log-item">
+          <div class="sub-log-item-top">
+            <h4 class="sub-log-item-title">${escapeHtml(title)}</h4>
+            <span class="sub-log-score-badge ${badgeClass}">${badgeText}</span>
+          </div>
+          <div class="sub-log-item-bottom">
+            <div class="sub-log-item-meta">
+              <span>📅 ${dateStr} ${timeStr}</span>
+              ${lang ? `<span>· ${escapeHtml(lang)}</span>` : ""}
+            </div>
+            <div class="sub-log-links">
+              ${codeBtn}
+              <button type="button" class="sub-log-link-btn" onclick="copyTextFromLog('${escapeHtml(title)}')">제목 복사</button>
+              ${serverSubId ? `<a class="sub-log-link-btn" href="http://edu.doingcoding.com/status/${encodeURIComponent(String(serverSubId))}" target="_blank" rel="noopener">제출 내역</a>` : ""}
+              ${problemUrl ? `<a class="sub-log-link-btn primary" href="${escapeHtml(problemUrl)}" target="_blank" rel="noopener">문제 보기</a>` : ""}
+            </div>
+          </div>
+        </article>
+      `;
+    }).join("");
+
+    bodyEl.innerHTML = html;
+  }
+
+  async function copyTextFromLog(text) {
+    if (!text) return;
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.top = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    if (typeof showToast === "function") showToast(`복사됨: ${text}`);
+    else alert(`복사됨: ${text}`);
+  }
+
+  function triggerAiFeedbackFromLogs() {
+    closeSubmissionLogsModal();
+    const name = window.APP_CONFIG?.viewUsername || "학생";
+    const studentId = window.APP_CONFIG?.viewUsername || "";
+    const userUuid = window.APP_CONFIG?.userUuid || "";
+    
+    if (typeof openFeedbackModal === "function") {
+      openFeedbackModal(name, studentId, userUuid);
+    } else {
+      alert("AI 피드백 모달을 사용할 수 없습니다.");
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+</script>

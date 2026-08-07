@@ -1,0 +1,87 @@
+<section class="charts-section" id="charts-section">
+  <h2 id="result-title" class="hidden"></h2>
+  <div class="section-head" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;">
+    <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <h2 class="section-title" style="margin: 0;">챕터별 학습 진행도</h2>
+      <div class="curriculum-tabs" style="display: inline-flex; gap: 6px; background: rgba(0,0,0,0.05); padding: 4px; border-radius: 999px;">
+        {% set currs = [
+          ('prog1', '💻 프로그래밍 I'),
+          ('prog2', '💻 프로그래밍 II (심화)')
+        ] %}
+        {% for k, label in currs %}
+        {% set is_active = (current_curr == k or (not current_curr and k == 'prog1')) %}
+        <a
+          href="?curr={{ k }}{% if streak_days %}&days={{ streak_days }}{% endif %}"
+          class="curr-tab-item {{ 'active' if is_active }}"
+          style="padding: 6px 14px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; text-decoration: none; transition: all 0.2s ease; {{ 'background: #1976d2; color: #fff; box-shadow: 0 2px 8px rgba(25,118,210,0.3);' if is_active else 'color: #555;' }}"
+        >
+          {{ label }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    <button
+      id="charts-toggle-btn"
+      type="button"
+      class="btn-quiet section-toggle"
+      aria-expanded="true"
+    >
+      접기
+    </button>
+  </div>
+
+  <!-- 3열 계층형 드릴다운 레이아웃 (1열: 대단원 / 2열: 소단원 / 3열: 개별 문제 목록 & 숙제 체크) -->
+  <div id="charts-container" class="drilldown-panel">
+    <!-- 1열: 대단원 목록 (Main Chapters) -->
+    <div class="drilldown-column col-main-chapters">
+      <div class="column-header">
+        <span>📁 1. 대단원 선택</span>
+        <span class="col-count-badge" id="main-chapter-count">0개</span>
+      </div>
+      <div class="column-scroll-list" id="main-chapters-list"></div>
+    </div>
+
+    <!-- 2열: 소단원 목록 (Sub-chapters / Groups) & S/SS 진도/숙제 세그먼트 필터 -->
+    <div class="drilldown-column col-sub-chapters">
+      <div class="column-header" style="flex-wrap: wrap; gap: 6px;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span>📂 2. 소단원 선택</span>
+          <span class="col-count-badge" id="sub-chapter-count">0개</span>
+        </div>
+        <div class="sub-filter-group" style="display: flex; gap: 3px;">
+          <button type="button" class="sub-filter-btn active" data-sub-filter="all" style="padding: 1px 6px; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #3b82f6; color: #fff; font-weight: 600; cursor: pointer;">전체</button>
+          <button type="button" class="sub-filter-btn" data-sub-filter="regular" style="padding: 1px 6px; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-weight: 600; cursor: pointer;">📖 진도</button>
+          <button type="button" class="sub-filter-btn" data-sub-filter="homework" style="padding: 1px 6px; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-weight: 600; cursor: pointer;">🛒 숙제</button>
+        </div>
+      </div>
+      <div class="column-scroll-list" id="sub-chapters-list">
+        <div class="col-placeholder">
+          👈 좌측 대단원을 선택해주세요.
+        </div>
+      </div>
+    </div>
+
+    <!-- 3열: 개별 문제 목록 & 상태 필터 칩 (Problems & Status Selection) -->
+    <div class="drilldown-column col-problems">
+      <div class="column-header" style="flex-wrap: wrap; gap: 6px;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span id="prob-header-title">📝 3. 문제 목록 (소단원을 선택해 주세요)</span>
+          {% if viewer_is_admin or is_admin %}
+          <button type="button" id="btn-select-all-problems" class="btn-small-action">전체 선택</button>
+          {% endif %}
+        </div>
+        <div class="prob-filter-group" style="display: flex; gap: 3px;">
+          <button type="button" class="prob-filter-btn active" data-prob-filter="all" style="padding: 1px 6px; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #3b82f6; color: #fff; font-weight: 600; cursor: pointer;">전체</button>
+          <button type="button" class="prob-filter-btn" data-prob-filter="unsolved" style="padding: 1px 6px; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-weight: 600; cursor: pointer;">⬜ 미풀이</button>
+          <button type="button" class="prob-filter-btn" data-prob-filter="solved" style="padding: 1px 6px; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-weight: 600; cursor: pointer;">🟩 정답</button>
+          <button type="button" class="prob-filter-btn" data-prob-filter="wrong" style="padding: 1px 6px; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-weight: 600; cursor: pointer;">🟧 부분/오답</button>
+        </div>
+      </div>
+      <div class="column-scroll-list" id="problems-list">
+        <div class="col-placeholder">
+          👈 소단원을 선택하면 개별 문제 목록과 숙제 선택 체크박스가 나열됩니다.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

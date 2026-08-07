@@ -228,6 +228,81 @@
                 }
             });
 
+            // 💻 정답 코드 모달 이벤트 핸들러
+            const solutionCodeModal = document.getElementById("solution-code-modal");
+            const btnCloseScm = document.getElementById("btn-close-scm");
+            const btnCloseScmCancel = document.getElementById("btn-close-scm-cancel");
+            const btnSaveScmCode = document.getElementById("btn-save-scm-code");
+            const btnCopyScmCode = document.getElementById("btn-copy-scm-code");
+            const scmLangTabs = document.getElementById("scm-lang-tabs");
+            const scmCodeText = document.getElementById("scm-code-text");
+
+            const closeScm = () => solutionCodeModal?.classList.remove("show");
+            btnCloseScm?.addEventListener("click", closeScm);
+            btnCloseScmCancel?.addEventListener("click", closeScm);
+
+            scmLangTabs?.addEventListener("click", (e) => {
+                const btn = e.target.closest("button");
+                if (!btn) return;
+                const lang = btn.getAttribute("data-lang") || "c";
+                window.currentScmLang = lang;
+
+                scmLangTabs.querySelectorAll("button").forEach(b => {
+                    b.classList.remove("active");
+                    b.style.fontWeight = "";
+                });
+                btn.classList.add("active");
+                btn.style.fontWeight = "700";
+
+                const codes = window.currentScmCodes || {};
+                if (scmCodeText) {
+                    scmCodeText.value = codes[lang] || "";
+                }
+            });
+
+            btnCopyScmCode?.addEventListener("click", async () => {
+                if (!scmCodeText) return;
+                try {
+                    await navigator.clipboard.writeText(scmCodeText.value);
+                    if (typeof showToast === "function") showToast("📋 정답 코드가 클립보드에 복사되었습니다!");
+                } catch (e) {
+                    if (typeof showToast === "function") showToast("복사 실패", true);
+                }
+            });
+
+            btnSaveScmCode?.addEventListener("click", async () => {
+                const pid = window.currentScmPid;
+                const lang = window.currentScmLang || "c";
+                const codeVal = scmCodeText ? scmCodeText.value.trim() : "";
+                if (!pid) return;
+
+                window.currentScmCodes = window.currentScmCodes || {};
+                window.currentScmCodes[lang] = codeVal;
+
+                try {
+                    const res = await fetch("/api/workspace/update_problem_metadata", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            prob_id: pid,
+                            solution_codes: window.currentScmCodes,
+                            solution_code: codeVal,
+                            lang: lang
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                        if (typeof showToast === "function") showToast(`💾 [${lang.toUpperCase()}] 정답 코드 저장 완료!`);
+                        closeScm();
+                        if (typeof window.triggerCatalogSearch === "function") window.triggerCatalogSearch();
+                    } else {
+                        if (typeof showToast === "function") showToast("저장 실패", true);
+                    }
+                } catch (e) {
+                    if (typeof showToast === "function") showToast("저장 중 오류 발생", true);
+                }
+            });
+
             btnSubmitBatchAdd?.addEventListener("click", async () => {
                 this.submitBatchAdd();
             });
@@ -348,10 +423,11 @@
                     <thead>
                         <tr style="background:#f1f5f9; border-bottom:1px solid var(--panel-border);">
                             <th style="padding:6px 8px; width:90px;">문제 ID</th>
-                            <th style="padding:6px 8px; width:130px;">단원</th>
-                            <th style="padding:6px 8px; width:160px;">문제 제목</th>
+                            <th style="padding:6px 8px; width:120px;">단원</th>
+                            <th style="padding:6px 8px; width:150px;">문제 제목</th>
                             <th style="padding:6px 8px;">💡 학습 목표 (인라인 편집 가능)</th>
-                            <th style="padding:6px 8px; width:110px;">개념</th>
+                            <th style="padding:6px 8px; width:100px;">개념</th>
+                            <th style="padding:6px 8px; width:110px;">💻 정답 코드</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -360,6 +436,13 @@
             problems.forEach(p => {
                 const goalVal = p.learning_goal || "";
                 const placeholderVal = p.learning_goal_fallback ? `자동상속: ${p.learning_goal_fallback}` : "학습목표 입력...";
+                
+                const solCodes = p.solution_codes || {};
+                const hasCode = Object.values(solCodes).some(c => c && String(c).trim());
+                const btnBadgeHTML = hasCode 
+                    ? `<button class="btn-small btn-secondary" style="padding:2px 6px; font-size:0.72rem; color:#059669; background:#ecfdf5; border-color:#a7f3d0;" onclick="event.stopPropagation(); if(typeof openSolutionCodeModal==='function') openSolutionCodeModal('${p.id}', '${p.title.replace(/'/g, "\\'")}', ${JSON.stringify(solCodes).replace(/"/g, '&quot;')})">🟢 보기/수정</button>`
+                    : `<button class="btn-small btn-secondary" style="padding:2px 6px; font-size:0.72rem; color:#64748b;" onclick="event.stopPropagation(); if(typeof openSolutionCodeModal==='function') openSolutionCodeModal('${p.id}', '${p.title.replace(/'/g, "\\'")}', ${JSON.stringify(solCodes).replace(/"/g, '&quot;')})">⚪ 코드 추가</button>`;
+
                 html += `
                     <tr class="meta-prob-row" data-pid="${p.id}" style="border-bottom:1px solid #e2e8f0;">
                         <td style="padding:6px 8px; font-weight:700; font-family:monospace; color:#334155;">${p.id}</td>
@@ -370,6 +453,9 @@
                         </td>
                         <td style="padding:4px 6px;">
                             <input type="text" class="meta-concept-input" value="${p.concept || ''}" placeholder="개념" style="width:100%; padding:4px 6px; font-size:0.8rem; border:1px solid var(--panel-border); border-radius:4px;">
+                        </td>
+                        <td style="padding:4px 6px; text-align:center;">
+                            ${btnBadgeHTML}
                         </td>
                     </tr>
                 `;
@@ -574,5 +660,50 @@
             }
         }
     };
+    window.openSolutionCodeModal = function(pid, title, solutionCodes = {}) {
+        const solutionCodeModal = document.getElementById("solution-code-modal");
+        const scmProbId = document.getElementById("scm-prob-id");
+        const scmProbTitle = document.getElementById("scm-prob-title");
+        const scmCodeText = document.getElementById("scm-code-text");
+        const scmLangTabs = document.getElementById("scm-lang-tabs");
+        if (!solutionCodeModal) return;
+
+        window.currentScmPid = pid;
+        window.currentScmCodes = typeof solutionCodes === "object" ? Object.assign({}, solutionCodes) : {};
+
+        if (scmProbId) scmProbId.textContent = pid;
+        if (scmProbTitle) scmProbTitle.textContent = title || pid;
+
+        // Auto detect student language if available
+        let targetLang = "c";
+        const selStudent = window.selectedStudentId ? (window.studentsData || {})[window.selectedStudentId] : null;
+        if (selStudent && Array.isArray(selStudent.subjects)) {
+            const sbj = selStudent.subjects.join(" ").toLowerCase();
+            if (sbj.includes("python") || sbj.includes("파이썬")) targetLang = "python";
+            else if (sbj.includes("java") || sbj.includes("자바")) targetLang = "java";
+            else if (sbj.includes("c++") || sbj.includes("cpp")) targetLang = "cpp";
+        }
+        window.currentScmLang = targetLang;
+
+        if (scmLangTabs) {
+            scmLangTabs.querySelectorAll("button").forEach(b => {
+                const l = b.getAttribute("data-lang");
+                if (l === targetLang) {
+                    b.classList.add("active");
+                    b.style.fontWeight = "700";
+                } else {
+                    b.classList.remove("active");
+                    b.style.fontWeight = "";
+                }
+            });
+        }
+
+        if (scmCodeText) {
+            scmCodeText.value = window.currentScmCodes[targetLang] || window.currentScmCodes["c"] || "";
+        }
+
+        solutionCodeModal.classList.add("show");
+    };
+
 })(window);
 

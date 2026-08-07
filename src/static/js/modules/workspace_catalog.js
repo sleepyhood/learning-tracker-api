@@ -323,7 +323,10 @@
                                 </div>
                                 ${goalHTML}
                             </div>
-                            <button class="btn-small btn-primary" style="flex-shrink:0;padding:2px 7px;font-size:0.75rem;border-radius:4px;${isSolved ? 'background:#34c759;' : ''}" onclick="event.stopPropagation(); addToBasket(${safeP})">${inBasket ? "✓" : "+"}</button>
+                            <div style="display:flex; gap:4px; flex-shrink:0; align-items:center;">
+                                <button class="btn-small btn-secondary" style="padding:2px 6px; font-size:0.72rem;" onclick="event.stopPropagation(); if(typeof openSolutionCodeModal==='function') openSolutionCodeModal('${p.legacy_code}', '${p.title.replace(/'/g, "\\'")}', ${JSON.stringify(p.solution_codes || {}).replace(/"/g, '&quot;')})">💻 코드</button>
+                                <button class="btn-small btn-primary" style="padding:2px 7px;font-size:0.75rem;border-radius:4px;${isSolved ? 'background:#34c759;' : ''}" onclick="event.stopPropagation(); addToBasket(${safeP})">${inBasket ? "✓" : "+"}</button>
+                            </div>
                         `;
                         item.onclick = () => {
                             if (typeof window.addToBasket === "function") {

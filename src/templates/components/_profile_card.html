@@ -1,0 +1,70 @@
+<aside id="profile-container" class="chart-card">
+  <div class="profile-head">
+    <img
+      src="{{ avatar_path }}"
+      alt="사용자 아바타"
+      width="100"
+      height="100"
+      class="profile-avatar"
+    />
+    <div class="profile-identity">
+      <h2 class="profile-name">{{ username }}</h2>
+      <div class="profile-badges">
+        <span class="chip chip-role {{ 'admin' if is_admin else 'user' }}"
+          >{{ role_label }}</span
+        >
+        {% if primary_lang %}
+        <span
+          class="chip chip-lang"
+          title="상위 언어: {% for l,c in primary_lang_top3 %}{{ l }} {{ c }}{% if not loop.last %}, {% endif %}{% endfor %}"
+        >주사용 언어: {{ primary_lang }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="profile-meta-row">
+    <div class="profile-actions" style="display: flex; gap: 6px; flex-wrap: wrap;">
+      <a
+        href="{{ url_for('view_homework_logs', user_uuid=user_uuid) }}"
+        class="chip chip-action btn-primary"
+      >숙제 기록 보기</a>
+      <button
+        type="button"
+        class="chip chip-action btn-secondary"
+        onclick="openSubmissionLogsModal()"
+        style="cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
+      >📊 풀이 로그 보기</button>
+    </div>
+    <p class="profile-last-login">최근 접속: {{ last_login }}</p>
+  </div>
+
+  <div id="profile-stats">
+    <div>
+      <div class="stat-value">{{ accepted_number }}</div>
+      <div class="stat-label">정답 문제</div>
+    </div>
+    <div>
+      <div class="stat-value">{{ submission_number }}</div>
+      <div class="stat-label">제출 수</div>
+    </div>
+    <div>
+      <div class="stat-value">{{ total_score }}</div>
+      <div class="stat-label">누적 점수</div>
+    </div>
+  </div>
+
+  <div id="today-latest-problem" class="today-problem-box">
+    <div class="today-problem-title-row">
+      <span id="today-problem-label" class="today-problem-label">오늘 마지막 풀이</span>
+      <span id="today-problem-status-badge" class="today-problem-badge">미제출</span>
+    </div>
+    <div class="today-problem-content">
+      <div class="today-problem-title-wrapper">
+        <a id="today-problem-link" href="#" target="_blank" rel="noopener" class="today-problem-title" style="pointer-events: none;">오늘 제출 내역 없음</a>
+        <button type="button" id="today-problem-copy-btn" class="btn-quiet streak-inline-btn today-copy-btn" style="display: none;" title="제목 복사">제목 복사</button>
+      </div>
+      <span id="today-problem-meta" class="today-problem-meta">-</span>
+    </div>
+  </div>
+</aside>

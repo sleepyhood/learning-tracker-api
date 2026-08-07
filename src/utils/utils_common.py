@@ -18,7 +18,8 @@ from utils.questions_crawler import do_crawling
 from utils.summarizer import (
     summarize_progress,
     summarize_user_chapter_group,
-)  # 너가 사용하는 함수 경로에 따라 조정 필요
+    summarize_drilldown_progress,
+)
 
 
 from utils.questions_api import save_server_problems_json
@@ -270,7 +271,9 @@ def fetch_submissions_window(s, username, myself: int, days=30, limit=100):
 
 
 def filter_main_account_submissions(submissions, true_username):
-    return [rec for rec in submissions if rec.get("username") == true_username]
+    if not isinstance(submissions, (list, tuple)):
+        return []
+    return [rec for rec in submissions if isinstance(rec, dict) and (not rec.get("username") or rec.get("username") == true_username)]
 
 
 def compute_primary_language(submissions, now=None):
@@ -280,8 +283,16 @@ def compute_primary_language(submissions, now=None):
     seen = set()
     score = defaultdict(int)
     count90 = defaultdict(int)
+    if not isinstance(submissions, (list, tuple)):
+        return None, []
+
     for rec in submissions:
-        ts = datetime.fromisoformat(rec["create_time"].replace("Z", "+00:00"))
+        if not isinstance(rec, dict) or not rec.get("create_time"):
+            continue
+        try:
+            ts = datetime.fromisoformat(str(rec["create_time"]).replace("Z", "+00:00"))
+        except Exception:
+            continue
         day = ts.date()
         lang = rec.get("language") or "Unknown"
         pid = rec.get("problem")
@@ -305,55 +316,124 @@ def compute_primary_language(submissions, now=None):
     return top_lang, top3
 
 
-# ... build_dashboard_viewmodel 에 days 파라미터 전달
-def build_dashboard_viewmodel(s, profile_json: dict, is_me: bool, days: int = 7):
-    payload = profile_json.get("data", {})
-    user_data = payload.get("user", {})
-    username = user_data.get("username", "")
+def build_dashboard_viewmodel(*args, **kwargs):
+    """
+    지원 형태 1: build_dashboard_viewmodel(s, profile_json: dict, is_me: bool, days: int = 7, curr_key: str = 'prog1')
+    지원 형태 2: build_dashboard_viewmodel(username_raw=..., user_uuid=..., profile=..., submissions=..., problems_dict=..., role_ctx=..., curr_key=...)
+    """
+    curr_key = kwargs.get("curr_key") or kwargs.get("curr") or "prog1"
+    curriculum_file_map = {
+        "prog1": "all_problems.json",
+        "prog2": "prog2_problems.json",
+        "block": "block_problems.json",
+        "external": "external_problems.json",
+    }
+    target_filename = curriculum_file_map.get(curr_key, "all_problems.json")
+    target_problem_file = os.path.join(PROBLEM_DIR, target_filename)
+    if not os.path.exists(target_problem_file):
+        target_problem_file = PROBLEM_FILE
 
-    role_label, is_admin, role_norm = normalize_role(user_data.get("admin_type"))
-    if is_me:
-        fsession["role"] = role_norm
+    if len(args) >= 2 or "profile_json" in kwargs:
+        s = args[0] if len(args) > 0 else kwargs.get("s")
+        profile_json = args[1] if len(args) > 1 else kwargs.get("profile_json", {})
+        is_me = args[2] if len(args) > 2 else kwargs.get("is_me", False)
+        days = args[3] if len(args) > 3 else kwargs.get("days", 7)
 
-    problems = payload.get("oi_problems_status", {}).get("problems", {})
+        payload = profile_json.get("data", {})
+        user_data = payload.get("user", {})
+        username = user_data.get("username", "")
 
-    myself_flag = 1 if is_me else 0
-    submissions = fetch_submissions_window(
-        s, username, myself=myself_flag, days=max(days, 30), limit=100
-    )
+        role_label, is_admin, role_norm = normalize_role(user_data.get("admin_type"))
+        if is_me:
+            fsession["role"] = role_norm
+
+        problems = payload.get("oi_problems_status", {}).get("problems", {})
+
+        myself_flag = 1 if is_me else 0
+        submissions = fetch_submissions_window(
+            s, username, myself=myself_flag, days=max(days, 30), limit=100
+        )
+        filtered = filter_main_account_submissions(submissions, username)
+
+        problems = _merge_submissions_list_into_problems(filtered, problems)
+        user_path = cache_user_problems(username, problems)
+
+        legacy_map = resolve_legacy_map_path()
+        chapter_summary = summarize_progress(
+            target_problem_file, user_path, legacy_map_file=legacy_map
+        )
+        drilldown_summary = summarize_drilldown_progress(
+            target_problem_file, user_path, legacy_map_file=legacy_map
+        )
+
+        streak = generate_streak_data(filtered, days=days)
+        top_lang, top3 = compute_primary_language(filtered)
+        last_login_fmt = format_last_login(user_data.get("last_login"))
+        avatar = payload.get("avatar") or "/public/avatar/default.png"
+        avatar_path = f"{BASE_URL}{avatar}"
+
+        return dict(
+            username=username,
+            real_name=user_data.get("realname") or username,
+            last_login=last_login_fmt,
+            accepted_number=payload.get("accepted_number"),
+            submission_number=payload.get("submission_number"),
+            total_score=payload.get("total_score"),
+            progress_data=chapter_summary,
+            drilldown_data=drilldown_summary,
+            streak_data=streak,
+            avatar_path=avatar_path,
+            role_label=role_label,
+            is_admin=is_admin,
+            primary_lang=top_lang,
+            primary_lang_top3=top3,
+            current_curr=curr_key,
+        )
+
+    # 형태 2: kwargs 기반 호출 지원
+    username = kwargs.get("username_raw") or kwargs.get("username", "")
+    user_uuid = kwargs.get("user_uuid", "")
+    profile = kwargs.get("profile", {})
+    submissions = kwargs.get("submissions", [])
+    days = kwargs.get("days", 7)
+
     filtered = filter_main_account_submissions(submissions, username)
+    top_lang, top3 = compute_primary_language(filtered)
+    last_login_fmt = format_last_login(profile.get("last_login", "")) if profile.get("last_login") else "-"
+    role_label, is_admin, _ = normalize_role(profile.get("admin_type"))
+    avatar = profile.get("avatar") or "/public/avatar/default.png"
+    avatar_path = f"{BASE_URL}{avatar}" if not avatar.startswith("http") else avatar
 
-    # 최근 제출 이력을 머지하여 캐시 생성
-    problems = _merge_submissions_list_into_problems(filtered, problems)
-    user_path = cache_user_problems(username, problems)
+    user_path = os.path.join(USER_DATA_DIR, f"{sanitize_filename(username)}.json")
+    if not os.path.exists(user_path) and user_uuid:
+        user_path = os.path.join(USER_DATA_DIR, f"{user_uuid}.json")
 
     legacy_map = resolve_legacy_map_path()
+    target_path = user_path if os.path.exists(user_path) else (PROBLEM_FILE if os.path.exists(PROBLEM_FILE) else "")
     chapter_summary = summarize_progress(
-        PROBLEM_FILE, user_path, legacy_map_file=legacy_map
-    )
-
-    # ✅ days 반영
+        target_problem_file, target_path, legacy_map_file=legacy_map
+    ) if target_path else []
+    drilldown_summary = summarize_drilldown_progress(
+        target_problem_file, target_path, legacy_map_file=legacy_map
+    ) if target_path else []
     streak = generate_streak_data(filtered, days=days)
-
-    top_lang, top3 = compute_primary_language(filtered)
-    last_login_fmt = format_last_login(user_data.get("last_login"))
-    avatar = payload.get("avatar") or "/public/avatar/default.png"
-    avatar_path = f"{BASE_URL}{avatar}"
 
     return dict(
         username=username,
-        real_name=user_data.get("realname") or username,
+        real_name=profile.get("name") or profile.get("realname") or username,
         last_login=last_login_fmt,
-        accepted_number=payload.get("accepted_number"),
-        submission_number=payload.get("submission_number"),
-        total_score=payload.get("total_score"),
+        accepted_number=profile.get("accepted_number", 0),
+        submission_number=profile.get("submission_number", len(submissions)),
+        total_score=profile.get("total_score", 0),
         progress_data=chapter_summary,
+        drilldown_data=drilldown_summary,
         streak_data=streak,
         avatar_path=avatar_path,
         role_label=role_label,
         is_admin=is_admin,
         primary_lang=top_lang,
         primary_lang_top3=top3,
+        current_curr=curr_key,
     )
 
 
@@ -549,10 +629,38 @@ def sync_user_problems_cache(
     return prof, user_path
 
 
-def ensure_user_cache_or_404(user_path: str, problem_file: str, username: str):
-    if not os.path.exists(user_path) or not os.path.exists(problem_file):
-        return f"{username} 또는 문제 파일이 존재하지 않습니다."
-    return None
+def ensure_user_cache_or_404(user_id_or_uuid: str, api_session=None, max_age_seconds: int = 600) -> tuple[dict, bool]:
+    """
+    유저 캐시 데이터(USER_DATA_DIR/{uuid}.json)를 로드하고,
+    캐시가 없거나 max_age_seconds 초 초과 시 API 세션을 통해 최신화한 뒤
+    (data_dict, is_success) 튜플을 반환.
+    """
+    try:
+        from utils.utils_user_doc import load_doc_by_any, is_doc_stale, pull_and_store_user, resolve_uuid
+
+        user_uuid = resolve_uuid(user_id_or_uuid) if "-" not in str(user_id_or_uuid) else str(user_id_or_uuid)
+        doc = load_doc_by_any(user_uuid)
+
+        username = (doc.get("profile") or {}).get("student_id") or (doc.get("profile") or {}).get("username") or user_id_or_uuid
+        ttl_ms = max_age_seconds * 1000
+
+        if (is_doc_stale(doc, ttl_ms=ttl_ms) or not doc.get("profile")) and api_session and username:
+            try:
+                doc = pull_and_store_user(username)
+            except Exception as e:
+                print(f"[ensure_user_cache_or_404] Sync failed for {username}: {e}")
+
+        if not doc:
+            return {}, False
+
+        doc.setdefault("profile", {"student_id": username, "name": username})
+        doc.setdefault("submissions", doc.get("oi_problems") or [])
+        doc.setdefault("problems_dict", doc.get("oi_problems") if isinstance(doc.get("oi_problems"), dict) else {})
+
+        return doc, True
+    except Exception as e:
+        print(f"[ensure_user_cache_or_404] Exception for {user_id_or_uuid}: {e}")
+        return {}, False
 
 
 def resolve_legacy_map_dict():

@@ -96,6 +96,10 @@ def _build_micro_registry(raw_json: dict) -> dict:
             c_entry = c_entry or {}
             l_goal = c_entry.get("learning_goal") or value.get("learning_goal", "")
             
+            sol_codes = c_entry.get("solution_codes") or value.get("solution_codes") or {}
+            if not sol_codes and (c_entry.get("solution_code") or value.get("solution_code")):
+                sol_codes = {"c": c_entry.get("solution_code") or value.get("solution_code")}
+
             registry[prob_id] = {
                 "id": prob_id,
                 "title": prob_t,
@@ -103,6 +107,8 @@ def _build_micro_registry(raw_json: dict) -> dict:
                 "major": maj,
                 "sub": sub_title,
                 "learning_goal": l_goal,
+                "solution_codes": sol_codes,
+                "solution_code": sol_codes.get("c") or sol_codes.get("python") or c_entry.get("solution_code") or "",
                 "tags": c_entry.get("tags") or value.get("tags") or []
             }
         else:
@@ -131,6 +137,10 @@ def _build_micro_registry(raw_json: dict) -> dict:
                         c_entry = c_entry or {}
                         l_goal = c_entry.get("learning_goal", "")
 
+                        sol_codes = c_entry.get("solution_codes") or {}
+                        if not sol_codes and c_entry.get("solution_code"):
+                            sol_codes = {"c": c_entry.get("solution_code")}
+
                         registry[prob_id] = {
                             "id": prob_id,
                             "title": prob_title,
@@ -138,6 +148,8 @@ def _build_micro_registry(raw_json: dict) -> dict:
                             "major": major_ch,
                             "sub": sub_title,
                             "learning_goal": l_goal,
+                            "solution_codes": sol_codes,
+                            "solution_code": sol_codes.get("c") or sol_codes.get("python") or c_entry.get("solution_code") or "",
                             "tags": c_entry.get("tags") or []
                         }
 
@@ -906,7 +918,7 @@ def api_workspace_update_problem_metadata():
     custom_meta = _load_problem_custom_metadata()
 
     items_to_update = []
-    if "prob_id" in payload:
+    if "prob_id" in payload or "id" in payload:
         items_to_update.append(payload)
     elif "problems" in payload and isinstance(payload["problems"], list):
         items_to_update = payload["problems"]
@@ -920,12 +932,27 @@ def api_workspace_update_problem_metadata():
         if not pid: continue
 
         entry = custom_meta.setdefault(pid, {})
+        entry["id"] = pid
         if "learning_goal" in item:
             entry["learning_goal"] = str(item["learning_goal"]).strip()
         if "concept" in item:
             entry["concept"] = str(item["concept"]).strip()
         if "tags" in item and isinstance(item["tags"], list):
             entry["tags"] = [str(t).strip() for t in item["tags"] if t]
+        
+        # Process solution_codes (dict) or solution_code (str)
+        if "solution_codes" in item and isinstance(item["solution_codes"], dict):
+            entry_sol = entry.setdefault("solution_codes", {})
+            for lang_k, code_v in item["solution_codes"].items():
+                if code_v is not None:
+                    entry_sol[str(lang_k).lower().strip()] = str(code_v).strip()
+        elif "solution_code" in item and item["solution_code"] is not None:
+            code_str = str(item["solution_code"]).strip()
+            lang_key = str(item.get("lang") or "c").lower().strip()
+            entry_sol = entry.setdefault("solution_codes", {})
+            entry_sol[lang_key] = code_str
+            entry["solution_code"] = code_str
+
         updated_count += 1
 
     _save_problem_custom_metadata(custom_meta)
@@ -971,6 +998,7 @@ def api_workspace_export_problem_metadata():
         if sub_filter != "all" and sub_title != sub_filter:
             continue
 
+        sol_codes = item.get("solution_codes") or {}
         export_list.append({
             "id": pid,
             "title": item.get("title", ""),
@@ -978,7 +1006,9 @@ def api_workspace_export_problem_metadata():
             "sub": sub_title,
             "concept": item.get("concept", ""),
             "learning_goal": item.get("learning_goal", ""),
-            "learning_goal_fallback": item.get("learning_goal_fallback", "")
+            "learning_goal_fallback": item.get("learning_goal_fallback", ""),
+            "solution_codes": sol_codes,
+            "solution_code": item.get("solution_code", "")
         })
 
     formatted_tree = {m: sorted(list(subs), key=_natural_sort_key) for m, subs in chapters_tree.items()}
@@ -1014,10 +1044,17 @@ def api_workspace_import_problem_metadata():
                 pid = parts[0].strip()
                 l_goal = parts[1].strip()
                 concept = parts[2].strip() if len(parts) >= 3 else ""
+                sol_c = parts[3].strip() if len(parts) >= 4 else ""
+                sol_py = parts[4].strip() if len(parts) >= 5 else ""
                 
                 entry = custom_meta.setdefault(pid, {})
+                entry["id"] = pid
                 entry["learning_goal"] = l_goal
                 if concept: entry["concept"] = concept
+                if sol_c or sol_py:
+                    entry_sol = entry.setdefault("solution_codes", {})
+                    if sol_c: entry_sol["c"] = sol_c
+                    if sol_py: entry_sol["python"] = sol_py
                 updated_count += 1
 
     for item in problems_arr:
@@ -1026,10 +1063,16 @@ def api_workspace_import_problem_metadata():
             if not pid: continue
             l_goal = str(item.get("learning_goal") or "").strip()
             concept = str(item.get("concept") or "").strip()
+            sol_codes = item.get("solution_codes")
             
             entry = custom_meta.setdefault(pid, {})
+            entry["id"] = pid
             if l_goal: entry["learning_goal"] = l_goal
             if concept: entry["concept"] = concept
+            if isinstance(sol_codes, dict):
+                entry["solution_codes"] = sol_codes
+            elif item.get("solution_code"):
+                entry.setdefault("solution_codes", {})["c"] = str(item["solution_code"]).strip()
             updated_count += 1
 
     _save_problem_custom_metadata(custom_meta)
@@ -1043,13 +1086,17 @@ def api_workspace_save_homework_log():
         return err
     payload = request.get_json(force=True) or {}
     display_id = payload.get("display_id")
+    user_uuid = payload.get("user_uuid") or display_id
     problems = payload.get("problems", [])
-    
-    data = _load_workspace_students()
-    student = data.get(display_id)
-    if not student:
-        return jsonify({"ok": False, "error": "Student not found"}), 404
-        
-    u = student.get("user_uuid") or display_id
-    append_homework_log(u, {"problems": problems})
+
+    if not user_uuid and display_id:
+        data = _load_workspace_students()
+        student = data.get(display_id)
+        if student:
+            user_uuid = student.get("user_uuid") or display_id
+
+    if not user_uuid:
+        return jsonify({"ok": False, "error": "Target user_uuid or display_id is required"}), 400
+
+    append_homework_log(user_uuid, {"problems": problems, "title": payload.get("title", "")})
     return jsonify({"ok": True})

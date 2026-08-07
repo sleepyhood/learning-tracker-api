@@ -1,0 +1,20 @@
+<footer class="page-footer">
+  <div class="update-controls">
+    <select id="update-chapter-select" class="footer-select" aria-label="갱신할 챕터 선택">
+      <option value="">갱신 범위 선택</option>
+      <option value="all">전체 8챕터</option>
+      <option value="1">1. 기초문법1</option>
+      <option value="2">2. 기초문법2</option>
+      <option value="3">3. 알고리즘 초급</option>
+      <option value="4">4. 알고리즘 중급1</option>
+      <option value="5">5. 알고리즘 중급2</option>
+      <option value="6">6. 알고리즘 중급3</option>
+      <option value="7">7. 알고리즘 고급1</option>
+      <option value="8">8. 알고리즘 고급2</option>
+    </select>
+    <button id="update-btn" class="footer-btn btn-primary" onclick="updateProblems()">문제 목록 새로고침</button>
+  </div>
+  <div id="update-time"></div>
+  <a class="footer-btn btn-quiet" href="/logout">로그아웃</a>
+  <button class="footer-btn btn-quiet" onclick="fetch('/clear_data').then(() => alert('로컬 데이터가 삭제되었습니다.'))">로컬 데이터 삭제</button>
+</footer>

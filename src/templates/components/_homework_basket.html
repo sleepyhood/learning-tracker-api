@@ -1,0 +1,27 @@
+{% if viewer_is_admin or is_admin %}
+<!-- 🧺 퀵 숙제 장바구니 (Quick Homework Basket) -->
+<div id="quick-homework-basket" class="basket-drawer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(0, 0, 0, 0.12); border-radius: 16px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); width: 340px; max-height: 480px; display: flex; flex-direction: column; overflow: hidden; transition: transform 0.3s ease, opacity 0.3s ease;">
+  <div class="basket-header" style="padding: 12px 16px; background: linear-gradient(135deg, #1663e8, #1d4ed8); color: #ffffff; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.95rem;">
+      <span>🧺 숙제 장바구니</span>
+      <span id="basket-count-badge" style="background: rgba(255, 255, 255, 0.25); padding: 2px 8px; border-radius: 999px; font-size: 0.78rem;">0개</span>
+    </div>
+    <button id="basket-toggle-btn" type="button" style="background: none; border: none; color: #fff; cursor: pointer; font-size: 1rem;" title="접기/펼치기">➖</button>
+  </div>
+
+  <div id="basket-body" style="padding: 12px; overflow-y: auto; flex: 1; min-height: 100px; max-height: 280px;">
+    <div id="basket-empty-msg" style="text-align: center; color: #888; padding: 24px 8px; font-size: 0.85rem;">
+      장바구니가 비어 있습니다.<br />
+      <span style="font-size: 0.78rem; color: #aaa;">챕터 카드의 <strong>[+ 퀵 출제]</strong>를 눌러 문제를 담아주세요.</span>
+    </div>
+    <ul id="basket-items-list" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px;"></ul>
+  </div>
+
+  <div class="basket-footer" style="padding: 12px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px;">
+    <div style="display: flex; gap: 8px;">
+      <button id="basket-clear-btn" type="button" class="btn-quiet" style="flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; font-size: 0.8rem; cursor: pointer; color: #64748b;">🧹 비우기</button>
+      <button id="basket-submit-btn" type="button" style="flex: 2; padding: 8px 12px; border: none; border-radius: 8px; background: #1663e8; color: #fff; font-size: 0.85rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(22, 99, 232, 0.3);">🚀 숙제 즉시 출제하기</button>
+    </div>
+  </div>
+</div>
+{% endif %}
