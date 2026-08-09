@@ -6,9 +6,9 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -17,13 +17,13 @@
   .feedback-modal-card {
     background: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 24px;
-    width: 380px;
-    max-width: 90%;
-    max-height: 90vh;
+    border-radius: 20px;
+    width: 720px;
+    max-width: 92vw;
+    max-height: 88vh;
     overflow-y: auto;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
-    padding: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -31,83 +31,133 @@
     box-sizing: border-box;
   }
   @keyframes feedback-fadeIn {
-    from { transform: scale(0.95); opacity: 0; }
+    from { transform: scale(0.96); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
   }
   .feedback-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    padding-bottom: 12px;
   }
   .feedback-modal-title {
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     font-weight: 800;
-    color: #222222;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
   .feedback-modal-close {
     background: none;
     border: none;
     font-size: 1.6rem;
     cursor: pointer;
-    color: #888;
+    color: #64748b;
     line-height: 1;
     padding: 0;
   }
   .feedback-modal-close:hover {
-    color: #222;
+    color: #0f172a;
   }
   .feedback-student-info {
-    font-size: 0.9rem;
-    color: #495057;
-    background: #f8f9fa;
-    padding: 8px 12px;
-    border-radius: 12px;
-    margin-bottom: 4px;
+    font-size: 0.88rem;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 8px 14px;
+    border-radius: 10px;
+  }
+  .feedback-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 640px) {
+    .feedback-modal-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .feedback-modal-column {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
   .feedback-modal-section {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    padding-bottom: 14px;
-  }
-  .feedback-modal-section:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 14px;
   }
   .feedback-section-title {
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     font-weight: 800;
-    color: #373a3c;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
   .feedback-problems-text {
     font-size: 0.82rem;
-    color: #495057;
-    line-height: 1.4;
-    background: #eef2f7;
-    padding: 10px;
-    border-radius: 12px;
+    color: #334155;
+    line-height: 1.45;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    padding: 10px 12px;
+    border-radius: 10px;
     word-break: break-all;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+  .feedback-radio-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .feedback-radio-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    transition: all 0.15s ease;
+  }
+  .feedback-radio-label:has(input:checked) {
+    border-color: #6c5ce7;
+    background: rgba(108, 92, 231, 0.08);
+    color: #5b4bc4;
+  }
+  .feedback-radio-label input[type="radio"] {
+    accent-color: #6c5ce7;
   }
   .feedback-checkbox-row {
     display: flex;
-    gap: 16px;
+    gap: 12px;
     align-items: center;
+    flex-wrap: wrap;
   }
   .feedback-checkbox {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 700;
-    color: #495057;
+    color: #475569;
     cursor: pointer;
   }
   .feedback-checkbox input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
     accent-color: #6c5ce7;
   }
   .feedback-step-container {
@@ -118,12 +168,12 @@
   .feedback-step-label {
     font-size: 0.78rem;
     font-weight: 700;
-    color: #868e96;
+    color: #64748b;
   }
   .quick-tag-btn {
-    background: #f1f5f9;
+    background: #ffffff;
     border: 1px solid #cbd5e1;
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 3px 8px;
     font-size: 0.75rem;
     color: #334155;
@@ -136,8 +186,8 @@
     border-color: #94a3b8;
   }
   .feedback-input {
-    border: 1.5px solid #dee2e6;
-    border-radius: 12px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
     padding: 8px 12px;
     font-size: 0.82rem;
     font-weight: 500;
@@ -145,7 +195,7 @@
     background: #ffffff;
     width: 100%;
     box-sizing: border-box;
-    color: #495057;
+    color: #334155;
     transition: all 0.2s ease;
   }
   .feedback-input:focus {
@@ -162,7 +212,7 @@
   }
   .feedback-btn {
     border: none;
-    border-radius: 20px;
+    border-radius: 10px;
     padding: 10px 12px;
     font-size: 0.85rem;
     font-weight: 700;
@@ -183,29 +233,29 @@
   .feedback-ai-btn {
     background: #6c5ce7;
     color: white;
-    box-shadow: 0 4px 8px rgba(108, 92, 231, 0.25);
+    box-shadow: 0 4px 10px rgba(108, 92, 231, 0.25);
   }
   .feedback-ai-btn:hover {
     background: #5b4bc4;
   }
   .feedback-complete-btn {
-    background: #2ed573;
+    background: #10b981;
     color: white;
-    box-shadow: 0 4px 8px rgba(46, 213, 115, 0.25);
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
   }
   .feedback-complete-btn:hover {
-    background: #26af5f;
+    background: #059669;
   }
   .modal-toast {
     position: fixed;
     bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(15, 23, 42, 0.9);
     color: white;
     padding: 10px 20px;
     border-radius: 20px;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     z-index: 10001;
     opacity: 0;
     transition: opacity 0.3s;
@@ -224,73 +274,107 @@
       <span class="feedback-modal-title">🪄 알림장 및 피드백</span>
       <button class="feedback-modal-close" onclick="closeFeedbackModal()">×</button>
     </div>
-    <div class="feedback-modal-body" style="display: flex; flex-direction: column; gap: 16px;">
-      <div class="feedback-student-info">
-        학생: <strong id="feedbackStudentName">홍길동</strong> (@<span id="feedbackStudentId">id</span>)
-      </div>
+    
+    <div class="feedback-student-info">
+      학생: <strong id="feedbackStudentName">홍길동</strong> (@<span id="feedbackStudentId">id</span>)
+    </div>
+
+    <!-- 2컬럼 레이아웃 -->
+    <div class="feedback-modal-grid">
       
-      <!-- 오늘 완료한 문항 -->
-      <div class="feedback-modal-section">
-        <div class="feedback-section-title">🎯 오늘 학습 문항</div>
-        <div id="feedbackTodayProblems" class="feedback-problems-text">
-          불러오는 중...
-        </div>
-      </div>
-
-      <!-- 옵션 설정 -->
-      <div class="feedback-modal-section">
-        <div class="feedback-section-title">⚙️ 옵션 설정</div>
-        <div class="feedback-checkbox-row" style="flex-wrap: wrap; gap: 8px 16px;">
-          <label class="feedback-checkbox">
-            <input type="checkbox" id="modalIncludeGreeting" checked />
-            인사말 포함
-          </label>
-          <label class="feedback-checkbox">
-            <input type="checkbox" id="modalIncludeUsername" />
-            풀이 계정 포함
-          </label>
-          <label class="feedback-checkbox">
-            <input type="checkbox" id="modalIncludeReview" checked />
-            오늘 학습 문항(복습 가이드) 포함
-          </label>
-        </div>
-      </div>
-
-      <!-- AI 코멘트 파이프라인 -->
-      <div class="feedback-modal-section">
-        <div class="feedback-section-title">🪄 AI 코멘트 작성</div>
-        
-        <div class="feedback-step-container">
-          <div class="feedback-step-label">1단계: 관찰 메모 작성</div>
-          <textarea id="modalTeacherMemo" placeholder="예: 오늘 피곤해 보여서 자주 깨움 (비워두면 기본값 적용)" class="feedback-input feedback-textarea" rows="1"></textarea>
-          <div class="quick-tags-container" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;">
-            <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '😊 집중도 좋음')">😊 집중도 좋음</button>
-            <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '❓ 질문 적극적')">❓ 질문 적극적</button>
-            <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '💡 오답 혼자 해결')">💡 오답 혼자 해결</button>
-            <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '⚡ 풀이 속도 빠름')">⚡ 풀이 속도 빠름</button>
-            <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '💤 조금 피곤해함')">💤 조금 피곤해함</button>
+      <!-- 좌측 컬럼: 숙제 문항 & 오늘 실습/제출 코드 현황 -->
+      <div class="feedback-modal-column">
+        <!-- 🎯 숙제 문항 (요구사항 2: 이름 변경) -->
+        <div class="feedback-modal-section">
+          <div class="feedback-section-title">🎯 숙제 문항</div>
+          <div id="feedbackHomeworkProblems" class="feedback-problems-text">
+            장바구니 지정 숙제 없음
           </div>
         </div>
 
-        <div class="feedback-step-container" style="margin-top: 8px;">
-          <div class="feedback-step-label">2단계: 프롬프트 복사</div>
-          <button id="modalCopyPromptBtn" class="feedback-btn feedback-ai-btn" onclick="copyModalAiPrompt()">
-            📋 AI 프롬프트 복사
-          </button>
-        </div>
-
-        <div class="feedback-step-container" style="margin-top: 8px;">
-          <div class="feedback-step-label">3단계: AI 답변 붙여넣기</div>
-          <textarea id="modalHomeworkComment" placeholder="외부 AI 답변 붙여넣기" class="feedback-input feedback-textarea" rows="1"></textarea>
-        </div>
-
-        <div class="feedback-step-container" style="margin-top: 8px;">
-          <div class="feedback-step-label">4단계: 완료</div>
-          <button id="modalCompleteBtn" class="feedback-btn feedback-complete-btn" onclick="submitModalFeedback()">
-            📋 최종 복사 및 전송
-          </button>
+        <!-- 📊 오늘 실습 및 제출 코드 현황 (요구사항 3: 제출시간,제목,결과,코드) -->
+        <div class="feedback-modal-section">
+          <div class="feedback-section-title">📊 오늘 풀이로그 & 제출 코드 현황</div>
+          <div id="feedbackTodayLogSummary" class="feedback-problems-text" style="max-height: 200px;">
+            불러오는 중...
+          </div>
         </div>
       </div>
+
+      <!-- 우측 컬럼: ⚙️ 옵션 설정 & AI 코멘트 작성 파이프라인 -->
+      <div class="feedback-modal-column">
+        <!-- ⚙️ 옵션 설정 (숙제 미존재 시 숙제라디오 비활성화 & 모드별 체크박스 동적 노출) -->
+        <div class="feedback-modal-section">
+          <div class="feedback-section-title">⚙️ 옵션 설정</div>
+          <div class="feedback-radio-group">
+            <label class="feedback-radio-label" id="labelNoticeHomework">
+              <input type="radio" name="modalNoticeMode" id="modeNoticeHomework" value="homework" checked onclick="handleNoticeModeChange('homework')" />
+              📘 숙제 안내
+            </label>
+            <label class="feedback-radio-label" id="labelNoticeReview">
+              <input type="radio" name="modalNoticeMode" id="modeNoticeReview" value="review" onclick="handleNoticeModeChange('review')" />
+              🔄 복습 안내
+            </label>
+          </div>
+          
+          <div class="feedback-checkbox-row" style="margin-top: 6px;">
+            <label class="feedback-checkbox">
+              <input type="checkbox" id="modalIncludeGreeting" checked />
+              인사말 포함
+            </label>
+            <label class="feedback-checkbox" id="wrapperShowHomeworkList">
+              <input type="checkbox" id="modalShowHomeworkList" checked />
+              숙제 세부 목록 표시
+            </label>
+            <label class="feedback-checkbox" id="wrapperShowReviewList" style="display: none;">
+              <input type="checkbox" id="modalShowReviewList" />
+              복습 세부 목록 표시
+            </label>
+          </div>
+        </div>
+
+        <!-- AI 코멘트 파이프라인 -->
+        <div class="feedback-modal-section">
+          <div class="feedback-section-title">🪄 AI 코멘트 작성</div>
+          
+          <div class="feedback-step-container">
+            <div class="feedback-step-label">1단계: 관찰 메모 작성</div>
+            <textarea id="modalTeacherMemo" placeholder="예: 오늘 집중도 높았고 오답 혼자 해결함 (비워두면 기본값 적용)" class="feedback-input feedback-textarea" rows="1"></textarea>
+            <div class="quick-tags-container" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;">
+              <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '😊 집중도 좋음')">😊 집중도 좋음</button>
+              <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '❓ 질문 적극적')">❓ 질문 적극적</button>
+              <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '💡 오답 혼자 해결')">💡 오답 혼자 해결</button>
+              <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '⚡ 풀이 속도 빠름')">⚡ 풀이 속도 빠름</button>
+              <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '💤 조금 피곤해함')">💤 조금 피곤해함</button>
+            </div>
+          </div>
+
+          <div class="feedback-step-container" style="margin-top: 6px;">
+            <div class="feedback-step-label">2단계: 프롬프트 복사</div>
+            <button id="modalCopyPromptBtn" class="feedback-btn feedback-ai-btn" onclick="copyModalAiPrompt()">
+              📋 AI 프롬프트 복사 (제출 코드 포함)
+            </button>
+          </div>
+
+          <div class="feedback-step-container" style="margin-top: 6px;">
+            <div class="feedback-step-label">3단계: AI 답변 붙여넣기</div>
+            <textarea id="modalHomeworkComment" placeholder="외부 AI(ChatGPT/Claude) 답변 붙여넣기" class="feedback-input feedback-textarea" rows="1"></textarea>
+          </div>
+
+          <div class="feedback-step-container" style="margin-top: 6px;">
+            <div class="feedback-step-label">4단계: 완료 및 출제</div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <button id="modalCompleteBtn" class="feedback-btn feedback-complete-btn" onclick="submitModalFeedback()">
+                📋 카카오톡 알림장 복사 & 숙제/피드백 저장
+              </button>
+              <button id="modalDirectSubmitBtn" class="feedback-btn" style="background: #475569; color: white; box-shadow: 0 4px 8px rgba(71, 85, 105, 0.2);" onclick="submitDirectHomework()">
+                ⚡ 피드백 없이 숙제만 즉시 출제
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -301,7 +385,11 @@
     name: "",
     studentId: "",
     userUuid: "",
-    solvedTitles: []
+    solvedTitles: [],
+    wrongTitles: [],
+    todayProblems: [],
+    basketProblems: [],
+    submissionCodes: {}
   };
 
   function showModalToast(message, duration = 3000) {
@@ -341,13 +429,12 @@
     }
   }
 
-  // Textarea 자동 높이 조절
   function autoExpandModalTextarea(el) {
+    if (!el) return;
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
   }
 
-  // 퀵 태그 토글 (schedule 등 script.js 미포함 페이지에서도 동작)
   function toggleQuickTag(textareaId, tagText) {
     const el = document.getElementById(textareaId);
     if (!el) return;
@@ -363,6 +450,25 @@
     }
   }
 
+  function handleNoticeModeChange(mode) {
+    const hwWrapper = document.getElementById("wrapperShowHomeworkList");
+    const rvWrapper = document.getElementById("wrapperShowReviewList");
+    const homeworkCheck = document.getElementById("modalShowHomeworkList");
+    const reviewCheck = document.getElementById("modalShowReviewList");
+
+    if (mode === "homework") {
+      if (hwWrapper) hwWrapper.style.display = "flex";
+      if (rvWrapper) rvWrapper.style.display = "none";
+      if (homeworkCheck) homeworkCheck.checked = true;
+      if (reviewCheck) reviewCheck.checked = false;
+    } else if (mode === "review") {
+      if (hwWrapper) hwWrapper.style.display = "none";
+      if (rvWrapper) rvWrapper.style.display = "flex";
+      if (homeworkCheck) homeworkCheck.checked = false;
+      if (reviewCheck) reviewCheck.checked = true;
+    }
+  }
+
   document.querySelectorAll(".feedback-textarea").forEach((ta) => {
     ta.addEventListener("input", function () {
       autoExpandModalTextarea(this);
@@ -372,12 +478,95 @@
     });
   });
 
+  function getActiveBasketProblems() {
+    if (typeof window.getBasketItems === "function") {
+      return window.getBasketItems() || [];
+    }
+    if (window.WorkspaceBasket && Array.isArray(window.WorkspaceBasket.basket)) {
+      return window.WorkspaceBasket.basket;
+    }
+    if (Array.isArray(window.basket)) {
+      return window.basket;
+    }
+    return [];
+  }
+
+  // 풀이로그 3종류 (정답 🟢 / 부분점수 🟡 / 오답 🔴) 분류 헬퍼
+  function classifySubmission(d) {
+    if (!d) return { type: "wrong", icon: "🔴", label: "오답", tag: "오답(FAILED 0점)" };
+    const score = Number(d.score);
+    const result = d.result;
+    const status = String(d.status || "").toLowerCase();
+
+    // result === 0 은 DoingCoding 상 정답(Accepted)이며, 90점 이상(예: 3개 테케 99점 등)도 정답으로 간주
+    if (result === 0 || status === "solved" || status === "passed" || d.passed === true || (!isNaN(score) && score >= 90)) {
+      const scoreVal = !isNaN(score) && score > 0 ? `${score}점` : "100점";
+      return { type: "solved", icon: "🟢", label: "정답", tag: `정답(AC ${scoreVal})` };
+    } else if ((!isNaN(score) && score > 0 && score < 90) || status === "partial" || result === 8) {
+      const scoreVal = !isNaN(score) && score > 0 ? `${score}점` : "부분점수";
+      return { type: "partial", icon: "🟡", label: `부분점수 (${scoreVal})`, tag: `부분점수 (${scoreVal})` };
+    } else {
+      return { type: "wrong", icon: "🔴", label: "오답", tag: "오답(FAILED 0점)" };
+    }
+  }
+
   async function openFeedbackModal(name, studentId, userUuid) {
-    feedbackModalState = { name, studentId, userUuid, solvedTitles: [] };
+    const basket = getActiveBasketProblems();
+    feedbackModalState = {
+      name: name || studentId,
+      studentId: studentId || name,
+      userUuid: userUuid || studentId,
+      solvedTitles: [],
+      wrongTitles: [],
+      todayProblems: [],
+      basketProblems: basket,
+      submissionCodes: {}
+    };
     
-    document.getElementById("feedbackStudentName").textContent = name;
-    document.getElementById("feedbackStudentId").textContent = studentId;
-    document.getElementById("feedbackTodayProblems").textContent = "불러오는 중...";
+    document.getElementById("feedbackStudentName").textContent = feedbackModalState.name;
+    document.getElementById("feedbackStudentId").textContent = feedbackModalState.studentId;
+    
+    // 🎯 숙제 문항 UI 렌더링
+    const hwEl = document.getElementById("feedbackHomeworkProblems");
+    if (hwEl) {
+      if (basket.length > 0) {
+        hwEl.innerHTML = basket.map((p, i) => `<strong>${i + 1}.</strong> ${p.title || p.legacy_code}`).join("<br>");
+      } else {
+        hwEl.innerHTML = "(장바구니 지정 숙제 없음)";
+      }
+    }
+
+    // 기본 라디오 설정 및 체크박스 동기화 (숙제 있으면 숙제모드 활성화, 없으면 숙제라디오 비활성화 및 복습모드 전용)
+    const modeHwRadio = document.getElementById("modeNoticeHomework");
+    const modeRvRadio = document.getElementById("modeNoticeReview");
+    const labelHwRadio = document.getElementById("labelNoticeHomework");
+
+    if (basket.length > 0) {
+      if (modeHwRadio) {
+        modeHwRadio.disabled = false;
+        modeHwRadio.checked = true;
+      }
+      if (labelHwRadio) {
+        labelHwRadio.style.opacity = "1";
+        labelHwRadio.style.cursor = "pointer";
+        labelHwRadio.title = "";
+      }
+      handleNoticeModeChange("homework");
+    } else {
+      if (modeHwRadio) {
+        modeHwRadio.disabled = true;
+        modeHwRadio.checked = false;
+      }
+      if (labelHwRadio) {
+        labelHwRadio.style.opacity = "0.45";
+        labelHwRadio.style.cursor = "not-allowed";
+        labelHwRadio.title = "장바구니에 출제할 숙제 문제가 없습니다.";
+      }
+      if (modeRvRadio) modeRvRadio.checked = true;
+      handleNoticeModeChange("review");
+    }
+
+    document.getElementById("feedbackTodayLogSummary").innerHTML = "⏳ 풀이로그 및 제출 코드 페치 중...";
     document.getElementById("modalTeacherMemo").value = "";
     document.getElementById("modalHomeworkComment").value = "";
     autoExpandModalTextarea(document.getElementById("modalTeacherMemo"));
@@ -385,28 +574,121 @@
 
     document.getElementById("feedbackModal").style.display = "flex";
 
-    // 오늘 문제 불러오기
+    // 오늘/최근 풀이로그 (시각, 제목, 결과, 제출 코드) 비동기 수집
     try {
-      const res = await fetch(`/api/streak?viewMode=user&viewUsername=${encodeURIComponent(studentId)}&days=1`);
+      const targetQuery = encodeURIComponent(feedbackModalState.studentId || feedbackModalState.userUuid);
+      const res = await fetch(`/api/streak?viewMode=user&username=${targetQuery}&viewUsername=${targetQuery}&days=7`);
       if (res.ok) {
         const data = await res.json();
-        if (data.streak_data && data.streak_data.length > 0) {
-          const todayDetails = data.streak_data[0].details || [];
-          const titles = todayDetails.map(item => item.title);
-          feedbackModalState.solvedTitles = titles;
-          if (titles.length > 0) {
-            document.getElementById("feedbackTodayProblems").textContent = "  * 오늘 완료 문항 (" + titles.length + "개): " + titles.join(", ");
+        const streakData = data.streak_data || (Array.isArray(data) ? data : []);
+        
+        // 오늘 KST 날짜 구하기 (MM-DD 포맷)
+        const nowKst = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+        const todayMmDd = nowKst.toISOString().slice(5, 10); // "08-08"
+
+        let allDetails = [];
+        // streakData는 과거->오늘 순이므로 역순(오늘->과거)으로 순회
+        [...streakData].reverse().forEach(dayObj => {
+          const dDate = dayObj.date || ""; // "08-08"
+          (dayObj.details || []).reverse().forEach(item => {
+            allDetails.push({
+              ...item,
+              dateStr: dDate,
+              weekday: dayObj.weekday || "",
+              isToday: (dDate === todayMmDd)
+            });
+          });
+        });
+
+        if (allDetails.length > 0) {
+          feedbackModalState.todayProblems = allDetails;
+          
+          const todayItems = allDetails.filter(d => d.isToday);
+          const targetItems = todayItems.length > 0 ? todayItems : allDetails;
+
+          const solvedList = [];
+          const partialList = [];
+          const wrongList = [];
+
+          targetItems.forEach(d => {
+            const cls = classifySubmission(d);
+            const titleStr = d.title || d.problem;
+            if (cls.type === "solved") solvedList.push(titleStr);
+            else if (cls.type === "partial") partialList.push(titleStr);
+            else wrongList.push(titleStr);
+          });
+
+          feedbackModalState.solvedTitles = Array.from(new Set(solvedList.length > 0 ? solvedList : targetItems.map(d => d.title)));
+          feedbackModalState.wrongTitles = Array.from(new Set([...partialList, ...wrongList]));
+
+          // 동적 소스코드 샘플링 (오답/부분점수 1순위 수집 + 부족분 정답 2순위 자동 충원 = 총 5개)
+          const wrongAndPartialItems = targetItems.filter(d => {
+            const cls = classifySubmission(d);
+            return cls.type === "wrong" || cls.type === "partial";
+          });
+
+          const solvedItems = targetItems.filter(d => {
+            const cls = classifySubmission(d);
+            return cls.type === "solved";
+          });
+
+          const selectedForCode = [];
+          const addedSubIds = new Set();
+
+          // 1. 오답 및 부분점수 항목 우선 추가
+          wrongAndPartialItems.forEach(item => {
+            if (selectedForCode.length < 5 && item.server_sub_id && !addedSubIds.has(item.server_sub_id)) {
+              selectedForCode.push(item);
+              addedSubIds.add(item.server_sub_id);
+            }
+          });
+
+          // 2. 5개 미만 시 정답 항목으로 부족분 자동 충원
+          solvedItems.forEach(item => {
+            if (selectedForCode.length < 5 && item.server_sub_id && !addedSubIds.has(item.server_sub_id)) {
+              selectedForCode.push(item);
+              addedSubIds.add(item.server_sub_id);
+            }
+          });
+
+          await Promise.all(selectedForCode.map(async (sub) => {
+            if (sub.server_sub_id) {
+              try {
+                const codeRes = await fetch(`/api/submission_code?id=${encodeURIComponent(sub.server_sub_id)}`);
+                if (codeRes.ok) {
+                  const codeData = await codeRes.json();
+                  if (codeData.code) {
+                    feedbackModalState.submissionCodes[sub.server_sub_id] = codeData.code;
+                  }
+                }
+              } catch(e){}
+            }
+          }));
+
+          let summaryHTML = "";
+          if (todayItems.length > 0) {
+            summaryHTML += `<strong style="color:#10b981;">✨ 오늘 수업 실습 ${todayItems.length}건</strong> (정답 ${solvedList.length}개 / 부분점수 ${partialList.length}개 / 오답 ${wrongList.length}개)<br><br>`;
           } else {
-            document.getElementById("feedbackTodayProblems").textContent = "(오늘 완료한 문항 없음)";
+            summaryHTML += `<strong style="color:#64748b;">🗓 오늘 제출 없음 (최근 7일 실습 ${allDetails.length}건 - 정답 ${solvedList.length}개 / 부분 ${partialList.length}개 / 오답 ${wrongList.length}개)</strong><br><br>`;
           }
+
+          summaryHTML += targetItems.slice(0, 8).map(d => {
+            const cls = classifySubmission(d);
+            const datePrefix = d.isToday ? `[오늘 ${d.time || ''}]` : `[${d.dateStr || ''} ${d.time || ''}]`;
+            const codeBadge = d.server_sub_id && feedbackModalState.submissionCodes[d.server_sub_id] ? " <span style='font-size:0.7rem; color:#6c5ce7; background:#ede9fe; padding:1px 4px; border-radius:4px;'>💻 코드 포함</span>" : "";
+            const statusDetail = cls.type === "partial" ? ` <span style="font-size:0.75rem; color:#d97706; font-weight:700;">(${cls.label})</span>` : "";
+            return `${cls.icon} ${datePrefix.trim()} ${d.title || d.problem}${statusDetail}${codeBadge}`;
+          }).join("<br>");
+
+          document.getElementById("feedbackTodayLogSummary").innerHTML = summaryHTML;
         } else {
-          document.getElementById("feedbackTodayProblems").textContent = "(오늘 완료한 문항 없음)";
+          document.getElementById("feedbackTodayLogSummary").innerHTML = "(최근 7일간 실습 및 제출 기록이 없습니다)";
         }
       } else {
-        document.getElementById("feedbackTodayProblems").textContent = "불러오기 실패";
+        document.getElementById("feedbackTodayLogSummary").innerHTML = "(풀이로그 API 응답 오류)";
       }
     } catch (e) {
-      document.getElementById("feedbackTodayProblems").textContent = "오류 발생";
+      document.getElementById("feedbackTodayLogSummary").innerHTML = "(풀이로그 로드 예외 발생)";
     }
   }
 
@@ -414,8 +696,7 @@
     document.getElementById("feedbackModal").style.display = "none";
   }
 
-  // 모달 영역 바깥 클릭 시 닫기
-  document.getElementById("feedbackModal").addEventListener("mousedown", (e) => {
+  document.getElementById("feedbackModal")?.addEventListener("mousedown", (e) => {
     if (e.target.id === "feedbackModal") {
       closeFeedbackModal();
     }
@@ -423,82 +704,194 @@
 
   async function copyModalAiPrompt() {
     const memoVal = document.getElementById("modalTeacherMemo").value.trim() || "";
+    const basket = feedbackModalState.basketProblems || getActiveBasketProblems();
+    const modeHomework = document.getElementById("modeNoticeHomework")?.checked;
 
-    const includeReview = document.getElementById("modalIncludeReview").checked;
     let problemsSummary = "";
-    if (includeReview && feedbackModalState.solvedTitles.length > 0) {
-      problemsSummary = `  * 복습 문항 (${feedbackModalState.solvedTitles.length}개): ${feedbackModalState.solvedTitles.join(", ")}\n`;
-    } else {
-      problemsSummary = "  * (신규 숙제 및 복습용 지정 문항 없음)\n";
+    if (basket.length > 0) {
+      problemsSummary += `  * 신규 출제 숙제 (${basket.length}개): ${basket.map(p => p.title || p.legacy_code).join(", ")}\n`;
+    }
+    if (!modeHomework && feedbackModalState.solvedTitles.length > 0) {
+      problemsSummary += `  * 복습 권장 문항 (${feedbackModalState.solvedTitles.length}개): ${feedbackModalState.solvedTitles.join(", ")}\n`;
+    }
+    if (!problemsSummary) {
+      problemsSummary = "  * (신규 숙제 및 지정 문항 없음 - 수업 태도/성향 중심 작성)\n";
+    }
+
+    // 제출 시각, 문제 제목, 정답/부분점수/오답 분류, 소스 코드 조립 (코드 보유 항목 우선 배치)
+    let todaySolvingLogStr = "";
+    if (feedbackModalState.todayProblems && feedbackModalState.todayProblems.length > 0) {
+      const itemsForPrompt = [...feedbackModalState.todayProblems].sort((a, b) => {
+        const codeA = a.server_sub_id && feedbackModalState.submissionCodes[a.server_sub_id] ? 1 : 0;
+        const codeB = b.server_sub_id && feedbackModalState.submissionCodes[b.server_sub_id] ? 1 : 0;
+        return codeB - codeA;
+      }).slice(0, 8);
+
+      todaySolvingLogStr = itemsForPrompt.map((p, idx) => {
+        const cls = classifySubmission(p);
+        const statusText = cls.tag;
+        const datePrefix = p.isToday ? `[오늘 ${p.time || ''}]` : `[${p.dateStr || ''} ${p.time || ''}]`;
+        const titleText = p.title || p.problem || "문제";
+        const code = p.server_sub_id ? feedbackModalState.submissionCodes[p.server_sub_id] : null;
+
+        let logLine = `${idx + 1}. ${datePrefix.trim()} ${titleText} | 결과: ${statusText}`;
+        if (code) {
+          logLine += `\n   - 제출 코드 (${p.language || 'c'}):\n\`\`\`\n${code.trim()}\n\`\`\``;
+        }
+        return logLine;
+      }).join("\n\n");
     }
 
     const finalMemo = memoVal || "오늘 수업에 차분하고 성실하게 임함 (특이사항 없음)";
-
-    const promptText = getAiPrompt(problemsSummary, finalMemo);
+    const promptText = getAiPrompt(problemsSummary, finalMemo, todaySolvingLogStr);
 
     try {
       await modalCopyToClipboard(promptText);
-      showModalToast("📋 AI 프롬프트 복사 완료!\nChatGPT나 Claude에 붙여넣으세요.");
+      showModalToast("📋 AI 프롬프트 복사 완료!\n(제출 코드 & 시간 기록이 포함되었습니다. ChatGPT/Claude에 붙여넣으세요)");
     } catch (err) {
       alert("프롬프트 복사 실패: " + err.message);
     }
   }
 
+  // 규격화된 카카오톡 알림장 메시지 생성 함수
+  function buildKakaoMessage(comment) {
+    const { name, studentId, basketProblems, solvedTitles } = feedbackModalState;
+    const basket = basketProblems && basketProblems.length > 0 ? basketProblems : getActiveBasketProblems();
+    const includeGreeting = document.getElementById("modalIncludeGreeting").checked;
+    const isHomeworkMode = document.getElementById("modeNoticeHomework")?.checked;
+    const showHomeworkList = document.getElementById("modalShowHomeworkList").checked;
+    const showReviewList = document.getElementById("modalShowReviewList").checked;
+
+    const todayObj = new Date();
+    const daysKR = ["일", "월", "화", "수", "목", "금", "토"];
+    const y = todayObj.getFullYear();
+    const m = String(todayObj.getMonth() + 1).padStart(2, "0");
+    const d = String(todayObj.getDate()).padStart(2, "0");
+    const dayStr = daysKR[todayObj.getDay()];
+    const dateFormatted = `${y}.${m}.${d}(${dayStr})`;
+
+    let text = "";
+
+    if (includeGreeting) {
+      text += "안녕하세요 두잉창의코딩학원입니다. 😊\n";
+    }
+
+    if (isHomeworkMode && basket.length > 0) {
+      text += "수업에 해당되는 숙제 부분 안내드립니다.\n\n";
+
+      const domain = "http://edu.doingcoding.com";
+      const firstProb = basket[0];
+      let chapterCode = firstProb.chapter_code || "p102";
+      let subChapterTitle = firstProb.group_title || firstProb.chapter_title || "";
+
+      if (!subChapterTitle) {
+        const firstProbTitle = firstProb.title || firstProb.legacy_code || "";
+        const match = firstProbTitle.match(/\[(.*?)\]/);
+        if (match && match[1]) {
+          subChapterTitle = match[1];
+        }
+      }
+
+      if (!subChapterTitle) subChapterTitle = "코딩 실습 및 숙제";
+      const chapterUrl = `${domain}/${chapterCode}?tag=${encodeURIComponent(subChapterTitle)}`;
+
+      text += `📘 ${subChapterTitle}\n`;
+      text += `🔗 ${chapterUrl}\n`;
+      text += `🗓 출제일: ${dateFormatted}\n`;
+      text += `⏰ 마감: 다음 수업시간 전까지\n`;
+      text += `📝 코멘트: ${comment}\n\n`;
+
+      if (showHomeworkList) {
+        basket.forEach((p, idx) => {
+          const pTitle = p.title || p.legacy_code;
+          text += `${pTitle}\n`;
+        });
+      }
+      text += "=========================";
+
+    } else if (!isHomeworkMode && solvedTitles.length > 0) {
+      text += "오늘 수업의 피드백 및 복습 안내드립니다.\n\n";
+
+      const domain = "http://edu.doingcoding.com";
+      let chapterCode = "p102";
+      let subChapterTitle = "";
+
+      if (feedbackModalState.todayProblems && feedbackModalState.todayProblems.length > 0) {
+        const firstItem = feedbackModalState.todayProblems[0];
+        if (firstItem.chapter_code || firstItem.chapter_id) {
+          chapterCode = firstItem.chapter_code || firstItem.chapter_id;
+        }
+        if (firstItem.group_title || firstItem.chapter_title) {
+          subChapterTitle = firstItem.group_title || firstItem.chapter_title;
+        }
+      }
+
+      if (!subChapterTitle && solvedTitles.length > 0) {
+        const match = solvedTitles[0].match(/\[(.*?)\]/);
+        if (match && match[1]) {
+          subChapterTitle = match[1];
+        }
+      }
+
+      if (!subChapterTitle) subChapterTitle = "오늘 학습 복습 안내";
+
+      const reviewUrl = `${domain}/${chapterCode}?tag=${encodeURIComponent(subChapterTitle)}`;
+
+      text += `📘 ${subChapterTitle} (복습)\n`;
+      text += `🔗 ${reviewUrl}\n`;
+      text += `🗓 수업일: ${dateFormatted}\n`;
+      text += `📝 코멘트: ${comment}\n\n`;
+
+      if (showReviewList) {
+        solvedTitles.forEach((title, idx) => {
+          
+          text += `${title}\n`;
+        });
+      }
+      text += "=========================";
+
+    } else {
+      text += "오늘 수업의 피드백을 안내해 드립니다.\n\n";
+      const displayName = (name && name !== studentId) ? `${name} 학생` : "오늘";
+      text += `📘 ${displayName} 수업 피드백\n`;
+      text += `🗓 수업일: ${dateFormatted}\n`;
+      text += `📝 코멘트: ${comment}\n`;
+      text += "=========================";
+    }
+
+    return text;
+  }
+
   async function submitModalFeedback() {
     const comment = document.getElementById("modalHomeworkComment").value.trim();
     if (!comment) {
-      showModalToast("⚠️ AI 답변을 붙여넣어 주세요!");
+      showModalToast("⚠️ 3단계에 AI 답변을 먼저 붙여넣어 주세요!");
       return;
     }
 
-    const { name, studentId, userUuid } = feedbackModalState;
-    const includeGreeting = document.getElementById("modalIncludeGreeting").checked;
-    const includeUsername = document.getElementById("modalIncludeUsername").checked;
-    const includeReview = document.getElementById("modalIncludeReview").checked;
-
-    let finalMsg = "";
-    if (includeGreeting) {
-      finalMsg += "안녕하세요 두잉창의코딩학원입니다. 😊\n오늘 수업의 피드백을 안내해 드립니다.\n\n";
-    }
-
-    let displayName = "오늘";
-    if (name && name !== studentId) {
-      displayName = `${name} 학생`;
-    }
-
-    finalMsg += `📘 ${displayName} 수업 피드백\n`;
-
-    if (includeUsername) {
-      finalMsg += `👤 풀이 계정: ${studentId}\n`;
-    }
-
-    const todayStr = new Date().toLocaleDateString("ko-KR", {
-      year: "numeric", month: "2-digit", day: "2-digit", weekday: "short"
-    });
-    finalMsg += `🗓 수업일: ${todayStr}\n`;
-    if (includeReview && feedbackModalState.solvedTitles.length > 0) {
-      finalMsg += `🎯 오늘 학습 문항(복습 대상): ${feedbackModalState.solvedTitles.join(", ")}\n`;
-    }
-    finalMsg += `📝 코멘트: ${comment}`;
+    const { name, studentId, userUuid, basketProblems } = feedbackModalState;
+    const basket = basketProblems && basketProblems.length > 0 ? basketProblems : getActiveBasketProblems();
+    const finalMsg = buildKakaoMessage(comment);
 
     try {
       await modalCopyToClipboard(finalMsg);
-      showModalToast("📋 최종 메시지 복사 완료!\n(카카오톡에 붙여넣기 하세요)");
+      showModalToast("📋 카카오톡 알림장 메시지가 복사되었습니다!\n(카카오톡에 바로 붙여넣기 하세요)");
 
-      // DB 저장
       const btn = document.getElementById("modalCompleteBtn");
       const originalText = btn.textContent;
       btn.textContent = "⏳ 저장 중...";
       btn.disabled = true;
 
       const payload = {
-        problems: [], // 피드백 전용이므로 문제 없음
+        display_id: studentId,
+        user_uuid: userUuid,
+        problems: basket,
         message: finalMsg,
-        title: `${name} 학생 수업 피드백`,
-        url: `${origin}/user/${studentId}`
+        comment: comment,
+        title: basket.length > 0 ? `${name} 학생 숙제 및 피드백 (${basket.length}개)` : `${name} 학생 수업 피드백`
       };
 
-      const res = await fetch(`/api/students/${userUuid}/homework_logs`, {
+      const res = await fetch(`/api/workspace/save_homework_log`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -507,20 +900,70 @@
       btn.disabled = false;
       btn.textContent = originalText;
 
-      if (!res.ok) throw new Error("서버 응답 오류");
-      
-      if (window.attachHomeworkBadges) {
-        setTimeout(() => {
-          window.attachHomeworkBadges([userUuid]);
-        }, 300);
+      if (!res.ok) throw new Error("서버 저장 실패");
+
+      if (typeof window.clearQuickBasket === "function") window.clearQuickBasket();
+      if (window.WorkspaceBasket && typeof window.WorkspaceBasket.clearBasket === "function") {
+        window.WorkspaceBasket.clearBasket();
       }
-      
+
       setTimeout(() => {
         closeFeedbackModal();
       }, 1000);
 
     } catch (err) {
-      showModalToast("복사에 실패했습니다.");
+      showModalToast("저장에 실패했으나 클립보드 복사는 완료되었습니다.");
+    }
+  }
+
+  async function submitDirectHomework() {
+    const { name, studentId, userUuid, basketProblems } = feedbackModalState;
+    const basket = basketProblems && basketProblems.length > 0 ? basketProblems : getActiveBasketProblems();
+
+    if (basket.length === 0) {
+      showModalToast("⚠️ 출제할 문제를 먼저 장바구니에 담아주세요!");
+      return;
+    }
+
+    const btn = document.getElementById("modalDirectSubmitBtn");
+    const originalText = btn.textContent;
+    btn.textContent = "⏳ 출제 중...";
+    btn.disabled = true;
+
+    try {
+      const payload = {
+        display_id: studentId,
+        user_uuid: userUuid,
+        problems: basket,
+        title: `${name} 학생 숙제 즉시 출제 (${basket.length}개)`
+      };
+
+      const res = await fetch(`/api/workspace/save_homework_log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      btn.disabled = false;
+      btn.textContent = originalText;
+
+      if (!res.ok) throw new Error("출제 실패");
+
+      showModalToast(`🚀 [${name}] 학생에게 숙제가 즉시 출제되었습니다! (${basket.length}개)`);
+
+      if (typeof window.clearQuickBasket === "function") window.clearQuickBasket();
+      if (window.WorkspaceBasket && typeof window.WorkspaceBasket.clearBasket === "function") {
+        window.WorkspaceBasket.clearBasket();
+      }
+
+      setTimeout(() => {
+        closeFeedbackModal();
+      }, 1000);
+
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+      showModalToast("⚠️ 숙제 출제에 실패했습니다.");
     }
   }
 </script>

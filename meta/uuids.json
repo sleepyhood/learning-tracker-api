@@ -167,5 +167,8 @@
   "test_user": "27d94421-b5c2-4fd4-9ade-bcf3e9d0be3d",
   "7b30239a-7d21-48aa-a2c3-45bd61d0b3dc": "7b30239a-7d21-48aa-a2c3-45bd61d0b3dc",
   "5ab084d1-5e31-43b6-8adb-5ffb91c73892": "5ab084d1-5e31-43b6-8adb-5ffb91c73892",
-  "test": "4c528ec9-c871-4952-8319-e259102f6833"
+  "test": "4c528ec9-c871-4952-8319-e259102f6833",
+  "nonexistent_fake_uuid_12345": "ff8f3982-3485-4d2d-b0c9-c025b563343d",
+  "nonexistent_test_user": "8645a1d1-f239-45ea-93bc-c718001ffca9",
+  "nonexistent_fake_uuid_99999": "968143db-32ff-4b4f-aeaa-2d30808280d3"
 }

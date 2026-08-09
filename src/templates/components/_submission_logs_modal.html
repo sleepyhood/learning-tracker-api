@@ -522,9 +522,15 @@
       const showLink = p.show_link !== false;  // 기본 true
       const problemUrl = p.problem_url || (p.problem ? `http://edu.doingcoding.com/problem/${encodeURIComponent(String(p.problem))}` : "");
 
+      const isAC = p.result === 0 || p.status === "solved" || p.status === "passed" || p.passed === true || score >= 90;
       let badgeClass = "fail", badgeText = `오답 (${score}점)`;
-      if (score === 100)     { badgeClass = "pass";    badgeText = "정답 (100점)"; }
-      else if (score > 0)    { badgeClass = "partial"; badgeText = `부분점수 (${score}점)`; }
+      if (isAC) {
+        badgeClass = "pass";
+        badgeText = `정답 (${score > 0 ? score + '점' : '100점'})`;
+      } else if (score > 0 && score < 90) {
+        badgeClass = "partial";
+        badgeText = `부분점수 (${score}점)`;
+      }
 
       const codeBtn = (serverSubId && showLink)
         ? `<button type="button" class="sub-log-code-toggle-btn"

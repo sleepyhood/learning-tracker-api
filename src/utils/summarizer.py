@@ -16,12 +16,75 @@ def _legacy_to_server_id(legacy_id: str, legacy_to_server: dict) -> str:
 
 
 def _ensure_v2_schema(problem_data: dict) -> dict:
-    """If problem_data is Schema V1 (nested dict), convert to Schema V2 flat schema on-the-fly."""
+    """Converts V1 nested dict or Playwright flat micro-registry to Schema V2 flat schema on-the-fly."""
     if not isinstance(problem_data, dict):
         return {"_schema_version": 2, "chapters": [], "groups": {}, "problems": {}}
 
     if problem_data.get("_schema_version") == 2:
         return problem_data
+
+    # Check if problem_data is a flat micro-registry e.g. {"P101v0101": {"title": ..., "major": ...}}
+    is_micro_registry = False
+    for v in problem_data.values():
+        if isinstance(v, dict) and ("major" in v or "title" in v) and "problem_names" not in v:
+            is_micro_registry = True
+            break
+
+    if is_micro_registry:
+        chapters_dict = {}
+        groups = {}
+        problems = {}
+        group_map = {}
+
+        for key, item in problem_data.items():
+            if not isinstance(item, dict) or "title" not in item:
+                continue
+            pid = item.get("id") or item.get("pid") or key
+            title = item.get("title", pid)
+            major = item.get("major") or "기타 대단원"
+            sub = item.get("sub") or "기타 소단원"
+
+            pair = (major, sub)
+            if pair not in group_map:
+                gid = item.get("group_id") or f"G_{abs(hash(pair)) % 1000000:06d}"
+                group_map[pair] = gid
+                groups[gid] = {
+                    "chapter_id": major,
+                    "chapter_code": "p101",
+                    "title": sub,
+                    "total": 0,
+                    "problem_ids": []
+                }
+                if major not in chapters_dict:
+                    chapters_dict[major] = []
+                chapters_dict[major].append(gid)
+
+            gid = group_map[pair]
+            groups[gid]["problem_ids"].append(pid)
+            groups[gid]["total"] += 1
+
+            problems[pid] = {
+                "pid": pid,
+                "group_id": gid,
+                "chapter_id": major,
+                "title": title
+            }
+
+        chapters = []
+        for order, (major_name, g_ids) in enumerate(chapters_dict.items(), start=1):
+            chapters.append({
+                "id": major_name,
+                "name": major_name,
+                "order": order,
+                "group_ids": g_ids
+            })
+
+        return {
+            "_schema_version": 2,
+            "chapters": chapters,
+            "groups": groups,
+            "problems": problems
+        }
 
     # V1 -> V2 on-the-fly conversion
     chapters = []

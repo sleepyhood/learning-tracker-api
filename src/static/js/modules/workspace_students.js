@@ -126,8 +126,8 @@
 
             list.forEach(student => {
                 const card = document.createElement("div");
-                const studentIdKey = student.user_uuid || student.display_id;
-                const isSelected = (this.selectedStudentId === studentIdKey || this.selectedStudentId === student.display_id);
+                const studentIdKey = student.display_id || student.user_uuid;
+                const isSelected = (this.selectedStudentId === studentIdKey);
                 card.className = `student-card ${isSelected ? 'selected' : ''}`;
                 card.onclick = () => this.selectStudent(studentIdKey);
 

@@ -21,14 +21,14 @@ const userUuid = CFG_MAIN.userUuid || "";
   const host = document.querySelector("#latest-homework");
   if (!host) return;
 
-  if (!data || !data.ok || !data.log) {
+  const log = data.log || data.homework;
+  if (!data || !data.ok || !log || (!log.id && !log.ts)) {
     host.innerHTML = `<div class="card empty-state"><div class="empty-title">숙제 데이터가 없습니다</div><div class="empty-desc">목록을 새로고침하거나 수업 일정을 확인해 주세요.</div><div class="empty-actions"><button class="btn btn-primary" id="refresh-homework">숙제 새로고침</button></div></div>`;
     document.getElementById("refresh-homework")?.addEventListener("click", updateProblems);
     return;
   }
 
-  const { log } = data;
-  const pct = log.counts.total ? Math.round((log.counts.passed / log.counts.total) * 100) : 0;
+  const pct = (log.counts && log.counts.total) ? Math.round((log.counts.passed / log.counts.total) * 100) : 0;
 
   const statusByLegacy = Object.fromEntries(
     (log.problem_status || []).map((p) => [p.legacy_code, p.status])
@@ -65,7 +65,7 @@ const userUuid = CFG_MAIN.userUuid || "";
 
   <div class="progress">
     <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-    <div class="progress-text">정답 ${log.counts.passed} | 오답 ${log.counts.wrong} | 미제출 ${log.counts.pending}</div>
+    <div class="progress-text">정답 ${(log.counts && log.counts.passed) || 0} | 오답 ${(log.counts && log.counts.wrong) || 0} | 미제출 ${(log.counts && log.counts.pending) || 0}</div>
   </div>
 
   <div class="meta">
@@ -91,28 +91,34 @@ const userUuid = CFG_MAIN.userUuid || "";
 function updateProblems() {
   const btn = document.getElementById("update-btn");
   const chapterSelect = document.getElementById("update-chapter-select");
+  const currSelect = document.getElementById("curriculum-select") || document.getElementById("update-curr-select");
   const timeDisplay = document.getElementById("update-time");
   const originalText = btn ? btn.innerHTML : "";
+
+  const currKey = currSelect ? currSelect.value : (window.APP_CONFIG?.currentCurr || "prog1");
+  const currLabel = currKey === "prog2" ? "프로그래밍 II (심화)" : "프로그래밍 I";
 
   if (btn) {
     btn.disabled = true;
     btn.setAttribute("aria-busy", "true");
-    btn.innerHTML = `<span class="spinner" aria-hidden="true"></span> <span>갱신 중...</span>`;
+    btn.innerHTML = `<span class="spinner" aria-hidden="true"></span> <span>${currLabel} 갱신 중...</span>`;
   }
 
   const selectedChapter = chapterSelect ? chapterSelect.value : "";
   const params = new URLSearchParams();
   if (selectedChapter) params.append("chapter", selectedChapter);
+  if (currKey) params.append("curr", currKey);
 
   fetch(`/update_problems?${params.toString()}`, { method: "POST" })
     .then((response) => response.json())
     .then((data) => {
-      if (data.status === "success") {
-        if (typeof showToast === "function") showToast("학습 데이터가 갱신되었습니다!");
+      if (data.status === "success" || data.ok) {
+        if (typeof showToast === "function") showToast(`✨ ${currLabel} 학습 데이터가 성공적으로 갱신되었습니다!`);
         if (timeDisplay && data.last_updated) timeDisplay.textContent = `최근 갱신: ${data.last_updated}`;
         if (typeof refreshStreak === "function") refreshStreak(typeof streakCurrentDays !== "undefined" ? streakCurrentDays : 7);
+        setTimeout(() => { location.reload(); }, 600);
       } else {
-        if (typeof showToast === "function") showToast(data.message || "데이터 갱신 중 오류가 발생했습니다.", 3500);
+        if (typeof showToast === "function") showToast(data.message || data.error || "데이터 갱신 중 오류가 발생했습니다.", 3500);
       }
     })
     .catch((error) => {
@@ -209,70 +215,52 @@ if (chartsToggleBtn) {
     });
   }
 
+  window.getBasketItems = function() {
+    return basketItems;
+  };
+
+  window.clearQuickBasket = function() {
+    basketItems = [];
+    updateBasketUI();
+    if (typeof window.refreshDrilldownCheckboxes === "function") window.refreshDrilldownCheckboxes();
+  };
+
   if (submitBtn) {
-    submitBtn.addEventListener("click", async () => {
-      if (basketItems.length === 0) {
-        if (typeof showToast === "function") showToast("⚠️ 출제할 문제를 먼저 장바구니에 담아주세요.");
-        return;
-      }
-
+    submitBtn.addEventListener("click", () => {
       const targetUuid = (window.APP_CONFIG && window.APP_CONFIG.userUuid) || "";
-      if (!targetUuid) {
-        if (typeof showToast === "function") showToast("⚠️ 대상 수강생 정보를 찾을 수 없습니다.");
-        return;
-      }
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = "⏳ 출제 중...";
-
-      try {
-        const res = await fetch("/api/workspace/save_homework_log", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_uuid: targetUuid,
-            problems: basketItems,
-            title: `대시보드 퀵 출제 (${basketItems.length}개)`
-          })
-        });
-
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          basketItems = [];
-          updateBasketUI();
-          if (typeof window.refreshDrilldownCheckboxes === "function") window.refreshDrilldownCheckboxes();
-          if (typeof showToast === "function") {
-            showToast("🚀 숙제가 성공적으로 즉시 출제/저장되었습니다!");
-          }
-        } else {
-          if (typeof showToast === "function") {
-            showToast(`❌ 출제 실패: ${data.error || '오류가 발생했습니다.'}`);
-          }
-        }
-      } catch (err) {
-        if (typeof showToast === "function") showToast(`❌ 출제 예외: ${err.message}`);
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "🚀 숙제 즉시 출제하기";
+      const targetUsername = (window.APP_CONFIG && (window.APP_CONFIG.viewUsername || window.APP_CONFIG.userUuid)) || "";
+      if (typeof window.openFeedbackModal === "function") {
+        window.openFeedbackModal(targetUsername, targetUsername, targetUuid);
+      } else {
+        if (typeof showToast === "function") showToast("⚠️ 피드백 모달을 불러올 수 없습니다.", true);
       }
     });
   }
 
   window.addProblemToBasket = function (probObj) {
-    if (!probObj || !probObj.pid) return;
-    if (!basketItems.some((item) => item.pid === probObj.pid)) {
-      basketItems.push(probObj);
+    if (!probObj || (!probObj.pid && !probObj.legacy_code)) return;
+    const pid = probObj.pid || probObj.legacy_code;
+    if (!basketItems.some((item) => (item.pid || item.legacy_code) === pid)) {
+      const itemToPush = {
+        pid: pid,
+        legacy_code: probObj.legacy_code || pid,
+        title: probObj.title || "",
+        url: probObj.url || "",
+        chapter_code: probObj.chapter_code || "",
+        group_title: probObj.group_title || ""
+      };
+      basketItems.push(itemToPush);
       updateBasketUI();
     }
   };
 
   window.removeProblemFromBasket = function (pid) {
-    basketItems = basketItems.filter((item) => item.pid !== pid);
+    basketItems = basketItems.filter((item) => item.pid !== pid && item.legacy_code !== pid);
     updateBasketUI();
   };
 
   window.isProblemInBasket = function (pid) {
-    return basketItems.some((item) => item.pid === pid);
+    return basketItems.some((item) => item.pid === pid || item.legacy_code === pid);
   };
 
   updateBasketUI();
@@ -329,10 +317,10 @@ if (chartsToggleBtn) {
       item.addEventListener("click", () => {
         const idx = parseInt(item.dataset.idx, 10);
         selectedChapter = drillData[idx];
-        selectedGroup = null;
+        selectedGroup = (selectedChapter && selectedChapter.groups && selectedChapter.groups.length > 0) ? selectedChapter.groups[0] : null;
         renderMainChapters();
         renderSubChapters();
-        renderProblemsPlaceholder();
+        renderProblems();
       });
     });
   }
@@ -531,8 +519,10 @@ if (chartsToggleBtn) {
         const pid = e.target.dataset.pid;
         const title = e.target.dataset.title;
         const url = e.target.dataset.url;
+        const chapter_code = (selectedGroup && selectedGroup.chapter_code) || (selectedChapter && selectedChapter.chapter_id) || "p102";
+        const group_title = (selectedGroup && selectedGroup.title) || (selectedChapter && selectedChapter.title) || "";
         if (e.target.checked) {
-          if (window.addProblemToBasket) window.addProblemToBasket({ pid, title, url });
+          if (window.addProblemToBasket) window.addProblemToBasket({ pid, legacy_code: pid, title, url, chapter_code, group_title });
         } else {
           if (window.removeProblemFromBasket) window.removeProblemFromBasket(pid);
         }
@@ -553,13 +543,75 @@ if (chartsToggleBtn) {
         const title = cb.dataset.title;
         const url = cb.dataset.url;
         if (!allChecked) {
-          if (window.addProblemToBasket) window.addProblemToBasket({ pid, title, url });
+          if (window.addProblemToBasket) window.addProblemToBasket({ pid, legacy_code: pid, title, url });
         } else {
           if (window.removeProblemFromBasket) window.removeProblemFromBasket(pid);
         }
       });
     });
   }
+
+  // 🎯 특정 문제/소단원 단원 목차로 1클릭 이동 & 스크롤 포커스 함수
+  window.navigateToProblemChapter = function (pid, groupId) {
+    const drillData = (window.APP_CONFIG && window.APP_CONFIG.drilldownData) || [];
+    if (!drillData.length) {
+      if (typeof showToast === "function") showToast("⚠️ 단원 목차 데이터가 없습니다.");
+      return;
+    }
+
+    let foundChapter = null;
+    let foundGroup = null;
+
+    // 1. pid 또는 groupId로 해당 단원 및 소단원 탐색
+    for (const ch of drillData) {
+      for (const g of (ch.groups || [])) {
+        if ((groupId && g.group_id === groupId) || (g.problems || []).some(p => p.pid === pid || p.legacy_code === pid)) {
+          foundChapter = ch;
+          foundGroup = g;
+          break;
+        }
+      }
+      if (foundChapter) break;
+    }
+
+    if (!foundChapter || !foundGroup) {
+      if (typeof showToast === "function") {
+        showToast("ℹ️ 해당 문제의 단원 위치를 목차에서 찾을 수 없습니다.");
+      } else {
+        alert("해당 문제의 단원 위치를 목차에서 찾을 수 없습니다.");
+      }
+      return;
+    }
+
+    // 2. 대단원 및 소단원 활성화 및 렌더링
+    selectedChapter = foundChapter;
+    selectedGroup = foundGroup;
+
+    renderMainChapters();
+    renderSubChapters();
+    renderProblems();
+
+    // 3. 문제 목록 3열에서 해당 문제 행 스크롤 포커스 & 노란색 하이라이트
+    setTimeout(() => {
+      const probListEl = document.getElementById("problems-list");
+      if (!probListEl) return;
+      const targetCheckbox = probListEl.querySelector(`.prob-homework-checkbox[data-pid="${pid}"]`);
+      if (targetCheckbox) {
+        const rowItem = targetCheckbox.closest(".prob-row-item");
+        if (rowItem) {
+          rowItem.style.transition = "background-color 0.5s ease";
+          rowItem.style.backgroundColor = "#fef08a";
+          rowItem.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(() => {
+            rowItem.style.backgroundColor = "";
+          }, 2200);
+        }
+      }
+      if (typeof showToast === "function") {
+        showToast(`🎯 '${foundGroup.title}' 단원으로 이동했습니다.`);
+      }
+    }, 150);
+  };
 
   // Sync checkboxes when basket updates externally
   window.refreshDrilldownCheckboxes = function () {
@@ -570,10 +622,10 @@ if (chartsToggleBtn) {
     });
   };
 
-  // Initial select first chapter, keep sub-chapter unselected
+  // Initial select first chapter and its first sub-chapter
   if (drillData.length > 0) {
     selectedChapter = drillData[0];
-    selectedGroup = null;
+    selectedGroup = (selectedChapter && selectedChapter.groups && selectedChapter.groups.length > 0) ? selectedChapter.groups[0] : null;
   }
 
   renderMainChapters();

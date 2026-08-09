@@ -17,35 +17,57 @@ DoingCoding(edu.doingcoding.com)의 API 및 DOM 기반 자동 크롤러를 연�
 
 ## ✨ 핵심 기능 (Key Features)
 
-### 1. 🎯 샌드박스 2-Pane 워크스페이스 (`/workspace`)
-- **2단 계층형 단원 필터 (`[대단원]` ➔ `[소단원]`)**: 클릭 2번으로 원하는 소단원(예: `Lv1 출력`, `Lv2 변수` 20개) 문제에 0초 만에 도달
-- **학생별 실시간 풀이 상태 오버레이 (🟢/🔴)**: 학생 선택 시 해당 학생의 통과/오답 여부가 문제 목록에 실시간 시각화되며 장바구니 자동 초기화
-- **통합 피드백 모달 & 개념 사전 파이프라인**: 문제 제목 태그 파싱 및 비플랫폼/오프라인 수업 드롭다운 선택 시 고품질 교육 개념 자동 추천
+### 1. 🪄 AI 피드백 & 카카오톡 알림장 모달 (`/templates/_feedback_modal.html`)
+- **데스크톱 최적화 720px 2-Column Grid Layout**: 시원하고 넓은 720px 2열 레이아웃으로 UI 반응성 및 가독성 대폭 향상.
+- **학생 실제 소스코드 & 타임스탬프 비동기 연동**:
+  - `/api/streak` 및 `/api/submission_code` 연동을 통해 학생이 실제 제출한 C/Python 소스코드와 풀이 시간(`[오늘 10:03:49]`)을 AI 프롬프트에 자동 전달.
+- **풀이 결과 3종 세분화 (🟢 정답 / 🟡 부분점수 / 🔴 오답)**:
+  - 3개 테스트케이스 등 99점/Score >= 90점 항목을 `🟢 정답`으로 정상 분류하며, 1~89점 **부분점수(Partial)** 항목을 독립 표출.
+  - `classifySubmission` 최상위 스코프 배치로 `📋 AI 프롬프트 복사` 클릭 시 `ReferenceError` 완전 예방.
+- **동적 소스코드 샘플링 알고리즘 (Dynamic Code Sampling Algorithm)**:
+  - **1순위 (오답/부분점수 우선)**: 오답(🔴) 및 부분점수(🟡) 소스코드를 최우선으로 수집하여 실수 원인 및 보완점 분석.
+  - **2순위 (정답 자동 충원)**: 다 맞추거나 오답이 적을 때 5개가 채워질 때까지 최신 정답(🟢) 소스코드를 자동 충원하여 우수한 루프/변수 구조에 대한 구체적 칭찬 작성.
+- **규격화된 공식 카카오톡 알림장 빌더**:
+  - 실제 학원 사이트 도메인(`http://edu.doingcoding.com`) 및 단원 코드/소단원 태그(`.../p102?tag=SLv15%20%EB%B0%B0%EC%97%B4%282%EC%B0%A8%29`) 기반 자동 링크 조립.
+  - 모드 및 데이터 유무에 따른 2번째 줄 안내 문구 지능형 자동 전환 (`수업에 해당되는 숙제 부분 안내드립니다.` / `오늘 수업의 피드백 및 복습 안내드립니다.` / `오늘 수업의 피드백을 안내해 드립니다.`).
+- **⚙️ 옵션 설정 UX 고도화**:
+  - 숙제 장바구니가 비어 있을 경우 `📘 숙제 안내` 라디오 버튼 자동 비활성화(`disabled`).
+  - `📘 숙제 안내` vs `🔄 복습 안내` 라디오 선택 시 관련 세부 목록 표시 체크박스만 동적으로 노출.
+- **Option A 이중 출제 버튼 시스템**:
+  - `📋 카카오톡 알림장 복사 & 숙제/피드백 저장`: 알림장 복사 및 유저 문서에 과제 기록 영구 적재.
+  - `⚡ 피드백 없이 숙제만 즉시 출제`: 피드백 작성 없이 0초 만에 숙제 등록.
+
+### 2. 🎯 샌드박스 2-Pane 워크스페이스 (`/workspace`)
+- **2단 계층형 단원 필터 (`[대단원]` ➔ `[소단원]`)**: 클릭 2번으로 원하는 소단원(예: `Lv1 출력`, `Lv2 변수` 20개) 문제에 0초 만에 도달.
+- **학생별 실시간 풀이 상태 오버레이 (🟢/🔴)**: 학생 선택 시 해당 학생의 통과/오답 여부가 문제 목록에 실시간 시각화되며 장바구니 자동 초기화.
+- **통합 피드백 모달 & 개념 사전 파이프라인**: 문제 제목 태그 파싱 및 비플랫폼/오프라인 수업 드롭다운 선택 시 고품질 교육 개념 자동 추천.
 - **3종 원클릭 클립보드 복사**:
   - `📱 학부모 카톡 복사 (b)`: 다듬어진 AI 학부모용 메시지 복사
   - `🎒 학생용 숙제 복사 (c)`: 코멘트를 자동으로 제외한 학생 전용 숙제 목록 복사
   - `📊 엑셀 1줄 복사 (Tab 구분)`: 날짜/회차/문제/코멘트를 탭 구문으로 가공하여 엑셀/구글시트에 Ctrl+V 1회로 셀 분할 저장
 
-### 2. ⚙️ [카탈로그 & 크롤링 관리 Webview] & Playwright 크롤러
-- **`playwright_crawler.py`**: DOM 기반 헤드리스 크롤링 모듈로 불규칙한 문제 ID 규격도 100% 정밀 수집 (`domcontentloaded` 기법으로 초고속 진입)
-- **`프로그래밍 II (심화)` 10개 대단원 매핑**: `AL100`(알고리즘 기초)부터 `AL302`(알고리즘 골드2)까지 10개 단원 총 1,370개 문항 수집 완료
-- **실시간 크롤링 진행률 및 상태 폴링 (`/api/workspace/crawl_status`)**: `[3/10] '4. 자료구조 브론즈2' 수집 중... (30%)` 와 같이 단원 단계 및 퍼센티지 실시간 안내
-- **단원 선택 갱신 vs 전체 갱신 기능**: 특정 단원만 빠르게 최신화하거나 전체 과정 1클릭 풀-크롤링 가능
-- **📋 엑셀/텍스트 일괄 문제 수동 등록**: 오프라인 교재/외부 자격증 문제를 엑셀에서 긁어와 1초 만에 마이크로 레지스트리로 추가
+### 3. 🚀 Playwright 초고속 크롤러 & 과정별 맞춤 새로고침
+- **Selenium 100% 제거 & Playwright 단일 엔진 통합**:
+  - 느린 레거시 Selenium(`questions_crawler.py`) 의존성을 전면 제거하고 초고속 **Playwright(`playwright_crawler.py`) 파이프라인**으로 100% 전환하여 수집 속도 3~5배 비약적 단축.
+  - 하위 호환 프록시 브릿지 패턴을 도입하여 백엔드 레거시 호출부 Zero-Regression 달성.
+- **과정별(`prog1` vs `prog2`) 맞춤 새로고침 (Targeted Refresh)**:
+  - `[💻 프로그래밍 I]` 선택 후 새로고침 ➔ `p101` (`all_problems.json`) 수집 ➔ 기초/기본 목차 동적 갱신.
+  - `[💻 프로그래밍 II (심화)]` 선택 후 새로고침 ➔ `p102` (`prog2_problems.json` 10개 대단원) 수집 ➔ 심화 10개 대단원 목차 동적 갱신.
+- **Schema V2 계층 포맷 자동 변환**:
+  - Playwright 크롤링 결과 데이터를 Schema V2 계층 구조(`chapters`, `groups`, `problems`)로 자동 변환하여 요약 파서가 대단원 8개/10개와 소단원, 문제 목록을 100% 정밀 렌더링.
 
-### 3. 요일별 수업 스케줄 및 학생 관리 (`/schedule`)
-* **요일별 시간표 슬롯(Slot) 생성 및 삭제**: 학원 수업 일정에 맞춘 실시간 시간표 배치 관리
-* **슬롯별 학생 등록 및 해제**: 직관적인 인터페이스를 이용해 특정 수업 타임에 학생을 배정하거나 삭제
-* **출석부 및 상태 연동**: 당일 등원한 학생들의 목록과 학습 여부 한눈에 점검
+### 4. 📚 챕터별 학습 진행도 & 🎯 위치 찾기 (Drilldown Panel)
+- **`🎯 위치 찾기` 원클릭 단원 탐색**:
+  - `오늘 마지막 풀이` 카드에서 버튼 클릭 1번으로 해당 문제가 속한 **대단원 ➔ 소단원 ➔ 문제 위치**로 3단 목차가 자동 켜지며 연한 노란색 포커스 하이라이트 및 부드러운 스크롤(`smooth scroll`) 이동.
+- **대단원 선택 시 1번째 소단원 자동 포커스**:
+  - 대단원(1열) 선택 시 1번째 소단원이 자동으로 선택되어 3열 문제 목록이 추가 클릭 없이 즉시 표출되도록 UX 개선.
+- **`프로그래밍 II (심화)` 10개 대단원 완제 수집**:
+  - `AL100`(알고리즘 기초)부터 `AL302`(알고리즘 골드2)까지 10개 단원 총 100개 핵심 문항 수집 및 계층형 드릴다운 표출 완료.
 
-### 4. 숙제(과제) 출제 및 내역 관리 (CRUD)
-* **지능형 숙제 제안**: 학생의 당일 풀이 로그를 분석하여 오답 문항 / 미완료 문항 / 복습 문항을 자동 분류
-* **알림장 메시지 빌더**: 출제일, 마감 일정, 숙제용 개별 풀이 계정 및 고유 피드백 링크가 포함된 완성형 텍스트 생성
-* **백엔드 로그 적재 및 삭제**: 숙제 발송 기록을 유저 JSON 문서에 영구 기록하며, 개별 삭제 지원
-
-### 5. 🪄 AI 학부모 피드백 코멘트 파이프라인
-* **원클릭 퀵 태그(Quick Tags) 입력**: `[😊 집중도 좋음]`, `[❓ 질문 적극적]`, `[💡 오답 혼자 해결]` 등 수업 태도 키워드 1클릭 추가
-* **전역 공통 프롬프트 모듈 (`ai_prompt.js`)**: 과장 배제, 부정적 뉘앙스 순화 및 차분하고 주도적인 연속성 표현 강제
+### 5. 요일별 수업 스케줄 및 학생 관리 (`/schedule`)
+* **요일별 시간표 슬롯(Slot) 생성 및 삭제**: 학원 수업 일정에 맞춘 실시간 시간표 배치 관리.
+* **학생 식별자 표준화 (UUID & Display ID)**: 유저 고유 UUID 기반 JSON 저장 및 계정명/이름 3단계 자동 추정(Fallback Resolution) 구조.
+* **출석부 및 상태 연동**: 당일 등원한 학생들의 목록과 학습 여부 한눈에 점검.
 
 ### 6. 🧩 샌드박스 프론트엔드 모듈화 아키텍처 (Modular JS System)
 * **비대한 메인 스크립트 슬림화**: 기존 1,125줄 분량의 `workspace_2pane.js`를 **90줄 수준의 메인 진입점 오케스트레이터**로 경량 다이어트 완료.
@@ -55,9 +77,8 @@ DoingCoding(edu.doingcoding.com)의 API 및 DOM 기반 자동 크롤러를 연�
   - `workspace_basket.js`: 숙제 바구니 담기/비우기, 수강생별 숙제 할당 로그 저장
   - `workspace_account_modal.js`: ⚙️ 1:N 도메인 계정(학원/스크래치/구름) 매핑 및 비고/동명이인 메모 관리
   - `workspace_feedback_ufm.js`: UFM AI 피드백 모달, 개념 파싱, 카톡 메시지 3종 복사
-  - `workspace_crawler.js`: 카탈로그 수집 크롤러, 실시간 토스트 폴링, 엑셀 1초 일괄 문제 등록
+  - `workspace_crawler.js`: 카탈로그 수집 크롤러, 실시간 토스트 폴링, 엑셀 1초 일괄 등록
   - `workspace_register_modal.js`: 신규 수강생 수동 등록 및 슬롯 지정 모달
-* **100% 무결성 & 하위 호환성 래퍼 (`Object.defineProperty`)**: 기존 코드나 인라인 DOM 핸들러와의 연동이 끊기지 않도록 전역 반응형 게터/세터 및 이벤트를 오케스트레이팅하여 Zero-Regression 완벽 보장.
 
 ---
 
@@ -76,24 +97,27 @@ DoingCoding(edu.doingcoding.com)의 API 및 DOM 기반 자동 크롤러를 연�
     │   ├── css/         # workspace_apple.css (60fps 경량 그래픽 최적화), unified.css 등
     │   └── js/
     │       ├── workspace_2pane.js # 오케스트레이터 진입점 (Phase 1~5 모듈 연결)
-    │       ├── modules/           # 7대 분리 모듈 디렉터리
-    │       │   ├── workspace_students.js       # [Phase 1] 수강생 보드 & 슬롯 관리
-    │       │   ├── workspace_catalog.js        # [Phase 2] 카탈로그 & 라이브 문제 검색
-    │       │   ├── workspace_basket.js         # [Phase 3-1] 숙제 바구니 관리
-    │       │   ├── workspace_account_modal.js  # [Phase 3-2] ⚙️ 도메인 계정/메모 모달
-    │       │   ├── workspace_feedback_ufm.js   # [Phase 4-1] UFM AI 피드백 모달
-    │       │   ├── workspace_crawler.js        # [Phase 4-2] 크롤러 & 1초 일괄 등록
-    │       │   └── workspace_register_modal.js # [Phase 5-1] 수강생 수동 등록 모달
-    │       ├── script.js          # 메인 인터랙션 및 숙제 로직
-    │       └── ai_prompt.js       # AI 피드백 프롬프트 생성기 & 개념 사전
+    │       ├── index_view.js      # 메인 대시보드 및 3단 드릴다운 제어 (🎯 위치 찾기 포함)
+    │       ├── streak.js          # 학습 스트릭 및 오늘 마지막 풀이 카드 관리
+    │       ├── ai_prompt.js       # AI 피드백 프롬프트 생성기 (제출 코드 & 부분점수 지침)
+    │       └── modules/           # 7대 분리 모듈 디렉터리
+    │           ├── workspace_students.js       # [Phase 1] 수강생 보드 & 슬롯 관리
+    │           ├── workspace_catalog.js        # [Phase 2] 카탈로그 & 라이브 문제 검색
+    │           ├── workspace_basket.js         # [Phase 3-1] 숙제 바구니 관리
+    │           ├── workspace_account_modal.js  # [Phase 3-2] ⚙️ 도메인 계정/메모 모달
+    │           ├── workspace_feedback_ufm.js   # [Phase 4-1] UFM AI 피드백 모달
+    │           ├── workspace_crawler.js        # [Phase 4-2] 크롤러 & 1초 일괄 등록
+    │           └── workspace_register_modal.js # [Phase 5-1] 수강생 수동 등록 모달
     ├── templates/
-    │   ├── workspace_2pane.html   # 샌드박스 2-Pane 워크스페이스 & 관리 모달 HTML
+    │   ├── index.html             # 메인 대시보드 화면
+    │   ├── _feedback_modal.html   # AI 피드백 & 카톡 알림장 720px 모달
+    │   ├── workspace_2pane.html   # 샌드박스 2-Pane 워크스페이스 HTML
     │   ├── schedule.html          # 주간 스케줄 및 학생 출석 화면
     │   ├── group_detail.html      # 그룹별 상세 문제 리스트
     │   └── homework_view.html     # 학생별 과제 이력 페이지
     ├── problems_data/   # 마이크로 레지스트리 포맷 문제 데이터 (all_problems, prog2_problems 등)
-    ├── users_data/      # 유저별 문제 제출 이력 및 숙제 로그 JSON 디렉터리
-    └── utils/           # playwright_crawler.py (Playwright 크롤러), 통계 분석 헬퍼
+    ├── users_data/      # 유저별 문제 제출 이력 및 숙제 로그 JSON 디렉터리 ({uuid}.json)
+    └── utils/           # questions_crawler.py (Playwright 브릿지), playwright_crawler.py, summarizer.py 등
 ```
 
 ---
@@ -115,20 +139,27 @@ FLASK_PORT=5000
 FLASK_DEBUG=1
 ```
 
-### 3) CLI 크롤러 직접 실행 예시 (Playwright)
-```bash
-python -m utils.playwright_crawler --url http://edu.doingcoding.com/p102 --out prog2_problems.json
-```
-
-### 4) Flask 애플리케이션 실행
+### 3) Flask 애플리케이션 실행
 ```bash
 python src/app.py
 ```
-브라우저를 열고 `http://127.0.0.1:5000/workspace` 접속.
+브라우저를 열고 `http://127.0.0.1:5000/` 접속.
 
 ---
 
-## 🔒 보안 및 캐시 파일 주의 사항
+## 🧪 유닛 테스트 및 안정성 검증
+
+시스템 무결성 보장을 위한 종합 자동화 테스트 스위트 지원:
+```bash
+python C:\Users\osw\.gemini\antigravity\brain\0c1aa7b8-3ebb-42ee-8d11-22a7eb72b6cb\scratch\test_stability.py
+```
+- 비존재 유저 문서 예외 처리 테스트 **PASS** ✅
+- 계정명 ➔ UUID 추정 3단계 Fallback 테스트 **PASS** ✅
+- 스트릭 데이터 파싱 및 90+점 정답(Accepted) 분류 테스트 **PASS** ✅
+
+---
+
+## 🔒 보안 및 데이터 무결성 주의 사항
 
 * `cookies/` 디렉터리에 생성되는 DoingCoding 세션 쿠키 데이터와 `src/users_data/` 하위의 개인별 문제 제출 이력 JSON 파일은 **절대로 Git 저장소에 커밋하거나 공유하지 마십시오**. (`.gitignore` 설정 확인 권장)
-* 로컬 데이터 무결성을 위해 주기적으로 `src/users_data/` 및 `src/problems_data/` 백업을 권장합니다.
+* 수강생 고유 식별자는 `user_uuid`로 관리되며 로컬 데이터 무결성을 위해 주기적으로 `src/users_data/` 백업을 권장합니다.

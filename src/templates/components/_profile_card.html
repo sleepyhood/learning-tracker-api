@@ -35,6 +35,14 @@
         onclick="openSubmissionLogsModal()"
         style="cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
       >📊 풀이 로그 보기</button>
+      {% if is_admin or viewer_is_admin %}
+      <button
+        type="button"
+        class="chip chip-action"
+        onclick="openFeedbackModal('{{ username }}', '{{ username }}', '{{ user_uuid }}')"
+        style="cursor: pointer; background: #6c5ce7; color: white; border: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"
+      >✨ AI 피드백 & 알림장</button>
+      {% endif %}
     </div>
     <p class="profile-last-login">최근 접속: {{ last_login }}</p>
   </div>
@@ -63,6 +71,7 @@
       <div class="today-problem-title-wrapper">
         <a id="today-problem-link" href="#" target="_blank" rel="noopener" class="today-problem-title" style="pointer-events: none;">오늘 제출 내역 없음</a>
         <button type="button" id="today-problem-copy-btn" class="btn-quiet streak-inline-btn today-copy-btn" style="display: none;" title="제목 복사">제목 복사</button>
+        <button type="button" id="today-problem-jump-btn" class="btn-quiet streak-inline-btn today-jump-btn" style="display: none; color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; font-weight: 600; margin-left: 4px;" title="단원 위치로 이동">🎯 위치 찾기</button>
       </div>
       <span id="today-problem-meta" class="today-problem-meta">-</span>
     </div>

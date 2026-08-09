@@ -74,12 +74,10 @@ def generate_streak_data(submissions, days: int = 7):
     kst = ZoneInfo("Asia/Seoul")
     title_map = _load_title_map()
     problem_meta_map = _load_problem_meta_map()
-    first_corrects = dict()  # problem_id(str) -> info
+    by_date = defaultdict(list)
 
     for rec in submissions:
         if not isinstance(rec, dict):
-            continue
-        if rec.get("result") != 0:
             continue
 
         pid = rec.get("problem")
@@ -98,51 +96,40 @@ def generate_streak_data(submissions, days: int = 7):
         dt_kst = dt_utc.astimezone(kst)
         date_str = dt_kst.strftime("%Y-%m-%d")
 
-        if pid not in first_corrects:
-            meta = problem_meta_map.get(pid, {})
-            chapter_id = meta.get("chapter_id")
-            chapter_title = meta.get("chapter_title")
-            chapter_url = None
-            if chapter_id:
-                tag = quote(str(chapter_title or "").replace(".", ""))
-                chapter_url = f"{BASE_URL}/{chapter_id}"
-                if tag:
-                    chapter_url = f"{chapter_url}?tag={tag}"
+        meta = problem_meta_map.get(pid, {})
+        chapter_id = meta.get("chapter_id")
+        chapter_title = meta.get("chapter_title")
+        chapter_url = None
+        if chapter_id:
+            tag = quote(str(chapter_title or "").replace(".", ""))
+            chapter_url = f"{BASE_URL}/{chapter_id}"
+            if tag:
+                chapter_url = f"{chapter_url}?tag={tag}"
 
-            problem_url = None
-            if pid:
-                # 실 문제 페이지 링크(환경별 라우팅 차이 가능성을 고려한 best-effort)
-                problem_url = f"{BASE_URL}/problem/{quote(pid)}"
+        problem_url = None
+        if pid:
+            # 실 문제 페이지 링크(환경별 라우팅 차이 가능성을 고려한 best-effort)
+            problem_url = f"{BASE_URL}/problem/{quote(pid)}"
 
-            first_corrects[pid] = {
-                "date": date_str,
-                "time": dt_kst.strftime("%H:%M:%S"),
-                "score": rec.get("statistic_info", {}).get("score", 0),
-                "language": rec.get("language"),
+        stat_info = rec.get("statistic_info") or {}
+        score = stat_info.get("score", 0)
+
+        by_date[date_str].append(
+            {
                 "problem": pid,
                 "title": title_map.get(pid, pid),
+                "score": score,
+                "result": rec.get("result"),
+                "language": rec.get("language"),
+                "date": date_str,
+                "time": dt_kst.strftime("%H:%M:%S"),
                 "server_sub_id": rec.get("id"),
                 "show_link": rec.get("show_link", True),
                 "problem_url": problem_url,
                 "chapter_url": chapter_url,
             }
-
-    # 날짜별 묶기
-    by_date = defaultdict(list)
-    for info in first_corrects.values():
-        by_date[info["date"]].append(
-            {
-                "problem": info["problem"],
-                "title": info["title"],
-                "score": info["score"],
-                "language": info["language"],
-                "time": info["time"],
-                "server_sub_id": info["server_sub_id"],
-                "show_link": info.get("show_link", True),
-                "problem_url": info.get("problem_url"),
-                "chapter_url": info.get("chapter_url"),
-            }
         )
+
     # 연속 days일 생성
     today = datetime.now(tz=kst).date()
     streak_data = []

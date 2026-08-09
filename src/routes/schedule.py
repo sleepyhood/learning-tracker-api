@@ -171,8 +171,24 @@ def update_problems():
         or request.args.get("chapter")
         or ""
     )
+    curr_key = (
+        payload.get("curr")
+        or payload.get("curr_key")
+        or request.form.get("curr")
+        or request.args.get("curr")
+        or request.args.get("curr_key")
+        or "prog1"
+    )
     chapter_token = str(chapter_token).strip()
+    curr_key = str(curr_key).strip().lower()
     refresh_api = payload.get("refresh_api")
+
+    if curr_key == "prog2":
+        output_filename = "prog2_problems.json"
+        target_url = f"{BASE_URL}/p102"
+    else:
+        output_filename = "all_problems.json"
+        target_url = f"{BASE_URL}/p101"
 
     chapter_label = None
     if chapter_token and chapter_token.lower() != "all":
@@ -193,15 +209,18 @@ def update_problems():
         chapter_label = crawler_chapter_name(chapter_index)
         problem_file_path = do_crawling(
             output_dir=PROBLEM_DIR,
-            filename="all_problems.json",
+            filename=output_filename,
             chapter=chapter_value,
+            url=target_url,
         )
         should_refresh_api = (
             bool(refresh_api) if refresh_api is not None else not os.path.exists(SERVER_DUMP_FILE)
         )
     else:
         problem_file_path = do_crawling(
-            output_dir=PROBLEM_DIR, filename="all_problems.json"
+            output_dir=PROBLEM_DIR,
+            filename=output_filename,
+            url=target_url,
         )
         should_refresh_api = True if refresh_api is None else bool(refresh_api)
 
@@ -214,28 +233,34 @@ def update_problems():
 
     map_result = None
     try:
-        all_prob_path = os.path.join(PROBLEM_DIR, "all_problems.json")
+        all_prob_path = os.path.join(PROBLEM_DIR, output_filename)
         serv_prob_path = os.path.join(PROBLEM_DIR, "server_problems.json")
         if os.path.exists(all_prob_path) and os.path.exists(serv_prob_path):
             map_stats = build_legacy_map(
-                all_problems_path=all_prob_path,
-                server_problems_path=serv_prob_path,
-                out_dir=PROBLEM_DIR,
+                all_prob_path,
+                serv_prob_path,
+                out_legacy=os.path.join(PROBLEM_DIR, "legacy_map.json"),
+                out_reverse=os.path.join(PROBLEM_DIR, "legacy_map_reverse.json"),
+                out_unmatched=os.path.join(PROBLEM_DIR, "legacy_unmatched.json"),
             )
             map_result = {"ok": True, "stats": map_stats}
-        else:
-            map_result = {"ok": False, "error": "매핑에 필요한 JSON 파일이 부족합니다."}
     except Exception as e:
         map_result = {"ok": False, "error": str(e)}
 
+    now_str = datetime.now(tz=KST).strftime("%Y-%m-%d %H:%M:%S")
     return jsonify(
         {
+            "status": "success",
             "ok": True,
-            "chapter_token": chapter_token or "ALL",
-            "chapter_label": chapter_label,
-            "problem_file": problem_file_path,
-            "api_result": api_result,
-            "map_result": map_result,
+            "curr": curr_key,
+            "last_updated": now_str,
+            "crawling": {
+                "file": problem_file_path,
+                "chapter": chapter_label,
+                "output_filename": output_filename,
+            },
+            "api_refresh": api_result,
+            "legacy_map": map_result,
         }
     )
 

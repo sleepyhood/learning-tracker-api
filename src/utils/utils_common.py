@@ -409,13 +409,13 @@ def build_dashboard_viewmodel(*args, **kwargs):
         user_path = os.path.join(USER_DATA_DIR, f"{user_uuid}.json")
 
     legacy_map = resolve_legacy_map_path()
-    target_path = user_path if os.path.exists(user_path) else (PROBLEM_FILE if os.path.exists(PROBLEM_FILE) else "")
+    solve_path = user_path if os.path.exists(user_path) else None
     chapter_summary = summarize_progress(
-        target_problem_file, target_path, legacy_map_file=legacy_map
-    ) if target_path else []
+        target_problem_file, solve_path, legacy_map_file=legacy_map
+    )
     drilldown_summary = summarize_drilldown_progress(
-        target_problem_file, target_path, legacy_map_file=legacy_map
-    ) if target_path else []
+        target_problem_file, solve_path, legacy_map_file=legacy_map
+    )
     streak = generate_streak_data(filtered, days=days)
 
     return dict(

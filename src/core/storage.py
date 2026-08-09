@@ -218,7 +218,7 @@ def append_homework_log(user_uuid: str, payload: dict) -> dict:
 
     for ent in list(payload["problems"]):
         if isinstance(ent, dict):
-            legacy_code = ent.get("legacy_code") or ent.get("code") or ""
+            legacy_code = ent.get("legacy_code") or ent.get("code") or ent.get("pid") or ""
             title = ent.get("title") or ent.get("title_at_issue") or ""
         else:
             legacy_code = str(ent)

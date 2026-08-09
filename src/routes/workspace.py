@@ -1086,14 +1086,28 @@ def api_workspace_save_homework_log():
         return err
     payload = request.get_json(force=True) or {}
     display_id = payload.get("display_id")
-    user_uuid = payload.get("user_uuid") or display_id
+    user_uuid = payload.get("user_uuid")
     problems = payload.get("problems", [])
 
     if not user_uuid and display_id:
         data = _load_workspace_students()
+        # 1차: display_id를 uuid 키로 직접 조회 (이전 uuid 기반 데이터 호환)
         student = data.get(display_id)
         if student:
             user_uuid = student.get("user_uuid") or display_id
+        else:
+            # 2차: display_id 필드 값으로 전체 순회 (계정명 기반 검색)
+            for u, st in data.items():
+                if st.get("display_id") == display_id:
+                    user_uuid = u
+                    break
+        # 3차: resolve_uuid 최후 수단 (uuids.json 조회 또는 신규 생성)
+        if not user_uuid:
+            try:
+                from utils.utils_common import resolve_uuid
+                user_uuid = resolve_uuid(display_id)
+            except Exception:
+                user_uuid = display_id
 
     if not user_uuid:
         return jsonify({"ok": False, "error": "Target user_uuid or display_id is required"}), 400

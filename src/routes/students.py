@@ -103,7 +103,7 @@ def api_student_homework_status(user_uuid):
 
     doc = load_doc_by_any(user_uuid)
     hw_map = _latest_homework_status_map(doc)
-    return jsonify({"ok": True, "homework_status": hw_map})
+    return jsonify({"ok": True, "homework_status": hw_map, "updated_at": doc.get("updated_at")})
 
 
 @students_bp.delete("/api/students/<id_or_uuid>/homework_logs/<log_key>")
@@ -146,7 +146,7 @@ def api_student_homework_latest(user_uuid):
     doc = load_doc_by_any(user_uuid)
     logs = doc.get("homework_logs", [])
     recent = logs[-1] if logs else {}
-    return jsonify({"ok": True, "homework": recent})
+    return jsonify({"ok": True, "homework": recent, "log": recent})
 
 
 @students_bp.post("/api/students/homework_latest_batch")
@@ -178,6 +178,8 @@ def view_homework_logs(user_uuid):
     doc = load_doc_by_any(user_uuid)
     profile = doc.get("profile", {})
     logs = doc.get("homework_logs", [])
+    # 파일 자체가 없는 경우: profile도 비어있고 homework_logs도 없음
+    doc_missing = not logs and not profile
 
     return render_template(
         "homework_view.html",
@@ -185,6 +187,7 @@ def view_homework_logs(user_uuid):
         logs=logs,
         user_uuid=user_uuid,
         is_admin=True,
+        doc_missing=doc_missing,
     )
 
 

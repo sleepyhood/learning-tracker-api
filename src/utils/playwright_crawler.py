@@ -216,12 +216,76 @@ def do_playwright_crawling(
 
         browser.close()
 
-    # Save to JSON
+    # Save to JSON in Schema V2 format
+    v2_data = convert_micro_registry_to_v2_schema(micro_registry)
     with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(micro_registry, f, ensure_ascii=False, indent=2)
+        json.dump(v2_data, f, ensure_ascii=False, indent=2)
 
     print(f"✅ [Playwright] 총 {scraped_count}개 문제 수집 완료! 저장 경로: {out_path}")
     return out_path
+
+
+def convert_micro_registry_to_v2_schema(micro_registry: dict) -> dict:
+    if not isinstance(micro_registry, dict):
+        return {"_schema_version": 2, "chapters": [], "groups": {}, "problems": {}}
+
+    if micro_registry.get("_schema_version") == 2:
+        return micro_registry
+
+    chapters_dict = {}
+    groups = {}
+    problems = {}
+    group_map = {}
+
+    for key, item in micro_registry.items():
+        if not isinstance(item, dict) or "title" not in item:
+            continue
+        pid = item.get("id") or item.get("pid") or key
+        title = item.get("title", pid)
+        major = item.get("major") or "기타 대단원"
+        sub = item.get("sub") or "기타 소단원"
+
+        pair = (major, sub)
+        if pair not in group_map:
+            gid = item.get("group_id") or f"G_{abs(hash(pair)) % 1000000:06d}"
+            group_map[pair] = gid
+            groups[gid] = {
+                "chapter_id": major,
+                "chapter_code": "p101",
+                "title": sub,
+                "total": 0,
+                "problem_ids": []
+            }
+            if major not in chapters_dict:
+                chapters_dict[major] = []
+            chapters_dict[major].append(gid)
+
+        gid = group_map[pair]
+        groups[gid]["problem_ids"].append(pid)
+        groups[gid]["total"] += 1
+
+        problems[pid] = {
+            "pid": pid,
+            "group_id": gid,
+            "chapter_id": major,
+            "title": title
+        }
+
+    chapters = []
+    for order, (major_name, g_ids) in enumerate(chapters_dict.items(), start=1):
+        chapters.append({
+            "id": major_name,
+            "name": major_name,
+            "order": order,
+            "group_ids": g_ids
+        })
+
+    return {
+        "_schema_version": 2,
+        "chapters": chapters,
+        "groups": groups,
+        "problems": problems
+    }
 
 
 if __name__ == "__main__":

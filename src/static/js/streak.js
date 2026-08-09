@@ -386,10 +386,11 @@ function updateTodayLatestProblem(streakData) {
   }
 
   if (badgeEl) {
-    if (score === 100) {
-      badgeEl.textContent = "정답 (100점)";
+    const isAC = latest.result === 0 || latest.status === "solved" || latest.status === "passed" || latest.passed === true || score >= 90;
+    if (isAC) {
+      badgeEl.textContent = `정답 (${score > 0 ? score + '점' : '100점'})`;
       badgeEl.className = "today-problem-badge pass";
-    } else if (score > 0) {
+    } else if (score > 0 && score < 90) {
       badgeEl.textContent = `부분점수 (${score}점)`;
       badgeEl.className = "today-problem-badge partial";
     } else {
@@ -422,6 +423,26 @@ function updateTodayLatestProblem(streakData) {
         }
       });
       copyBtn.__bound = true;
+    }
+  }
+
+  const jumpBtn = document.getElementById("today-problem-jump-btn");
+  if (jumpBtn) {
+    jumpBtn.style.display = "inline-flex";
+    jumpBtn.dataset.pid = latest.pid || latest.problem || "";
+    jumpBtn.dataset.groupId = latest.group_id || "";
+    if (!jumpBtn.__bound) {
+      jumpBtn.__bound = true;
+      jumpBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const pid = jumpBtn.dataset.pid || "";
+        const groupId = jumpBtn.dataset.groupId || "";
+        if (typeof window.navigateToProblemChapter === "function") {
+          window.navigateToProblemChapter(pid, groupId);
+        } else {
+          if (typeof showToast === "function") showToast("단원 이동 기능을 준비하는 중입니다.");
+        }
+      });
     }
   }
 }
