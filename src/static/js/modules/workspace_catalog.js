@@ -172,7 +172,7 @@
 
             if (tree && tree[selectedMajor] && Array.isArray(tree[selectedMajor])) {
                 tree[selectedMajor].forEach(subName => {
-                    if (subName) subSet.add(subName);
+                    if (subName && !subName.includes(":::")) subSet.add(subName);
                 });
             }
 
@@ -180,13 +180,19 @@
                 const majorObj = currObj.chapters.find(ch => (typeof ch === "object" ? ch.major : ch) === selectedMajor);
                 if (majorObj && typeof majorObj === "object" && majorObj.subs) {
                     majorObj.subs.forEach(subName => {
-                        if (subName) subSet.add(subName);
+                        if (subName && !subName.includes(":::")) subSet.add(subName);
                     });
                 }
             }
 
             const naturalCompare = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-            const isHw = (s) => /^s{1,2}/i.test(s) || s.includes("숙제") || s.includes("기출");
+            const isHw = (s) => {
+                if (!s || s.includes(":::")) return false;
+                if (/^SSTRLv/i.test(s)) return true;
+                if (/^STRLv/i.test(s)) return false;
+                if (/^S/i.test(s)) return true;
+                return s.includes("숙제") || s.includes("기출");
+            };
 
             let subArr = Array.from(subSet).sort(naturalCompare);
 

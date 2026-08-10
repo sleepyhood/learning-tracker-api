@@ -19,15 +19,30 @@
         </a>
         {% endfor %}
       </div>
+      <!-- 최근 수집 시각 뱃지 (JS로 채워짐) -->
+      <span id="charts-last-crawled-badge" style="display:none; font-size: 0.72rem; color: #5e6f8c; background: #f0f4ff; border: 1px solid #c9d6ea; border-radius: 999px; padding: 2px 10px; white-space: nowrap;"></span>
     </div>
-    <button
-      id="charts-toggle-btn"
-      type="button"
-      class="btn-quiet section-toggle"
-      aria-expanded="true"
-    >
-      접기
-    </button>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      {% if viewer_is_admin or is_admin %}
+      <button
+        id="btn-open-crawler-modal"
+        type="button"
+        class="btn-quiet"
+        style="font-size: 0.8rem; padding: 5px 12px; border-radius: 8px; background: #e8f0fe; color: #1663e8; border: 1px solid #c5d5f7; font-weight: 600; cursor: pointer; transition: all 0.18s ease;"
+        aria-label="문제 수집 및 관리 모달 열기"
+      >
+        🔄 문제 수집 및 관리
+      </button>
+      {% endif %}
+      <button
+        id="charts-toggle-btn"
+        type="button"
+        class="btn-quiet section-toggle"
+        aria-expanded="true"
+      >
+        접기
+      </button>
+    </div>
   </div>
 
   <!-- 3열 계층형 드릴다운 레이아웃 (1열: 대단원 / 2열: 소단원 / 3열: 개별 문제 목록 & 숙제 체크) -->

@@ -44,21 +44,44 @@ def build_legacy_map(
     unmatched: List[Dict] = []
 
     # 크롤링된 모든 레거시코드를 API 인덱스에서 찾아 매핑
-    for chap_title, groups in book.items():
-        for group_code, info in groups.items():
-            for legacy_code in (info.get("problem_names") or {}).keys():
-                sid = api_legacy_to_server.get(legacy_code)
-                if sid:
-                    server_to_legacy[sid] = legacy_code
-                    legacy_to_server[legacy_code] = sid
-                else:
-                    unmatched.append(
-                        {
-                            "legacy_code": legacy_code,
-                            "chapter": chap_title,
-                            "group": group_code,
-                        }
-                    )
+    if isinstance(book, dict) and book.get("_schema_version") == 2:
+        problems_dict = book.get("problems", {})
+        for pid, prob in problems_dict.items():
+            if not isinstance(prob, dict):
+                continue
+            legacy_code = str(prob.get("pid") or pid).strip()
+            sid = api_legacy_to_server.get(legacy_code)
+            if sid:
+                server_to_legacy[sid] = legacy_code
+                legacy_to_server[legacy_code] = sid
+            else:
+                unmatched.append(
+                    {
+                        "legacy_code": legacy_code,
+                        "chapter": prob.get("chapter_id", ""),
+                        "group": prob.get("group_id", ""),
+                    }
+                )
+    elif isinstance(book, dict):
+        for chap_title, groups in book.items():
+            if not isinstance(groups, dict):
+                continue
+            for group_code, info in groups.items():
+                if not isinstance(info, dict):
+                    continue
+                for legacy_code in (info.get("problem_names") or {}).keys():
+                    sid = api_legacy_to_server.get(legacy_code)
+                    if sid:
+                        server_to_legacy[sid] = legacy_code
+                        legacy_to_server[legacy_code] = sid
+                    else:
+                        unmatched.append(
+                            {
+                                "legacy_code": legacy_code,
+                                "chapter": chap_title,
+                                "group": group_code,
+                            }
+                        )
 
     # 저장
     with open(out_map_path, "w", encoding="utf-8") as f:

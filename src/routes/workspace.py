@@ -886,12 +886,25 @@ def api_workspace_search_problems():
         elif p_id in wrong_set:
             status = "wrong"
 
+        # Determine chapter_code
+        ch_code = item.get("chapter_code") or item.get("chapter_id")
+        if not ch_code and target_config and target_config.get("url"):
+            url_str = target_config.get("url", "")
+            match = re.search(r'doingcoding\.com/([^/?#]+)', url_str)
+            if match:
+                ch_code = match.group(1)
+        if not ch_code:
+            ch_code = "p101" if curr_key == "prog1" else ("p102" if curr_key == "prog2" else curr_key)
+
         results.append({
             "legacy_code": p_id,
             "title": title,
             "concept": concept,
             "major": maj,
             "sub": sub_title,
+            "group_title": sub_title,
+            "chapter_code": ch_code,
+            "curriculum": curr_key,
             "learning_goal": item.get("learning_goal", ""),
             "learning_goal_fallback": item.get("learning_goal_fallback", ""),
             "tags": item.get("tags", []),

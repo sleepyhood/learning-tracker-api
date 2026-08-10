@@ -18,9 +18,9 @@
     background: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 20px;
-    width: 720px;
-    max-width: 92vw;
-    max-height: 88vh;
+    width: 820px;
+    max-width: 95vw;
+    max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
     padding: 24px;
@@ -115,22 +115,27 @@
   }
   .feedback-radio-group {
     display: flex;
-    gap: 12px;
+    gap: 8px;
     align-items: center;
+    width: 100%;
   }
   .feedback-radio-label {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.86rem;
+    justify-content: center;
+    gap: 5px;
+    font-size: 0.82rem;
     font-weight: 700;
     color: #334155;
     cursor: pointer;
-    padding: 6px 12px;
+    padding: 6px 8px;
     border-radius: 8px;
     background: #ffffff;
     border: 1.5px solid #cbd5e1;
     transition: all 0.15s ease;
+    white-space: nowrap;
+    flex: 1;
+    text-align: center;
   }
   .feedback-radio-label:has(input:checked) {
     border-color: #6c5ce7;
@@ -184,6 +189,13 @@
   .quick-tag-btn:hover {
     background: #e2e8f0;
     border-color: #94a3b8;
+  }
+  .quick-tag-btn.active {
+    background: #6c5ce7;
+    color: #ffffff;
+    border-color: #5b4bc4;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(108, 92, 231, 0.25);
   }
   .feedback-input {
     border: 1.5px solid #cbd5e1;
@@ -292,11 +304,22 @@
           </div>
         </div>
 
-        <!-- 📊 오늘 실습 및 제출 코드 현황 (요구사항 3: 제출시간,제목,결과,코드) -->
+        <!-- 📊 오늘 실습 및 제출 코드 현황 -->
         <div class="feedback-modal-section">
           <div class="feedback-section-title">📊 오늘 풀이로그 & 제출 코드 현황</div>
-          <div id="feedbackTodayLogSummary" class="feedback-problems-text" style="max-height: 200px;">
+          <div id="feedbackTodayLogSummary" class="feedback-problems-text" style="max-height: 140px;">
             불러오는 중...
+          </div>
+        </div>
+
+        <!-- 👀 완성될 카카오톡 알림장 실시간 미리보기 (좌측 하단 밸런스 배치) -->
+        <div class="feedback-modal-section">
+          <div class="feedback-section-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>👀 완성될 알림장 실시간 미리보기</span>
+            <span style="font-size: 0.7rem; color: #8b5cf6; font-weight: 600;">실시간 갱신 중</span>
+          </div>
+          <div id="modalKakaoPreview" class="feedback-problems-text" style="max-height: 160px; min-height: 110px; background: #faf5ff; border-color: #d8b4fe; color: #3b0764; font-family: inherit; white-space: pre-wrap; font-size: 0.78rem; line-height: 1.45;">
+            (미리보기 렌더링 중...)
           </div>
         </div>
       </div>
@@ -314,6 +337,10 @@
             <label class="feedback-radio-label" id="labelNoticeReview">
               <input type="radio" name="modalNoticeMode" id="modeNoticeReview" value="review" onclick="handleNoticeModeChange('review')" />
               🔄 복습 안내
+            </label>
+            <label class="feedback-radio-label" id="labelNoticeComment">
+              <input type="radio" name="modalNoticeMode" id="modeNoticeComment" value="comment" onclick="handleNoticeModeChange('comment')" />
+              📝 코멘트만
             </label>
           </div>
           
@@ -341,10 +368,14 @@
             <div class="feedback-step-label">1단계: 관찰 메모 작성</div>
             <textarea id="modalTeacherMemo" placeholder="예: 오늘 집중도 높았고 오답 혼자 해결함 (비워두면 기본값 적용)" class="feedback-input feedback-textarea" rows="1"></textarea>
             <div class="quick-tags-container" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;">
-              <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '😊 집중도 좋음')">😊 집중도 좋음</button>
+              <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '😊 집중도 최고')">😊 집중도 최고</button>
               <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '❓ 질문 적극적')">❓ 질문 적극적</button>
               <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '💡 오답 혼자 해결')">💡 오답 혼자 해결</button>
               <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '⚡ 풀이 속도 빠름')">⚡ 풀이 속도 빠름</button>
+              <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '🧩 개념 재설명 완료')">🧩 개념 재설명 완료</button>
+              <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '⚠️ 문법/오타 실수 주의')">⚠️ 문법/오타 실수 주의</button>
+              <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '📘 지난 수업 복습 완료')">📘 지난 수업 복습 완료</button>
+              <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '🚀 심화 문제까지 도전')">🚀 심화 문제까지 도전</button>
               <button type="button" class="quick-tag-btn" onclick="toggleQuickTag('modalTeacherMemo', '💤 조금 피곤해함')">💤 조금 피곤해함</button>
             </div>
           </div>
@@ -363,14 +394,9 @@
 
           <div class="feedback-step-container" style="margin-top: 6px;">
             <div class="feedback-step-label">4단계: 완료 및 출제</div>
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-              <button id="modalCompleteBtn" class="feedback-btn feedback-complete-btn" onclick="submitModalFeedback()">
-                📋 카카오톡 알림장 복사 & 숙제/피드백 저장
-              </button>
-              <button id="modalDirectSubmitBtn" class="feedback-btn" style="background: #475569; color: white; box-shadow: 0 4px 8px rgba(71, 85, 105, 0.2);" onclick="submitDirectHomework()">
-                ⚡ 피드백 없이 숙제만 즉시 출제
-              </button>
-            </div>
+            <button id="modalCompleteBtn" class="feedback-btn feedback-complete-btn" onclick="submitModalFeedback()">
+              📋 카카오톡 알림장 복사 & 숙제/피드백 저장
+            </button>
           </div>
         </div>
       </div>
@@ -435,6 +461,29 @@
     el.style.height = el.scrollHeight + 'px';
   }
 
+  function updateQuickTagActiveStates() {
+    const el = document.getElementById("modalTeacherMemo");
+    const val = el ? el.value : "";
+    document.querySelectorAll(".quick-tag-btn").forEach((btn) => {
+      const tagText = btn.textContent.trim();
+      if (val.includes(tagText)) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+  }
+
+  function updateLiveKakaoPreview() {
+    const commentEl = document.getElementById("modalHomeworkComment");
+    const comment = commentEl ? commentEl.value.trim() : "";
+    const previewText = buildKakaoMessage(comment);
+    const previewEl = document.getElementById("modalKakaoPreview");
+    if (previewEl) {
+      previewEl.textContent = previewText;
+    }
+  }
+
   function toggleQuickTag(textareaId, tagText) {
     const el = document.getElementById(textareaId);
     if (!el) return;
@@ -448,6 +497,8 @@
     if (typeof autoExpandModalTextarea === "function") {
       autoExpandModalTextarea(el);
     }
+    updateQuickTagActiveStates();
+    updateLiveKakaoPreview();
   }
 
   function handleNoticeModeChange(mode) {
@@ -466,15 +517,31 @@
       if (rvWrapper) rvWrapper.style.display = "flex";
       if (homeworkCheck) homeworkCheck.checked = false;
       if (reviewCheck) reviewCheck.checked = true;
+    } else if (mode === "comment") {
+      if (hwWrapper) hwWrapper.style.display = "none";
+      if (rvWrapper) rvWrapper.style.display = "none";
+      if (homeworkCheck) homeworkCheck.checked = false;
+      if (reviewCheck) reviewCheck.checked = false;
     }
+    updateLiveKakaoPreview();
   }
 
   document.querySelectorAll(".feedback-textarea").forEach((ta) => {
     ta.addEventListener("input", function () {
       autoExpandModalTextarea(this);
+      if (this.id === "modalTeacherMemo") updateQuickTagActiveStates();
+      if (this.id === "modalHomeworkComment") updateLiveKakaoPreview();
     });
     ta.addEventListener("change", function () {
       autoExpandModalTextarea(this);
+      if (this.id === "modalTeacherMemo") updateQuickTagActiveStates();
+      if (this.id === "modalHomeworkComment") updateLiveKakaoPreview();
+    });
+  });
+
+  document.querySelectorAll('input[name="modalNoticeMode"], #modalIncludeGreeting, #modalShowHomeworkList, #modalShowReviewList').forEach((el) => {
+    el.addEventListener("change", () => {
+      updateLiveKakaoPreview();
     });
   });
 
@@ -571,6 +638,8 @@
     document.getElementById("modalHomeworkComment").value = "";
     autoExpandModalTextarea(document.getElementById("modalTeacherMemo"));
     autoExpandModalTextarea(document.getElementById("modalHomeworkComment"));
+    updateQuickTagActiveStates();
+    updateLiveKakaoPreview();
 
     document.getElementById("feedbackModal").style.display = "flex";
 
@@ -681,6 +750,7 @@
           }).join("<br>");
 
           document.getElementById("feedbackTodayLogSummary").innerHTML = summaryHTML;
+          updateLiveKakaoPreview();
         } else {
           document.getElementById("feedbackTodayLogSummary").innerHTML = "(최근 7일간 실습 및 제출 기록이 없습니다)";
         }
@@ -755,12 +825,13 @@
 
   // 규격화된 카카오톡 알림장 메시지 생성 함수
   function buildKakaoMessage(comment) {
-    const { name, studentId, basketProblems, solvedTitles } = feedbackModalState;
+    const { name, studentId, basketProblems, solvedTitles, todayProblems } = feedbackModalState;
     const basket = basketProblems && basketProblems.length > 0 ? basketProblems : getActiveBasketProblems();
-    const includeGreeting = document.getElementById("modalIncludeGreeting").checked;
-    const isHomeworkMode = document.getElementById("modeNoticeHomework")?.checked;
-    const showHomeworkList = document.getElementById("modalShowHomeworkList").checked;
-    const showReviewList = document.getElementById("modalShowReviewList").checked;
+    const includeGreeting = document.getElementById("modalIncludeGreeting")?.checked;
+    
+    const selectedMode = document.querySelector('input[name="modalNoticeMode"]:checked')?.value || "homework";
+    const showHomeworkList = document.getElementById("modalShowHomeworkList")?.checked;
+    const showReviewList = document.getElementById("modalShowReviewList")?.checked;
 
     const todayObj = new Date();
     const daysKR = ["일", "월", "화", "수", "목", "금", "토"];
@@ -776,86 +847,123 @@
       text += "안녕하세요 두잉창의코딩학원입니다. 😊\n";
     }
 
-    if (isHomeworkMode && basket.length > 0) {
-      text += "수업에 해당되는 숙제 부분 안내드립니다.\n\n";
+    if (selectedMode === "homework" && basket.length > 0) {
+      text += "수업 피드백 및 숙제 안내드립니다.\n\n";
 
-      const domain = "http://edu.doingcoding.com";
-      const firstProb = basket[0];
-      let chapterCode = firstProb.chapter_code || "p102";
-      let subChapterTitle = firstProb.group_title || firstProb.chapter_title || "";
-
-      if (!subChapterTitle) {
-        const firstProbTitle = firstProb.title || firstProb.legacy_code || "";
-        const match = firstProbTitle.match(/\[(.*?)\]/);
-        if (match && match[1]) {
-          subChapterTitle = match[1];
-        }
+      if (comment) {
+        text += `📝 [수업 피드백 & 태도]\n${comment}\n\n`;
+        text += `---------------------------------\n`;
       }
 
-      if (!subChapterTitle) subChapterTitle = "코딩 실습 및 숙제";
-      const chapterUrl = `${domain}/${chapterCode}?tag=${encodeURIComponent(subChapterTitle)}`;
+      text += `📖 [숙제 안내]\n\n`;
 
-      text += `📘 ${subChapterTitle}\n`;
-      text += `🔗 ${chapterUrl}\n`;
-      text += `🗓 출제일: ${dateFormatted}\n`;
+      // 소단원별 문제 그룹화
+      const groupsMap = new Map();
+      basket.forEach((prob) => {
+        let chapterCode = prob.chapter_code || prob.chapter_id || prob.curriculum || "p102";
+        let subTitle = prob.group_title || prob.sub || prob.chapter_title || "";
+        
+        if (!subTitle) {
+          const probTitle = prob.title || prob.legacy_code || "";
+          const match = probTitle.match(/\[(.*?)\]/);
+          if (match && match[1]) {
+            subTitle = match[1];
+          }
+        }
+        if (!subTitle) subTitle = "코딩 실습 및 숙제";
+
+        const groupKey = `${chapterCode}:::${subTitle}`;
+        if (!groupsMap.has(groupKey)) {
+          groupsMap.set(groupKey, { chapterCode, subTitle, problems: [] });
+        }
+        groupsMap.get(groupKey).problems.push(prob);
+      });
+
+      const domain = "http://edu.doingcoding.com";
+      const groupEntries = Array.from(groupsMap.values());
+
+      groupEntries.forEach((grp, idx) => {
+        const chapterUrl = `${domain}/${grp.chapterCode}?tag=${encodeURIComponent(grp.subTitle)}`;
+        text += `📘 ${grp.subTitle}\n`;
+        text += `🔗 ${chapterUrl}\n`;
+
+        if (showHomeworkList) {
+          grp.problems.forEach((p) => {
+            const pTitle = p.title || p.legacy_code;
+            text += `  ${pTitle}\n`;
+          });
+        }
+        if (idx < groupEntries.length - 1) {
+          text += `\n`;
+        }
+      });
+
+      text += `\n🗓 출제일: ${dateFormatted}\n`;
       text += `⏰ 마감: 다음 수업시간 전까지\n`;
-      text += `📝 코멘트: ${comment}\n\n`;
-
-      if (showHomeworkList) {
-        basket.forEach((p, idx) => {
-          const pTitle = p.title || p.legacy_code;
-          text += `${pTitle}\n`;
-        });
-      }
       text += "=========================";
 
-    } else if (!isHomeworkMode && solvedTitles.length > 0) {
-      text += "오늘 수업의 피드백 및 복습 안내드립니다.\n\n";
+    } else if (selectedMode === "review" && ((todayProblems && todayProblems.length > 0) || (solvedTitles && solvedTitles.length > 0))) {
+      text += "오늘 수업 피드백 및 복습 안내드립니다.\n\n";
 
-      const domain = "http://edu.doingcoding.com";
-      let chapterCode = "p102";
-      let subChapterTitle = "";
-
-      if (feedbackModalState.todayProblems && feedbackModalState.todayProblems.length > 0) {
-        const firstItem = feedbackModalState.todayProblems[0];
-        if (firstItem.chapter_code || firstItem.chapter_id) {
-          chapterCode = firstItem.chapter_code || firstItem.chapter_id;
+      if (!showReviewList) {
+        text += `📝 [수업 피드백 & 태도]\n${comment || "오늘 수업에 집중하여 성실히 문제 풀이를 작성하였습니다."}\n\n`;
+        text += `🗓 수업일: ${dateFormatted}\n`;
+        text += "=========================";
+      } else {
+        if (comment) {
+          text += `📝 [수업 피드백 & 태도]\n${comment}\n\n`;
+          text += `---------------------------------\n`;
         }
-        if (firstItem.group_title || firstItem.chapter_title) {
-          subChapterTitle = firstItem.group_title || firstItem.chapter_title;
-        }
-      }
 
-      if (!subChapterTitle && solvedTitles.length > 0) {
-        const match = solvedTitles[0].match(/\[(.*?)\]/);
-        if (match && match[1]) {
-          subChapterTitle = match[1];
-        }
-      }
+        text += `🔄 [오늘 학습 복습 문제 목록]\n\n`;
 
-      if (!subChapterTitle) subChapterTitle = "오늘 학습 복습 안내";
+        // 소단원별 복습 문제 그룹화
+        const groupsMap = new Map();
+        const problemItems = (todayProblems && todayProblems.length > 0) ? todayProblems : (solvedTitles || []).map(t => ({ title: t }));
 
-      const reviewUrl = `${domain}/${chapterCode}?tag=${encodeURIComponent(subChapterTitle)}`;
+        problemItems.forEach((prob) => {
+          let chapterCode = (typeof prob === 'object' && (prob.chapter_code || prob.chapter_id)) || "p102";
+          let subTitle = (typeof prob === 'object' && (prob.group_title || prob.sub || prob.chapter_title)) || "";
+          const probTitle = typeof prob === 'object' ? (prob.title || prob.legacy_code || "") : String(prob || "");
 
-      text += `📘 ${subChapterTitle} (복습)\n`;
-      text += `🔗 ${reviewUrl}\n`;
-      text += `🗓 수업일: ${dateFormatted}\n`;
-      text += `📝 코멘트: ${comment}\n\n`;
+          if (!subTitle && probTitle) {
+            const match = probTitle.match(/\[(.*?)\]/);
+            if (match && match[1]) {
+              subTitle = match[1];
+            }
+          }
+          if (!subTitle) subTitle = "기타 실습 문제";
 
-      if (showReviewList) {
-        solvedTitles.forEach((title, idx) => {
-          
-          text += `${title}\n`;
+          const groupKey = `${chapterCode}:::${subTitle}`;
+          if (!groupsMap.has(groupKey)) {
+            groupsMap.set(groupKey, { chapterCode, subTitle, problems: [] });
+          }
+          groupsMap.get(groupKey).problems.push(probTitle);
         });
+
+        const groupEntries = Array.from(groupsMap.values());
+
+        groupEntries.forEach((grp, idx) => {
+          text += `📘 ${grp.subTitle}\n`;
+          grp.problems.forEach((pTitle) => {
+            text += `  ${pTitle}\n`;
+          });
+          if (idx < groupEntries.length - 1) {
+            text += `\n`;
+          }
+        });
+
+        text += `\n🗓 수업일: ${dateFormatted}\n`;
+        text += "=========================";
       }
-      text += "=========================";
 
     } else {
-      text += "오늘 수업의 피드백을 안내해 드립니다.\n\n";
+      // comment 모드 또는 fallback
+      text += "오늘 수업 피드백 안내드립니다.\n\n";
       const displayName = (name && name !== studentId) ? `${name} 학생` : "오늘";
-      text += `📘 ${displayName} 수업 피드백\n`;
+      
+      text += `📝 [${displayName} 수업 피드백 & 태도]\n${comment || "오늘 수업에 집중하여 성실히 문제 풀이를 작성하였습니다."}\n\n`;
       text += `🗓 수업일: ${dateFormatted}\n`;
-      text += `📝 코멘트: ${comment}\n`;
       text += "=========================";
     }
 
@@ -864,8 +972,10 @@
 
   async function submitModalFeedback() {
     const comment = document.getElementById("modalHomeworkComment").value.trim();
-    if (!comment) {
-      showModalToast("⚠️ 3단계에 AI 답변을 먼저 붙여넣어 주세요!");
+    const selectedMode = document.querySelector('input[name="modalNoticeMode"]:checked')?.value || "homework";
+    
+    if (!comment && selectedMode === "comment") {
+      showModalToast("⚠️ 3단계에 AI 답변이나 코멘트를 먼저 작성/붙여넣어 주세요!");
       return;
     }
 
@@ -875,10 +985,11 @@
 
     try {
       await modalCopyToClipboard(finalMsg);
-      showModalToast("📋 카카오톡 알림장 메시지가 복사되었습니다!\n(카카오톡에 바로 붙여넣기 하세요)");
 
       const btn = document.getElementById("modalCompleteBtn");
       const originalText = btn.textContent;
+      const originalBg = btn.style.background;
+      
       btn.textContent = "⏳ 저장 중...";
       btn.disabled = true;
 
@@ -897,10 +1008,11 @@
         body: JSON.stringify(payload)
       });
 
-      btn.disabled = false;
-      btn.textContent = originalText;
-
       if (!res.ok) throw new Error("서버 저장 실패");
+
+      btn.textContent = "✅ 복사 & 저장 완료!";
+      btn.style.background = "#10b981";
+      showModalToast("📋 카카오톡 알림장 메시지가 복사되었습니다!\n(카카오톡에 Ctrl+V로 붙여넣기 하세요)", 4000);
 
       if (typeof window.clearQuickBasket === "function") window.clearQuickBasket();
       if (window.WorkspaceBasket && typeof window.WorkspaceBasket.clearBasket === "function") {
@@ -908,8 +1020,11 @@
       }
 
       setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        btn.style.background = originalBg;
         closeFeedbackModal();
-      }, 1000);
+      }, 2500);
 
     } catch (err) {
       showModalToast("저장에 실패했으나 클립보드 복사는 완료되었습니다.");
@@ -927,6 +1042,8 @@
 
     const btn = document.getElementById("modalDirectSubmitBtn");
     const originalText = btn.textContent;
+    const originalBg = btn.style.background;
+    
     btn.textContent = "⏳ 출제 중...";
     btn.disabled = true;
 
@@ -944,12 +1061,11 @@
         body: JSON.stringify(payload)
       });
 
-      btn.disabled = false;
-      btn.textContent = originalText;
-
       if (!res.ok) throw new Error("출제 실패");
 
-      showModalToast(`🚀 [${name}] 학생에게 숙제가 즉시 출제되었습니다! (${basket.length}개)`);
+      btn.textContent = "✅ 숙제 즉시 출제 완료!";
+      btn.style.background = "#10b981";
+      showModalToast(`🚀 [${name}] 학생에게 숙제가 즉시 출제되었습니다! (${basket.length}개)`, 4000);
 
       if (typeof window.clearQuickBasket === "function") window.clearQuickBasket();
       if (window.WorkspaceBasket && typeof window.WorkspaceBasket.clearBasket === "function") {
@@ -957,13 +1073,17 @@
       }
 
       setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        btn.style.background = originalBg;
         closeFeedbackModal();
-      }, 1000);
+      }, 2500);
 
     } catch (err) {
       btn.disabled = false;
       btn.textContent = originalText;
-      showModalToast("⚠️ 숙제 출제에 실패했습니다.");
+      btn.style.background = originalBg;
+      showModalToast("⚠️ 숙제 출제 실패: " + err.message, 4000);
     }
   }
 </script>

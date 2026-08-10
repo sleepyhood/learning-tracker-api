@@ -90,9 +90,9 @@ def refresh_user(username):
 
     try:
         updated_doc, user_path = sync_user_problems_cache(s, username)
-        return jsonify({"ok": True, "message": f"{username} 프로필 갱신 완료"})
+        return jsonify({"ok": True, "success": True, "message": f"{username} 프로필 갱신 완료"})
     except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
+        return jsonify({"ok": False, "success": False, "error": str(e)}), 500
 
 
 @students_bp.route("/api/students/<user_uuid>/homework_status")

@@ -1,0 +1,115 @@
+<!-- ====================================================
+  문제 수집 & 관리 모달 (_crawler_modal.html)
+  - 챕터별 학습 진행도 헤더에서 열림
+  - 실시간 수집 상태 표시 (progress bar + console log)
+  - 최근 수집 시각 / 통계 뱃지
+  ==================================================== -->
+<div id="crawler-modal-backdrop" class="cm-backdrop" style="display:none;" aria-hidden="true"></div>
+
+<div id="crawler-modal" class="cm-modal" role="dialog" aria-modal="true" aria-labelledby="cm-title" style="display:none;">
+  <div class="cm-inner">
+
+    <!-- 헤더 -->
+    <div class="cm-header">
+      <div class="cm-header-left">
+        <span class="cm-title-icon">🔄</span>
+        <h2 class="cm-title" id="cm-title">문제 데이터 수집 &amp; 갱신</h2>
+      </div>
+      <button class="cm-close-btn" id="cm-close-btn" aria-label="닫기" type="button">✕</button>
+    </div>
+
+    <!-- 최근 수집 뱃지 -->
+    <div class="cm-meta-bar">
+      <span class="cm-meta-label">🕒 최근 수집</span>
+      <span id="cm-last-crawled" class="cm-meta-value">조회 중...</span>
+      <span id="cm-stats-badge" class="cm-stats-badge" style="display:none;"></span>
+    </div>
+
+    <div class="cm-body">
+      <!-- 왼쪽: 설정 카드 -->
+      <div class="cm-section cm-section-left">
+        <div class="cm-section-title">⚙️ 수집 옵션</div>
+
+        <!-- 과정 선택 -->
+        <div class="cm-field">
+          <label class="cm-label">1. 과정 선택</label>
+          <div class="cm-radio-group" id="cm-curr-group">
+            <label class="cm-radio-item" id="cm-curr-prog1-label">
+              <input type="radio" name="cm-curr" value="prog1" id="cm-curr-prog1">
+              💻 프로그래밍 I
+            </label>
+            <label class="cm-radio-item" id="cm-curr-prog2-label">
+              <input type="radio" name="cm-curr" value="prog2" id="cm-curr-prog2">
+              💻 프로그래밍 II (심화)
+            </label>
+          </div>
+        </div>
+
+        <!-- 대단원 선택 -->
+        <div class="cm-field">
+          <label class="cm-label" for="cm-chapter-select">2. 갱신 범위</label>
+          <select id="cm-chapter-select" class="cm-select"></select>
+        </div>
+
+        <!-- 대기시간 선택 -->
+        <div class="cm-field" style="margin-top:10px;">
+          <label class="cm-label" for="cm-timeout-select">3. ⏱️ 페이지 로딩 대기시간</label>
+          <select id="cm-timeout-select" class="cm-select">
+            <option value="30">⚡ 빠름 (30초)</option>
+            <option value="60" selected>🐢 보통 (60초 - 추천 기본값)</option>
+            <option value="120">🐌 지연 대응 (120초 / 2분)</option>
+            <option value="180">🛑 극심한 지연 대응 (180초 / 3분)</option>
+          </select>
+        </div>
+
+        <!-- 실시간 브라우저 표시 토글 -->
+        <div class="cm-field" style="margin-top:10px;">
+          <label class="cm-label" style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.85rem; font-weight:600; color:#334155;">
+            <input type="checkbox" id="cm-show-browser" style="width:16px; height:16px; cursor:pointer; accent-color:#3b82f6;">
+            🖥️ 크롤링 브라우저 화면 실시간 표시
+          </label>
+        </div>
+
+        <!-- DoingCoding 계정 정보 입력 (선택) -->
+        <div class="cm-field" style="margin-top:10px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+          <label class="cm-label" style="font-size:0.8rem; color:#475569; margin-bottom:4px; font-weight:600;">🔑 DoingCoding 계정 인증 (세션 갱신용)</label>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="cm-username" placeholder="아이디 (선택)" class="cm-select" style="font-size:0.8rem; padding:4px 8px; flex:1;">
+            <input type="password" id="cm-password" placeholder="비밀번호 (선택)" class="cm-select" style="font-size:0.8rem; padding:4px 8px; flex:1;">
+          </div>
+        </div>
+
+        <div class="cm-info-box">
+          <p>💡 <strong>전체 대단원</strong> 선택 시 모든 소단원을 순차 수집합니다.</p>
+          <p>🔑 아이디/비밀번호 입력 시 수집 전 자동으로 로그인하여 최신 세션 쿠키를 갱신합니다.</p>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 진행 상태 콘솔 -->
+      <div class="cm-section cm-section-right">
+        <div class="cm-section-title">📡 실시간 수집 상태</div>
+
+        <!-- 프로그레스 바 -->
+        <div class="cm-progress-wrap">
+          <div class="cm-progress-bar-track">
+            <div class="cm-progress-bar-fill" id="cm-progress-fill" style="width:0%"></div>
+          </div>
+          <span class="cm-progress-text" id="cm-progress-text">대기 중</span>
+        </div>
+
+        <!-- 콘솔 로그 -->
+        <div class="cm-console" id="cm-console">
+          <div class="cm-console-line cm-muted">수집 시작 버튼을 누르면 여기에 실시간 로그가 표시됩니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 푸터 버튼 -->
+    <div class="cm-footer">
+      <button class="cm-btn cm-btn-start" id="cm-start-btn" type="button">⚡ 수집 시작</button>
+      <button class="cm-btn cm-btn-cancel" id="cm-cancel-btn" type="button" style="display:none;">⏹ 중지 요청</button>
+      <button class="cm-btn cm-btn-close" id="cm-footer-close-btn" type="button">닫기</button>
+    </div>
+
+  </div>
+</div>

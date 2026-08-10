@@ -46,10 +46,20 @@ DoingCoding(edu.doingcoding.com)의 API 및 DOM 기반 자동 크롤러를 연�
   - `🎒 학생용 숙제 복사 (c)`: 코멘트를 자동으로 제외한 학생 전용 숙제 목록 복사
   - `📊 엑셀 1줄 복사 (Tab 구분)`: 날짜/회차/문제/코멘트를 탭 구문으로 가공하여 엑셀/구글시트에 Ctrl+V 1회로 셀 분할 저장
 
-### 3. 🚀 Playwright 초고속 크롤러 & 과정별 맞춤 새로고침
+### 3. 🚀 Playwright 초고속 크롤러 & 계정 인증 자동화
 - **Selenium 100% 제거 & Playwright 단일 엔진 통합**:
   - 느린 레거시 Selenium(`questions_crawler.py`) 의존성을 전면 제거하고 초고속 **Playwright(`playwright_crawler.py`) 파이프라인**으로 100% 전환하여 수집 속도 3~5배 비약적 단축.
   - 하위 호환 프록시 브릿지 패턴을 도입하여 백엔드 레거시 호출부 Zero-Regression 달성.
+- **🖥️ 실시간 브라우저 GUI 창 팝업 (`CREATE_NEW_CONSOLE`)**:
+  - `🖥️ 크롤링 브라우저 화면 실시간 표시` 체크박스 옵션 지원.
+  - Windows 백그라운드 세션 권한 제약을 우회하기 위해 독립 Subprocess(`CREATE_NEW_CONSOLE`)로 띄워 실시간 크롬 브라우저 동작 및 탐색을 눈앞에서 감상 가능.
+- **🔑 DoingCoding 계정 자동 로그인 & 세션 쿠키 자동 갱신**:
+  - 수집 모달 내 계정 정보(ID/PW) 입력 시 `http://edu.doingcoding.com/api/profile`에서 기존 세션 유효성을 자동 검증.
+  - 세션 만료 시 `http://edu.doingcoding.com/admin/login`에서 정확한 XPath 셀렉터로 자동 로그인을 수행하고 최신 세션 쿠키를 추출하여 `src/cookies/`에 파일로 즉시 갱신·저장.
+- **⚡ 외부 CDN/폰트 차단(`page.route`)으로 무한 로딩 해결 & 1~2초대 초고속 접속**:
+  - 지연을 유발하는 불필요한 외부 폰트/미디어 리소스 차단 및 `domcontentloaded` 접속 전략을 적용하여 무한 로딩을 완벽 해결하고 1~2초 대의 초고속 단원 탐색 달성.
+- **⚠️ 수집 데이터 결과 검증 강화**:
+  - 크롤링 완료 후 실제 수집된 문제 건수(`scraped_count`)를 프론트엔드로 전달. 0개 수집 시 `⚠️ 수집 건수 0개 (세션/네트워크 확인)` 경고 및 토스트를 명확히 출력하여 오인 표시 방지.
 - **과정별(`prog1` vs `prog2`) 맞춤 새로고침 (Targeted Refresh)**:
   - `[💻 프로그래밍 I]` 선택 후 새로고침 ➔ `p101` (`all_problems.json`) 수집 ➔ 기초/기본 목차 동적 갱신.
   - `[💻 프로그래밍 II (심화)]` 선택 후 새로고침 ➔ `p102` (`prog2_problems.json` 10개 대단원) 수집 ➔ 심화 10개 대단원 목차 동적 갱신.

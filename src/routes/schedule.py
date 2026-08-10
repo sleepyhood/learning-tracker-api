@@ -24,6 +24,7 @@ from core.storage import (
     UNCERTAIN_WEEKDAY,
     UNCERTAIN_WEEKDAY_LABEL,
     WEEKDAY_LABELS,
+    KST,
 )
 from utils.utils_common import (
     ensure_admin_or_403,
@@ -44,6 +45,7 @@ from utils.utils_common import (
     sync_user_problems_cache,
 )
 from utils.questions_api import save_server_problems_json
+from utils.legacy_map import build_legacy_map
 from utils.questions_crawler import (
     do_crawling,
     chapter_name as crawler_chapter_name,
@@ -52,8 +54,29 @@ from utils.questions_crawler import (
 )
 from utils.summarizer import summarize_progress, summarize_user_chapter_group
 from utils.streak_utils import generate_streak_data
+from utils.playwright_crawler import get_crawl_status
 
 schedule_bp = Blueprint("schedule", __name__)
+
+
+@schedule_bp.route("/api/crawl_status")
+def api_crawl_status():
+    status = get_crawl_status()
+    # If no in-memory crawl has run yet, enrich with metadata from saved JSON files
+    if not status.get("last_crawled"):
+        curr = request.args.get("curr", "prog1")
+        filename = "prog2_problems.json" if curr == "prog2" else "all_problems.json"
+        fpath = os.path.join(PROBLEM_DIR, filename)
+        if os.path.exists(fpath):
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    saved = json.load(f)
+                status["last_crawled"] = saved.get("_last_updated", "")
+                status["last_crawled_stats"] = saved.get("_stats", {})
+            except Exception:
+                pass
+    return jsonify(status)
+
 
 
 @schedule_bp.route("/schedule")
@@ -159,110 +182,163 @@ def schedule_delete_slot():
 
 @schedule_bp.route("/update_problems", methods=["POST"])
 def update_problems():
-    s, err = ensure_admin_or_403()
-    if err:
-        return err
-    os.makedirs(PROBLEM_DIR, exist_ok=True)
-
-    payload = request.get_json(silent=True) or {}
-    chapter_token = (
-        payload.get("chapter")
-        or request.form.get("chapter")
-        or request.args.get("chapter")
-        or ""
-    )
-    curr_key = (
-        payload.get("curr")
-        or payload.get("curr_key")
-        or request.form.get("curr")
-        or request.args.get("curr")
-        or request.args.get("curr_key")
-        or "prog1"
-    )
-    chapter_token = str(chapter_token).strip()
-    curr_key = str(curr_key).strip().lower()
-    refresh_api = payload.get("refresh_api")
-
-    if curr_key == "prog2":
-        output_filename = "prog2_problems.json"
-        target_url = f"{BASE_URL}/p102"
-    else:
-        output_filename = "all_problems.json"
-        target_url = f"{BASE_URL}/p101"
-
-    chapter_label = None
-    if chapter_token and chapter_token.lower() != "all":
-        try:
-            chapter_index = resolve_chapter_index(chapter_token)
-        except ValueError as e:
-            return (
-                jsonify(
-                    {
-                        "ok": False,
-                        "error": str(e),
-                        "valid_range": f"1-{crawler_chapter_count()}",
-                    }
-                ),
-                400,
-            )
-        chapter_value = chapter_index + 1
-        chapter_label = crawler_chapter_name(chapter_index)
-        problem_file_path = do_crawling(
-            output_dir=PROBLEM_DIR,
-            filename=output_filename,
-            chapter=chapter_value,
-            url=target_url,
-        )
-        should_refresh_api = (
-            bool(refresh_api) if refresh_api is not None else not os.path.exists(SERVER_DUMP_FILE)
-        )
-    else:
-        problem_file_path = do_crawling(
-            output_dir=PROBLEM_DIR,
-            filename=output_filename,
-            url=target_url,
-        )
-        should_refresh_api = True if refresh_api is None else bool(refresh_api)
-
-    api_result = None
-    if should_refresh_api:
-        try:
-            api_result = save_server_problems_json(PROBLEM_DIR, BASE_URL)
-        except Exception as e:
-            api_result = {"ok": False, "error": str(e)}
-
-    map_result = None
     try:
-        all_prob_path = os.path.join(PROBLEM_DIR, output_filename)
-        serv_prob_path = os.path.join(PROBLEM_DIR, "server_problems.json")
-        if os.path.exists(all_prob_path) and os.path.exists(serv_prob_path):
-            map_stats = build_legacy_map(
-                all_prob_path,
-                serv_prob_path,
-                out_legacy=os.path.join(PROBLEM_DIR, "legacy_map.json"),
-                out_reverse=os.path.join(PROBLEM_DIR, "legacy_map_reverse.json"),
-                out_unmatched=os.path.join(PROBLEM_DIR, "legacy_unmatched.json"),
-            )
-            map_result = {"ok": True, "stats": map_stats}
-    except Exception as e:
-        map_result = {"ok": False, "error": str(e)}
+        s, err = ensure_admin_or_403()
+        if err:
+            return err
+        os.makedirs(PROBLEM_DIR, exist_ok=True)
 
-    now_str = datetime.now(tz=KST).strftime("%Y-%m-%d %H:%M:%S")
-    return jsonify(
-        {
-            "status": "success",
-            "ok": True,
-            "curr": curr_key,
-            "last_updated": now_str,
-            "crawling": {
-                "file": problem_file_path,
-                "chapter": chapter_label,
-                "output_filename": output_filename,
-            },
-            "api_refresh": api_result,
-            "legacy_map": map_result,
-        }
-    )
+        payload = request.get_json(silent=True) or {}
+        chapter_token = (
+            payload.get("chapter")
+            or request.form.get("chapter")
+            or request.args.get("chapter")
+            or ""
+        )
+        curr_key = (
+            payload.get("curr")
+            or payload.get("curr_key")
+            or request.form.get("curr")
+            or request.args.get("curr")
+            or request.args.get("curr_key")
+            or "prog1"
+        )
+        chapter_token = str(chapter_token).strip()
+        curr_key = str(curr_key).strip().lower()
+        refresh_api = payload.get("refresh_api")
+        show_browser_val = (
+            payload.get("show_browser")
+            or request.args.get("show_browser")
+            or request.form.get("show_browser")
+        )
+        is_headless = not (str(show_browser_val).lower() in ("true", "1", "yes"))
+
+        username_val = (
+            payload.get("username")
+            or request.args.get("username")
+            or request.form.get("username")
+            or ""
+        )
+        password_val = (
+            payload.get("password")
+            or request.args.get("password")
+            or request.form.get("password")
+            or ""
+        )
+        timeout_sec_val = (
+            payload.get("timeout_sec")
+            or request.args.get("timeout_sec")
+            or request.form.get("timeout_sec")
+            or 60
+        )
+        try:
+            timeout_sec = int(timeout_sec_val)
+        except Exception:
+            timeout_sec = 60
+
+        if curr_key == "prog2":
+            output_filename = "prog2_problems.json"
+            target_url = f"{BASE_URL}/p102"
+        else:
+            output_filename = "all_problems.json"
+            target_url = f"{BASE_URL}/p101"
+
+        chapter_label = None
+        if chapter_token and chapter_token.lower() != "all":
+            try:
+                chapter_index = resolve_chapter_index(chapter_token)
+            except ValueError as e:
+                return (
+                    jsonify(
+                        {
+                            "ok": False,
+                            "error": str(e),
+                            "valid_range": f"1-{crawler_chapter_count()}",
+                        }
+                    ),
+                    400,
+                )
+            chapter_value = chapter_index + 1
+            chapter_label = crawler_chapter_name(chapter_index)
+            problem_file_path = do_crawling(
+                output_dir=PROBLEM_DIR,
+                filename=output_filename,
+                chapter=chapter_value,
+                url=target_url,
+                headless=is_headless,
+                username=username_val,
+                password=password_val,
+                timeout_sec=timeout_sec,
+            )
+            should_refresh_api = (
+                bool(refresh_api) if refresh_api is not None else not os.path.exists(SERVER_DUMP_FILE)
+            )
+        else:
+            problem_file_path = do_crawling(
+                output_dir=PROBLEM_DIR,
+                filename=output_filename,
+                url=target_url,
+                headless=is_headless,
+                username=username_val,
+                password=password_val,
+                timeout_sec=timeout_sec,
+            )
+            should_refresh_api = True if refresh_api is None else bool(refresh_api)
+
+        api_result = None
+        if should_refresh_api:
+            try:
+                api_result = save_server_problems_json(PROBLEM_DIR, BASE_URL)
+            except Exception as e:
+                api_result = {"ok": False, "error": str(e)}
+
+        map_result = None
+        try:
+            all_prob_path = os.path.join(PROBLEM_DIR, output_filename)
+            serv_prob_path = os.path.join(PROBLEM_DIR, "server_problems.json")
+            if os.path.exists(all_prob_path) and os.path.exists(serv_prob_path):
+                map_stats = build_legacy_map(
+                    all_prob_path,
+                    serv_prob_path,
+                    out_map_path=os.path.join(PROBLEM_DIR, "legacy_map.json"),
+                    out_unmatched_path=os.path.join(PROBLEM_DIR, "legacy_unmatched.json"),
+                )
+                map_result = {"ok": True, "stats": map_stats}
+        except Exception as e:
+            map_result = {"ok": False, "error": str(e)}
+
+        now_str = datetime.now(tz=KST).strftime("%Y-%m-%d %H:%M:%S")
+
+        # Read scraped_count from crawler status — used by frontend to detect 0-item failures
+        try:
+            from utils.playwright_crawler import get_crawl_status
+            crawl_status = get_crawl_status()
+            scraped_count = crawl_status.get("scraped_count", -1)
+        except Exception:
+            scraped_count = -1
+
+        return jsonify(
+            {
+                "status": "success",
+                "ok": True,
+                "curr": curr_key,
+                "last_updated": now_str,
+                "scraped_count": scraped_count,
+                "crawling": {
+                    "file": problem_file_path,
+                    "chapter": chapter_label,
+                    "output_filename": output_filename,
+                },
+                "api_refresh": api_result,
+                "legacy_map": map_result,
+            }
+        )
+
+    except Exception as exc:
+        import traceback
+        err_msg = f"[update_problems] Exception: {exc}\n{traceback.format_exc()}"
+        print(err_msg)
+        return jsonify({"ok": False, "status": "error", "error": str(exc), "details": err_msg}), 500
 
 
 @schedule_bp.route("/api/streak")

@@ -88,51 +88,311 @@ const userUuid = CFG_MAIN.userUuid || "";
   });
 })();
 
-function updateProblems() {
-  const btn = document.getElementById("update-btn");
-  const chapterSelect = document.getElementById("update-chapter-select");
-  const currSelect = document.getElementById("curriculum-select") || document.getElementById("update-curr-select");
-  const timeDisplay = document.getElementById("update-time");
-  const originalText = btn ? btn.innerHTML : "";
+// ─────────────────────────────────────────────────────────────────
+//  🔄 문제 수집 & 관리 모달 (Crawler Modal)
+// ─────────────────────────────────────────────────────────────────
+(function initCrawlerModal() {
+  const modal       = document.getElementById("crawler-modal");
+  const backdrop    = document.getElementById("crawler-modal-backdrop");
+  const openBtn     = document.getElementById("btn-open-crawler-modal");
+  const closeBtn    = document.getElementById("cm-close-btn");
+  const footerClose = document.getElementById("cm-footer-close-btn");
+  const startBtn    = document.getElementById("cm-start-btn");
+  const cancelBtn   = document.getElementById("cm-cancel-btn");
+  const chapterSel  = document.getElementById("cm-chapter-select");
+  const progressFill = document.getElementById("cm-progress-fill");
+  const progressText = document.getElementById("cm-progress-text");
+  const consoleEl   = document.getElementById("cm-console");
+  const lastCrawledEl = document.getElementById("cm-last-crawled");
+  const statsBadgeEl  = document.getElementById("cm-stats-badge");
+  const headerBadge   = document.getElementById("charts-last-crawled-badge");
 
-  const currKey = currSelect ? currSelect.value : (window.APP_CONFIG?.currentCurr || "prog1");
-  const currLabel = currKey === "prog2" ? "프로그래밍 II (심화)" : "프로그래밍 I";
+  if (!modal) return; // 비관리자 페이지에는 모달이 없을 수 있음
 
-  if (btn) {
-    btn.disabled = true;
-    btn.setAttribute("aria-busy", "true");
-    btn.innerHTML = `<span class="spinner" aria-hidden="true"></span> <span>${currLabel} 갱신 중...</span>`;
+  const CHAPTER_LISTS = {
+    prog1: [
+      { val: "all", label: "전체 8개 대단원 (추천)" },
+      { val: "1", label: "1. 기초문법1" }, { val: "2", label: "2. 기초문법2" },
+      { val: "3", label: "3. 알고리즘 초급" }, { val: "4", label: "4. 알고리즘 중급1" },
+      { val: "5", label: "5. 알고리즘 중급2" }, { val: "6", label: "6. 알고리즘 중급3" },
+      { val: "7", label: "7. 알고리즘 고급1" }, { val: "8", label: "8. 알고리즘 고급2" },
+    ],
+    prog2: [
+      { val: "all", label: "전체 10개 대단원 (추천)" },
+      { val: "1", label: "1. 알고리즘 기초" }, { val: "2", label: "2. 자료구조 브론즈1" },
+      { val: "3", label: "3. 알고리즘 브론즈1" }, { val: "4", label: "4. 자료구조 브론즈2" },
+      { val: "5", label: "5. 알고리즘 브론즈2" }, { val: "6", label: "6. 자료구조 실버" },
+      { val: "7", label: "7. 알고리즘 실버1" }, { val: "8", label: "8. 알고리즘 실버2" },
+      { val: "9", label: "9. 알고리즘 골드1" }, { val: "10", label: "10. 알고리즘 골드2" },
+    ],
+  };
+
+  let statusTimer = null;
+  let isCrawling  = false;
+
+  // ── 헬퍼: 과정 선택에 따라 드롭다운 옵션 재구성
+  function populateCmChapterSelect(currKey) {
+    if (!chapterSel) return;
+    const savedVal = chapterSel.value || "all";
+    chapterSel.innerHTML = "";
+    (CHAPTER_LISTS[currKey] || CHAPTER_LISTS.prog1).forEach(ch => {
+      const opt = document.createElement("option");
+      opt.value = ch.val;
+      opt.textContent = ch.label;
+      chapterSel.appendChild(opt);
+    });
+    if (Array.from(chapterSel.options).some(o => o.value === savedVal)) {
+      chapterSel.value = savedVal;
+    }
   }
 
-  const selectedChapter = chapterSelect ? chapterSelect.value : "";
-  const params = new URLSearchParams();
-  if (selectedChapter) params.append("chapter", selectedChapter);
-  if (currKey) params.append("curr", currKey);
+  // ── 헬퍼: 현재 선택된 과정 키 반환
+  function getSelectedCurr() {
+    const r = document.querySelector("input[name='cm-curr']:checked");
+    return r ? r.value : (window.APP_CONFIG?.currentCurr || "prog1");
+  }
 
-  fetch(`/update_problems?${params.toString()}`, { method: "POST" })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.status === "success" || data.ok) {
-        if (typeof showToast === "function") showToast(`✨ ${currLabel} 학습 데이터가 성공적으로 갱신되었습니다!`);
-        if (timeDisplay && data.last_updated) timeDisplay.textContent = `최근 갱신: ${data.last_updated}`;
-        if (typeof refreshStreak === "function") refreshStreak(typeof streakCurrentDays !== "undefined" ? streakCurrentDays : 7);
-        setTimeout(() => { location.reload(); }, 600);
+  // ── 헬퍼: 마지막 수집 뱃지 텍스트 갱신
+  function applyLastCrawledBadge(lastCrawled, stats) {
+    const statStr = stats && stats.total_problems
+      ? ` · ${stats.total_problems}개 문제`
+      : "";
+    if (lastCrawledEl) {
+      lastCrawledEl.textContent = lastCrawled ? `${lastCrawled}${statStr}` : "기록 없음";
+    }
+    if (headerBadge) {
+      if (lastCrawled) {
+        headerBadge.textContent = `🕒 ${lastCrawled}${statStr}`;
+        headerBadge.style.display = "";
       } else {
-        if (typeof showToast === "function") showToast(data.message || data.error || "데이터 갱신 중 오류가 발생했습니다.", 3500);
+        headerBadge.style.display = "none";
       }
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-      if (typeof showToast === "function") showToast("서버와 통신 중 오류가 발생했습니다.", 3500);
-    })
-    .finally(() => {
-      if (btn) {
-        btn.disabled = false;
-        btn.removeAttribute("aria-busy");
-        btn.innerHTML = originalText;
+    }
+    if (statsBadgeEl) {
+      if (stats && stats.total_chapters) {
+        statsBadgeEl.textContent = `${stats.total_chapters}개 단원 · ${stats.total_subs || 0}개 소단원`;
+        statsBadgeEl.style.display = "";
+      } else {
+        statsBadgeEl.style.display = "none";
       }
+    }
+  }
+
+  // ── 헬퍼: 콘솔에 로그 라인 추가
+  function appendConsoleLog(msg, cls = "") {
+    if (!consoleEl) return;
+    const line = document.createElement("div");
+    line.className = "cm-console-line" + (cls ? ` ${cls}` : "");
+    line.textContent = msg;
+    consoleEl.appendChild(line);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
+  // ── 헬퍼: 프로그레스 바 업데이트
+  function setProgress(idx, total, msg) {
+    const pct = total > 0 ? Math.round((idx / total) * 100) : 0;
+    if (progressFill) progressFill.style.width = `${pct}%`;
+    if (progressText) progressText.textContent = `${pct}% (${idx}/${total})`;
+  }
+
+  // ── 초기 마지막 수집 시각 로드 (모달 열기 전에도 뱃지에 표시)
+  function fetchAndApplyLastCrawled() {
+    const currKey = getSelectedCurr();
+    fetch(`/api/crawl_status?curr=${currKey}`)
+      .then(r => r.json())
+      .then(st => {
+        applyLastCrawledBadge(st.last_crawled || "", st.last_crawled_stats || {});
+      })
+      .catch(() => {
+        if (lastCrawledEl) lastCrawledEl.textContent = "조회 실패";
+      });
+  }
+
+  // ── 모달 열기
+  function openModal() {
+    const currKey = getSelectedCurr();
+    // 현재 과정 탭을 라디오에 반영
+    const r = document.querySelector(`input[name='cm-curr'][value='${currKey}']`);
+    if (r) r.checked = true;
+    syncRadioLabels();
+    populateCmChapterSelect(currKey);
+    fetchAndApplyLastCrawled();
+    resetConsole();
+
+    try {
+      const savedUser = localStorage.getItem("cm_saved_username") || window.APP_CONFIG?.viewUsername || window.APP_CONFIG?.userUsername || "";
+      const usernameElem = document.getElementById("cm-username");
+      if (usernameElem && !usernameElem.value && savedUser) {
+        usernameElem.value = savedUser;
+      }
+    } catch(e) {}
+
+    modal.style.display = "flex";
+    backdrop.style.display = "block";
+    document.body.style.overflow = "hidden";
+  }
+
+  // ── 모달 닫기
+  function closeModal() {
+    if (isCrawling) return; // 수집 중에는 닫기 방지
+    modal.style.display = "none";
+    backdrop.style.display = "none";
+    document.body.style.overflow = "";
+  }
+
+  // ── 콘솔 초기화
+  function resetConsole() {
+    if (!consoleEl) return;
+    consoleEl.innerHTML = '<div class="cm-console-line cm-muted">수집 시작 버튼을 누르면 여기에 실시간 로그가 표시됩니다.</div>';
+    if (progressFill) progressFill.style.width = "0%";
+    if (progressText) progressText.textContent = "대기 중";
+  }
+
+  // ── 라디오 레이블 active 동기화
+  function syncRadioLabels() {
+    document.querySelectorAll(".cm-radio-item").forEach(lbl => lbl.classList.remove("active"));
+    const checked = document.querySelector("input[name='cm-curr']:checked");
+    if (checked) checked.closest(".cm-radio-item")?.classList.add("active");
+  }
+
+  // ── 수집 시작
+  function startCrawl() {
+    if (isCrawling) return;
+    isCrawling = true;
+    const currKey = getSelectedCurr();
+    const chapter = chapterSel ? chapterSel.value : "all";
+    const currLabel = currKey === "prog2" ? "프로그래밍 II (심화)" : "프로그래밍 I";
+
+    startBtn.style.display = "none";
+    cancelBtn.style.display = "";
+    if (footerClose) footerClose.disabled = true;
+    if (closeBtn) closeBtn.disabled = true;
+
+    resetConsole();
+    appendConsoleLog(`🚀 [${currLabel}] 수집 시작... (범위: ${chapter})`, "cm-info");
+
+    const showBrowserElem = document.getElementById("cm-show-browser");
+    const showBrowser = showBrowserElem ? showBrowserElem.checked : false;
+
+    const timeoutElem = document.getElementById("cm-timeout-select");
+    const timeoutSec = timeoutElem ? timeoutElem.value : "60";
+
+    const usernameElem = document.getElementById("cm-username");
+    const passwordElem = document.getElementById("cm-password");
+    const username = usernameElem ? usernameElem.value.trim() : "";
+    const password = passwordElem ? passwordElem.value.trim() : "";
+
+    if (username) {
+      try { localStorage.setItem("cm_saved_username", username); } catch(e){}
+    }
+
+    const params = new URLSearchParams();
+    if (chapter) params.append("chapter", chapter);
+    if (currKey) params.append("curr", currKey);
+    if (showBrowser) params.append("show_browser", "true");
+    if (timeoutSec) params.append("timeout_sec", timeoutSec);
+    if (username) params.append("username", username);
+    if (password) params.append("password", password);
+
+    // 0.85초 폴링으로 실시간 상태 표시
+    let lastLogMsg = "";
+    statusTimer = setInterval(() => {
+      fetch(`/api/crawl_status?curr=${currKey}`)
+        .then(r => r.json())
+        .then(st => {
+          if (st && st.running && st.log_msg && st.log_msg !== lastLogMsg) {
+            lastLogMsg = st.log_msg;
+            appendConsoleLog(`🌐 ${st.log_msg}`);
+            setProgress(st.current_index || 0, st.total_chapters || 0, st.log_msg);
+          }
+        })
+        .catch(() => {});
+    }, 850);
+
+    fetch(`/update_problems?${params.toString()}`, { method: "POST" })
+      .then(async r => {
+        const text = await r.text();
+        let data = {};
+        try {
+          data = JSON.parse(text);
+        } catch(e) {
+          throw new Error(`[HTTP ${r.status}] ${r.statusText || "서버 오류"}: ${text.substring(0, 120)}`);
+        }
+        if (!r.ok || data.ok === false) {
+          throw new Error(data.error || data.message || `HTTP ${r.status} ${r.statusText}`);
+        }
+        return data;
+      })
+      .then(data => {
+        clearInterval(statusTimer);
+        statusTimer = null;
+        if (data.status === "success" || data.ok) {
+          const scrapedCount = (typeof data.scraped_count === "number") ? data.scraped_count : -1;
+
+          if (scrapedCount === 0) {
+            // 수집 건수가 0개인 경우 — 실패로 간주
+            setProgress(1, 1, "경고");
+            appendConsoleLog(`⚠️ ${currLabel} 수집 건수 0개 (페이지 접속 지연 또는 쿠키 세션 만료)`, "cm-error");
+            appendConsoleLog(`💡 쿠키 세션이 만료되었거나 네트워크 연결을 확인해 주세요.`, "cm-error");
+            if (typeof showToast === "function") showToast(`⚠️ ${currLabel} 수집 실패: 수집된 문제가 없습니다. 쿠키/네트워크를 확인해 주세요.`, 4000);
+          } else {
+            const countLabel = scrapedCount > 0 ? ` (총 ${scrapedCount}개 문제 수집)` : "";
+            setProgress(1, 1, "완료");
+            appendConsoleLog(`✅ ${currLabel} 수집 완료!${countLabel} (${data.last_updated || ""})`, "cm-success");
+            fetchAndApplyLastCrawled();
+            if (typeof showToast === "function") showToast(`✨ ${currLabel} 학습 데이터가 성공적으로 갱신되었습니다!`);
+            if (typeof refreshStreak === "function") refreshStreak(typeof streakCurrentDays !== "undefined" ? streakCurrentDays : 7);
+            // 완료 후 2초 뒤 페이지 새로고침
+            setTimeout(() => { location.reload(); }, 2000);
+          }
+        } else {
+          appendConsoleLog(`❌ 오류: ${data.error || data.message || "알 수 없는 오류"}`, "cm-error");
+          if (typeof showToast === "function") showToast(data.error || "데이터 갱신 중 오류가 발생했습니다.", 3500);
+        }
+      })
+
+      .catch(err => {
+        clearInterval(statusTimer);
+        statusTimer = null;
+        appendConsoleLog(`❌ 오류 발생: ${err.message || err}`, "cm-error");
+        if (typeof showToast === "function") showToast(err.message || "서버와 통신 중 오류가 발생했습니다.", 3500);
+      })
+      .finally(() => {
+        isCrawling = false;
+        startBtn.style.display = "";
+        cancelBtn.style.display = "none";
+        if (footerClose) footerClose.disabled = false;
+        if (closeBtn) closeBtn.disabled = false;
+      });
+  }
+
+  // ── 이벤트 연결
+  if (openBtn) openBtn.addEventListener("click", openModal);
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+  if (footerClose) footerClose.addEventListener("click", closeModal);
+  if (backdrop) backdrop.addEventListener("click", closeModal);
+  if (startBtn) startBtn.addEventListener("click", startCrawl);
+  // ESC 키 닫기
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+  // 과정 라디오 변경 시 드롭다운 재구성
+  document.querySelectorAll("input[name='cm-curr']").forEach(r => {
+    r.addEventListener("change", () => {
+      syncRadioLabels();
+      populateCmChapterSelect(getSelectedCurr());
     });
+  });
+
+  // 페이지 로드 시 헤더 뱃지에 마지막 수집 시각 조용히 표시
+  fetchAndApplyLastCrawled();
+})();
+
+// 하위 호환: 기존에 updateProblems()를 직접 호출하는 코드가 있을 경우를 위해 shim 유지
+function updateProblems() {
+  const openBtn = document.getElementById("btn-open-crawler-modal");
+  if (openBtn) { openBtn.click(); }
 }
+
 
 const chartsSection = document.getElementById("charts-section");
 const chartsToggleBtn = document.getElementById("charts-toggle-btn");
@@ -317,7 +577,10 @@ if (chartsToggleBtn) {
       item.addEventListener("click", () => {
         const idx = parseInt(item.dataset.idx, 10);
         selectedChapter = drillData[idx];
-        selectedGroup = (selectedChapter && selectedChapter.groups && selectedChapter.groups.length > 0) ? selectedChapter.groups[0] : null;
+        const validG = (selectedChapter && selectedChapter.groups) 
+          ? selectedChapter.groups.filter(g => !String(g.title || "").includes(":::")) 
+          : [];
+        selectedGroup = validG.length > 0 ? validG[0] : null;
         renderMainChapters();
         renderSubChapters();
         renderProblems();
@@ -329,9 +592,24 @@ if (chartsToggleBtn) {
 
   function isHomeworkGroup(g) {
     if (!g) return false;
-    const gid = String(g.group_id || "").trim();
-    const title = String(g.title || "").trim();
-    return /^SS?\d+/i.test(gid) || gid.startsWith("S") || gid.startsWith("SS") || title.includes("숙제");
+    const title = String(g.title || g.group_id || "").trim();
+
+    // 구분선(:::) 항목은 헤더이므로 숙제/진도가 아님
+    if (title.includes(":::")) return false;
+
+    // SSTRLv 접두사 -> 숙제 (true)
+    if (/^SSTRLv/i.test(title)) return true;
+
+    // STRLv 접두사 -> 진도 (false)
+    if (/^STRLv/i.test(title)) return false;
+
+    // 일반 S 접두사 (SLv, SS, S1, S2 등) -> 숙제 (true)
+    if (/^S/i.test(title)) return true;
+
+    // 제목에 "숙제" 또는 "기출" 명시 시 -> 숙제 (true)
+    if (title.includes("숙제") || title.includes("기출")) return true;
+
+    return false;
   }
 
   // Handle Sub-chapter Filter Buttons
@@ -359,7 +637,13 @@ if (chartsToggleBtn) {
     }
 
     const allGroups = selectedChapter.groups || [];
-    const filteredGroups = allGroups.filter((g) => {
+    // ::: 구분선 헤더는 실제 선택 가능한 소단원이 아니므로 제거
+    const validGroups = allGroups.filter((g) => {
+      const title = String(g.title || g.group_id || "").trim();
+      return !title.includes("::: me") && !title.includes(":::");
+    });
+
+    const filteredGroups = validGroups.filter((g) => {
       const isHw = isHomeworkGroup(g);
       if (currentSubFilter === "regular") return !isHw;
       if (currentSubFilter === "homework") return isHw;
@@ -622,10 +906,13 @@ if (chartsToggleBtn) {
     });
   };
 
-  // Initial select first chapter and its first sub-chapter
+  // Initial select first chapter and its first valid sub-chapter
   if (drillData.length > 0) {
     selectedChapter = drillData[0];
-    selectedGroup = (selectedChapter && selectedChapter.groups && selectedChapter.groups.length > 0) ? selectedChapter.groups[0] : null;
+    const validG = (selectedChapter && selectedChapter.groups) 
+      ? selectedChapter.groups.filter(g => !String(g.title || "").includes(":::")) 
+      : [];
+    selectedGroup = validG.length > 0 ? validG[0] : null;
   }
 
   renderMainChapters();
