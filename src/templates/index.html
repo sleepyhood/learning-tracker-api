@@ -9,6 +9,7 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
     />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index_view.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/feedback_modal.css') }}" />
   </head>
 
   <body>
@@ -57,5 +58,11 @@
     </script>
     <script src="{{ url_for('static', filename='js/streak.js') }}"></script>
     <script src="{{ url_for('static', filename='js/index_view.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/latest_homework_card.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/modules/crawler_modal.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/modules/quick_basket.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/modules/drilldown_filter.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/ai_prompt.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/modules/feedback_modal.js') }}" defer></script>
   </body>
 </html>

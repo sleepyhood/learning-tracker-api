@@ -74,6 +74,38 @@ const overlayEl = ensureEl("overlay", {
   style: "display:none;",
 });
 
+function mapLanguageToHljs(langStr) {
+  if (!langStr) return "plaintext";
+  const l = String(langStr).toLowerCase();
+  if (l.includes("c++") || l.includes("cpp")) return "cpp";
+  if (l === "c" || l.startsWith("c ")) return "c";
+  if (l.includes("python") || l.includes("pypy")) return "python";
+  if (l.includes("java") && !l.includes("script")) return "java";
+  if (l.includes("javascript") || l.includes("js")) return "javascript";
+  return "plaintext";
+}
+
+async function ensureHighlightJsLoaded() {
+  if (window.hljs) return window.hljs;
+  if (!document.getElementById("hljs-css")) {
+    const link = document.createElement("link");
+    link.id = "hljs-css";
+    link.rel = "stylesheet";
+    link.href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css";
+    document.head.appendChild(link);
+  }
+  if (!window.__hljs_promise) {
+    window.__hljs_promise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js";
+      script.onload = () => resolve(window.hljs);
+      script.onerror = (e) => reject(e);
+      document.head.appendChild(script);
+    });
+  }
+  return window.__hljs_promise;
+}
+
 window.openSubmissionCodeModal = async function(subId, title) {
   let modal = document.getElementById("submissionCodeModal");
   if (!modal) {
@@ -81,15 +113,18 @@ window.openSubmissionCodeModal = async function(subId, title) {
     modal.id = "submissionCodeModal";
     modal.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.45); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 10010;";
     modal.innerHTML = `
-      <div style="background: #ffffff; border-radius: 18px; width: 720px; max-width: 92vw; max-height: 85vh; padding: 24px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 50px rgba(0,0,0,0.25);">
+      <div style="background: #ffffff; border-radius: 18px; width: 780px; max-width: 92vw; max-height: 85vh; padding: 24px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 50px rgba(0,0,0,0.25);">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-          <span style="font-weight: 800; font-size: 1.05rem; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+          <span style="font-weight: 800; font-size: 1.05rem; color: #1e293b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span>💻 제출 코드 확인</span>
+            <span id="scmCodeLangBadge" style="font-size: 0.75rem; background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 12px; font-weight: 700; display: none;"></span>
             <span id="scmCodeTitle" style="font-size: 0.85rem; color: #64748b; font-weight: 600;"></span>
           </span>
           <button style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b;" onclick="document.getElementById('submissionCodeModal').style.display='none'">×</button>
         </div>
-        <div id="scmCodeContent" style="background: #0f172a; color: #f8fafc; padding: 14px; border-radius: 12px; font-family: monospace; font-size: 0.82rem; line-height: 1.5; white-space: pre-wrap; word-break: break-all; max-height: 55vh; overflow-y: auto;">⏳ 소스코드를 불러오는 중...</div>
+        <div id="scmCodeContainer" style="background: #0f172a; border-radius: 12px; max-height: 55vh; overflow: auto; padding: 14px;">
+          <pre style="margin: 0;"><code id="scmCodeContent" class="hljs" style="font-family: Consolas, Monaco, 'Andale Mono', monospace; font-size: 0.83rem; line-height: 1.5; white-space: pre; word-break: normal;">⏳ 소스코드를 불러오는 중...</code></pre>
+        </div>
         <div style="display: flex; justify-content: flex-end; gap: 8px;">
           <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; background: #ffffff; border: 1px solid #cbd5e1; color: #334155;" onclick="navigator.clipboard.writeText(document.getElementById('scmCodeContent').textContent); alert('📋 소스코드가 클립보드에 복사되었습니다!');">📋 코드 복사</button>
           <button class="btn btn-primary" style="font-size: 0.8rem; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; background: #64748b; color: white; border: none;" onclick="document.getElementById('submissionCodeModal').style.display='none'">닫기</button>
@@ -100,20 +135,57 @@ window.openSubmissionCodeModal = async function(subId, title) {
     document.body.appendChild(modal);
   }
   document.getElementById("scmCodeTitle").textContent = title ? `(${title})` : "";
-  document.getElementById("scmCodeContent").textContent = "⏳ 소스코드를 불러오는 중...";
+  const langBadgeEl = document.getElementById("scmCodeLangBadge");
+  if (langBadgeEl) langBadgeEl.style.display = "none";
+  const codeContentEl = document.getElementById("scmCodeContent");
+  if (codeContentEl) {
+    codeContentEl.removeAttribute("data-highlighted");
+    delete codeContentEl.dataset.highlighted;
+    codeContentEl.className = "hljs";
+    codeContentEl.textContent = "⏳ 소스코드를 불러오는 중...";
+  }
   modal.style.display = "flex";
 
   try {
-    const res = await fetch(`/api/submission_code?id=${encodeURIComponent(subId)}`);
-    if (!res.ok) throw new Error("코드 페치 실패");
-    const data = await res.json();
-    if (data.code) {
-      document.getElementById("scmCodeContent").textContent = data.code;
-    } else {
-      document.getElementById("scmCodeContent").textContent = "// 저장된 제출 소스코드가 없습니다.";
+    const fetchPromise = fetch(`/api/submission_code?id=${encodeURIComponent(subId)}`).then(async (res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    });
+    const hljsPromise = ensureHighlightJsLoaded().catch(() => null);
+
+    const [data, hljs] = await Promise.all([fetchPromise, hljsPromise]);
+
+    const langName = data?.language || "";
+    if (langBadgeEl) {
+      if (langName) {
+        langBadgeEl.textContent = langName;
+        langBadgeEl.style.display = "inline-block";
+      } else {
+        langBadgeEl.style.display = "none";
+      }
+    }
+
+    if (codeContentEl) {
+      codeContentEl.removeAttribute("data-highlighted");
+      delete codeContentEl.dataset.highlighted;
+
+      if (data?.code) {
+        codeContentEl.textContent = data.code;
+        const targetLang = mapLanguageToHljs(langName);
+        codeContentEl.className = `hljs language-${targetLang}`;
+        if (hljs) {
+          hljs.highlightElement(codeContentEl);
+        }
+      } else {
+        codeContentEl.textContent = "// 저장된 제출 소스코드가 없습니다.";
+      }
     }
   } catch (e) {
-    document.getElementById("scmCodeContent").textContent = `// 소스코드 로드 오류: ${e.message}`;
+    if (codeContentEl) {
+      codeContentEl.removeAttribute("data-highlighted");
+      delete codeContentEl.dataset.highlighted;
+      codeContentEl.textContent = `// 소스코드 로드 오류: ${e.message}`;
+    }
   }
 };
 
@@ -597,11 +669,11 @@ function renderStreakGrid(streakData, { days = 7, prevData = [], summaryData = n
       const renderItemHTML = (p) => {
         const score = Number(p.score ?? 0);
         const isAC = p.result === 0 || p.status === "solved" || p.status === "passed" || p.passed === true || score >= 90;
-        let statusBadge = `<span style="font-size:0.75rem; color:#059669; background:#ecfdf5; border:1px solid #a7f3d0; padding:2px 8px; border-radius:12px; font-weight:700; flex-shrink:0;">🟢 100점</span>`;
+        let statusBadge = `<span style="font-size:0.75rem; color:#059669; background:#ecfdf5; border:1px solid #a7f3d0; padding:2px 4px; border-radius:12px; font-weight:700; flex-shrink:0; width:72px; white-space:nowrap; text-align:center; display:inline-block;">🟢 100점</span>`;
         if (!isAC && score > 0) {
-          statusBadge = `<span style="font-size:0.75rem; color:#d97706; background:#fffbeb; border:1px solid #fde68a; padding:2px 8px; border-radius:12px; font-weight:700; flex-shrink:0;">🟡 ${score}점</span>`;
+          statusBadge = `<span style="font-size:0.75rem; color:#d97706; background:#fffbeb; border:1px solid #fde68a; padding:2px 4px; border-radius:12px; font-weight:700; flex-shrink:0; width:72px; white-space:nowrap; text-align:center; display:inline-block;">🟡 ${score}점</span>`;
         } else if (!isAC) {
-          statusBadge = `<span style="font-size:0.75rem; color:#dc2626; background:#fef2f2; border:1px solid #fecaca; padding:2px 8px; border-radius:12px; font-weight:700; flex-shrink:0;">🔴 0점</span>`;
+          statusBadge = `<span style="font-size:0.75rem; color:#dc2626; background:#fef2f2; border:1px solid #fecaca; padding:2px 4px; border-radius:12px; font-weight:700; flex-shrink:0; width:72px; white-space:nowrap; text-align:center; display:inline-block;">🔴 0점</span>`;
         }
 
         const pTitle = escapeHtml(p.title || p.problem || "제목 없음");
@@ -609,15 +681,44 @@ function renderStreakGrid(streakData, { days = 7, prevData = [], summaryData = n
         const subId = p.server_sub_id || p.serverSubId || p.sub_id || p.id || "";
         const pid = p.pid || p.problem || p.problem_id || "";
         const groupId = p.group_id || p.groupId || "";
+        const langStr = p.language ? escapeHtml(p.language) : "";
+
+        // Phase 1: 개념 태그 칩
+        const rawChapter = p.chapter_title || "";
+        let chapterTagStr = rawChapter.replace(/^\d+\.\s*/, "").replace(/\s*\(.*?\)$/, "").trim();
+        if (!chapterTagStr && rawChapter) chapterTagStr = rawChapter;
+        const chapterBadge = chapterTagStr ? `<span style="font-size:0.72rem; color:#4338ca; background:#e0e7ff; border:1px solid #c7d2fe; padding:2px 7px; border-radius:6px; font-weight:700; flex-shrink:0;">🏷️ ${escapeHtml(chapterTagStr)}</span>` : "";
+
+        // Phase 2: 시도 횟수 & 1-Try AC 뱃지
+        let tryBadge = "";
+        if (p.is_first_try_ac) {
+          tryBadge = `<span style="font-size:0.72rem; color:#047857; background:#d1fae5; border:1px solid #6ee7b7; padding:2px 7px; border-radius:6px; font-weight:700; flex-shrink:0;">⚡ 1-Try 통과</span>`;
+        } else if (p.attempt_number && p.attempt_number > 1) {
+          tryBadge = `<span style="font-size:0.72rem; color:#b45309; background:#fef3c7; border:1px solid #fcd34d; padding:2px 7px; border-radius:6px; font-weight:700; flex-shrink:0;">🔄 ${p.attempt_number}회차 시도</span>`;
+        }
+
+        // Phase 3: AI / 초고속 복사 의심 경고 뱃지
+        let aiWarningBadge = "";
+        if (p.is_ai_suspected) {
+          const reasonStr = escapeHtml(p.ai_suspicion_reason || "초고속 복사 제출 의심");
+          aiWarningBadge = `<span style="font-size:0.72rem; color:#dc2626; background:#fef2f2; border:1px solid #fecaca; padding:2px 7px; border-radius:6px; font-weight:800; cursor:help; flex-shrink:0;" title="📌 의심 사유: ${reasonStr}">🤖 AI/복사 의심</span>`;
+        }
 
         const codeBtn = subId ? `<button type="button" class="btn-quiet" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; border: 1px solid #6c5ce7; background: #faf5ff; color: #6c5ce7; font-weight: 700; cursor: pointer;" onclick="openSubmissionCodeModal('${subId}', '${pTitle.replace(/'/g, "\\'")}')">💻 코드</button>` : "";
         const jumpBtn = pid ? `<button type="button" class="btn-quiet" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; border: 1px solid #93c5fd; background: #eff6ff; color: #1d4ed8; font-weight: 700; cursor: pointer;" onclick="jumpToProblemLocation('${pid}', '${groupId}')">🎯 위치</button>` : "";
+        const langBadge = langStr ? `<span style="font-size:0.72rem; color:#475569; background:#f1f5f9; border:1px solid #cbd5e1; padding:2px 6px; border-radius:6px; font-weight:600; flex-shrink:0;">${langStr}</span>` : "";
 
         return `
           <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.83rem; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; overflow: hidden;">
               ${statusBadge}
-              <a href="${escapeHtml(pUrl)}" target="_blank" rel="noopener" style="color: #1e293b; font-weight: 600; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${pTitle}">${pTitle}</a>
+              <a href="${escapeHtml(pUrl)}" target="_blank" rel="noopener" style="color: #1e293b; font-weight: 700; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; max-width: 48%;" title="${pTitle}">${pTitle}</a>
+              <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; overflow: hidden;">
+                ${langBadge}
+                ${chapterBadge}
+                ${tryBadge}
+                ${aiWarningBadge}
+              </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
               <span style="font-size: 0.75rem; color: #94a3b8;">${escapeHtml(p.time || "")}</span>

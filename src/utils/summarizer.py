@@ -313,16 +313,72 @@ def summarize_user_chapter_group(
     }
 
 
+CHAPTER_SLUG_MAP = {
+    # PROG1
+    "1. 기초문법1": "p101",
+    "2. 기초문법2": "p102",
+    "3. 알고리즘 초급": "p201",
+    "4. 알고리즘 중급1": "p202",
+    "5. 알고리즘 중급2": "p203",
+    "6. 알고리즘 중급3": "p206",
+    "7. 알고리즘 고급1": "p204",
+    "8. 알고리즘 고급2": "p205",
+    # PROG2
+    "1. 알고리즘 기초": "AL100",
+    "2. 자료구조 브론즈1": "STR101",
+    "3. 알고리즘 브론즈1": "AL101",
+    "4. 자료구조 브론즈2": "STR102",
+    "5. 알고리즘 브론즈2": "AL102",
+    "6. 자료구조 실버": "STR201",
+    "7. 알고리즘 실버1": "AL201",
+    "8. 알고리즘 실버2": "AL202",
+    "9. 알고리즘 골드1": "AL301",
+    "10. 알고리즘 골드2": "AL302",
+}
+
+
+def resolve_chapter_code(ch, g_info=None):
+    if isinstance(ch, dict):
+        code = (
+            ch.get("chapter_code")
+            or ch.get("slug")
+            or ch.get("code")
+            or (isinstance(g_info, dict) and (g_info.get("chapter_code") or g_info.get("slug")))
+        )
+        if code:
+            return str(code)
+        name = str(ch.get("name") or ch.get("id") or "").strip()
+    else:
+        name = str(ch or "").strip()
+
+    if name in CHAPTER_SLUG_MAP:
+        return CHAPTER_SLUG_MAP[name]
+
+    for key, slug in CHAPTER_SLUG_MAP.items():
+        if key in name or name in key:
+            return slug
+
+    if isinstance(ch, dict) and ch.get("id"):
+        cid = str(ch.get("id")).strip()
+        if cid and not any(c in cid for c in [" ", "월", "일", "년"]):
+            return cid
+
+    return ""
+
+
 def summarize_drilldown_progress(problem_file, solve_file, legacy_map_file=None):
     """
     Returns a complete 3-level hierarchical drilldown structure:
     [
       {
         "chapter": "1. 기초문법1",
+        "chapter_code": "p101",
+        "chapter_id": "p101",
         "solved": 188, "partial": 0, "wrong": 1, "total": 660, "percent": 28.5,
         "groups": [
           {
             "group_id": "P101v01", "title": "Lv1 출력",
+            "chapter_code": "p101", "chapter_id": "p101",
             "solved": 20, "partial": 0, "wrong": 0, "total": 20, "percent": 100.0,
             "problems": [
               {
@@ -330,6 +386,8 @@ def summarize_drilldown_progress(problem_file, solve_file, legacy_map_file=None)
                 "title": "01. [출력-기본1] Hello 출력",
                 "status": "solved",
                 "raw_status": 0,
+                "chapter_code": "p101",
+                "chapter_id": "p101",
                 "url": "http://edu.doingcoding.com/problem/P101v0101"
               }, ...
             ]
@@ -397,11 +455,13 @@ def summarize_drilldown_progress(problem_file, solve_file, legacy_map_file=None)
 
     for ch in v2_data.get("chapters", []):
         chapter_name = ch.get("name") or ch.get("id")
+        chapter_code = resolve_chapter_code(ch)
         total = solved = wrong = partial = 0
         group_details = []
 
         for group_id in ch.get("group_ids", []):
             g_info = groups_dict.get(group_id, {})
+            group_chapter_code = chapter_code or resolve_chapter_code(ch, g_info)
             prob_ids = g_info.get("problem_ids", [])
             g_total = len(prob_ids)
             g_solved = g_wrong = g_partial = 0
@@ -429,12 +489,16 @@ def summarize_drilldown_progress(problem_file, solve_file, legacy_map_file=None)
                     "title": p_title,
                     "status": solved_status,
                     "raw_status": status,
+                    "chapter_code": group_chapter_code,
+                    "chapter_id": group_chapter_code,
                     "url": f"http://edu.doingcoding.com/problem/{legacy_pid}"
                 })
 
             group_details.append({
                 "group_id": group_id,
                 "title": g_info.get("title", ""),
+                "chapter_code": group_chapter_code,
+                "chapter_id": group_chapter_code,
                 "solved": g_solved,
                 "partial": g_partial,
                 "wrong": g_wrong,
@@ -451,6 +515,8 @@ def summarize_drilldown_progress(problem_file, solve_file, legacy_map_file=None)
         percent = round(solved / total * 100, 1) if total else 0
         result.append({
             "chapter": chapter_name,
+            "chapter_code": chapter_code,
+            "chapter_id": chapter_code,
             "solved": solved,
             "partial": partial,
             "wrong": wrong,
@@ -460,3 +526,4 @@ def summarize_drilldown_progress(problem_file, solve_file, legacy_map_file=None)
         })
 
     return result
+

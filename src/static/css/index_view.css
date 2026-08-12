@@ -649,48 +649,47 @@
 
   .viz-2col {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-columns: 390px minmax(0, 1fr);
     gap: var(--space-3);
-    align-items: stretch;
+    align-items: start;
     margin-top: 0;
     margin-bottom: var(--space-4);
   }
   #profile-container {
-    grid-column: span 5;
+    width: 390px;
+    max-width: 390px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
+    gap: 14px;
+    justify-content: flex-start;
+    height: auto;
   }
 
   #latest-homework {
-    grid-column: span 7;
+    min-width: 0;
     display: flex;
     flex-direction: column;
   }
 
   #latest-homework .card {
-    height: 100%;
-    min-height: 260px;
+    height: auto;
+    min-height: auto;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 12px;
   }
   @media (max-width: 960px) {
-
-
     .viz-2col {
-
-
-      grid-template-columns: repeat(12, minmax(0, 1fr));
-
-
+      grid-template-columns: 1fr;
     }
-
-
-    #profile-container,
+    #profile-container {
+      width: 100%;
+      max-width: 100%;
+    }
     #latest-homework {
-      grid-column: span 12;
+      width: 100%;
     }
   }
 
@@ -1052,9 +1051,11 @@
 
   #latest-homework .card {
     padding: var(--space-3);
-    display: grid;
-    gap: var(--space-2);
-    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 12px;
+    height: auto;
   }
 
 
