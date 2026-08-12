@@ -8,6 +8,7 @@ import os
 import sys
 import json
 import time
+import re
 import argparse
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -287,7 +288,27 @@ CRAWL_STATUS = {
     "updated_at": 0
 }
 
+STATUS_FILE_PATH = os.path.join(PROBLEM_DIR, "crawl_status.json")
+
+def update_crawl_status(updates: dict):
+    """Updates CRAWL_STATUS dictionary and persists to crawl_status.json for cross-process sync."""
+    CRAWL_STATUS.update(updates)
+    try:
+        os.makedirs(PROBLEM_DIR, exist_ok=True)
+        with open(STATUS_FILE_PATH, "w", encoding="utf-8") as f:
+            json.dump(CRAWL_STATUS, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
 def get_crawl_status():
+    if os.path.exists(STATUS_FILE_PATH):
+        try:
+            with open(STATUS_FILE_PATH, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+                if isinstance(saved, dict) and saved.get("updated_at", 0) >= CRAWL_STATUS.get("updated_at", 0):
+                    return saved
+        except Exception:
+            pass
     return CRAWL_STATUS.copy()
 
 
@@ -571,6 +592,10 @@ def do_playwright_crawling(
                         except Exception:
                             pass
 
+                        # 개별 문제 서브 필터 버튼 제외 (예: "01. [완전탐색 기초 - 1] 키 순서", "[완전탐색 기초 - 1]")
+                        if re.search(r"^\d+\s*[\.\:]\s*\[", txt) or re.search(r"\[.*-\s*\d+\]", txt):
+                            continue
+
                         if "sub-btn" in cls or any(k in txt for k in target_keywords):
                             clickable_buttons.append((btn, txt))
                     
@@ -587,11 +612,12 @@ def do_playwright_crawling(
                     print(f"   ⚠️ [최종 렌더링 확인] 발견된 소단원 버튼: 0개 / 전체 버튼: {len(sub_buttons)}개")
 
                 sub_scraped_before = len(micro_registry)
+                chapter_scraped_count = 0
 
                 if clickable_buttons:
                     for b_elem, b_txt in clickable_buttons:
                         sub_log = f"[{idx}/{len(tasks)}] {m_name} ➔ 소단원 [{b_txt}] 수집 중..."
-                        CRAWL_STATUS.update({
+                        update_crawl_status({
                             "current_chapter": m_name,
                             "current_sub": b_txt,
                             "current_index": idx,
@@ -618,41 +644,60 @@ def do_playwright_crawling(
                                 break
                             time.sleep(1.5)
 
-                        print(f"   [DEBUG] Found {len(rows)} table rows for sub [{b_txt}]")
                         for row in rows:
                             tds = row.query_selector_all("td")
-                            if len(tds) >= 2:
+                            if len(tds) >= 3:
+                                # iView table: tds[0]=Status Icon, tds[1]=Problem ID, tds[2]=Problem Title
+                                prob_id = tds[1].text_content().strip()
+                                prob_title = tds[2].text_content().strip()
+                            elif len(tds) == 2:
                                 prob_id = tds[0].text_content().strip()
                                 prob_title = tds[1].text_content().strip()
-                                if prob_id and prob_title and prob_id != "#":
-                                    concept = parse_concept_tag(prob_title)
-                                    micro_registry[prob_id] = {
-                                        "id": prob_id,
-                                        "title": prob_title,
-                                        "concept": concept,
-                                        "major": m_name,
-                                        "sub": b_txt
-                                    }
-                                    scraped_count += 1
-                else:
-                    rows = task_page.query_selector_all("table tbody tr")
-                    for row in rows:
-                        tds = row.query_selector_all("td")
-                        if len(tds) >= 2:
-                            prob_id = tds[0].text_content().strip()
-                            prob_title = tds[1].text_content().strip()
-                            if prob_id and prob_title:
+                            else:
+                                continue
+
+                            if prob_id and prob_title and prob_id != "#":
                                 concept = parse_concept_tag(prob_title)
+                                existing_sub = micro_registry.get(prob_id, {}).get("sub", "")
+                                target_sub = b_txt
+                                if existing_sub and re.search(r"^\d+\s*[\.\:]\s*\[", target_sub):
+                                    target_sub = existing_sub
+
                                 micro_registry[prob_id] = {
                                     "id": prob_id,
                                     "title": prob_title,
                                     "concept": concept,
                                     "major": m_name,
-                                    "sub": "주요 문제"
+                                    "sub": target_sub
                                 }
                                 scraped_count += 1
+                                chapter_scraped_count += 1
+                else:
+                    rows = task_page.query_selector_all("table tbody tr")
+                    for row in rows:
+                        tds = row.query_selector_all("td")
+                        if len(tds) >= 3:
+                            prob_id = tds[1].text_content().strip()
+                            prob_title = tds[2].text_content().strip()
+                        elif len(tds) == 2:
+                            prob_id = tds[0].text_content().strip()
+                            prob_title = tds[1].text_content().strip()
+                        else:
+                            continue
 
-                if len(micro_registry) > sub_scraped_before:
+                        if prob_id and prob_title and prob_id != "#":
+                            concept = parse_concept_tag(prob_title)
+                            micro_registry[prob_id] = {
+                                "id": prob_id,
+                                "title": prob_title,
+                                "concept": concept,
+                                "major": m_name,
+                                "sub": "주요 문제"
+                            }
+                            scraped_count += 1
+                            chapter_scraped_count += 1
+
+                if chapter_scraped_count > 0 or len(micro_registry) > sub_scraped_before:
                     task_success = True
                 elif not task_error_reason:
                     task_error_reason = f"페이지 내 문제 목록 테이블(table tbody tr) 탐색 실패 (단원: {m_name})"

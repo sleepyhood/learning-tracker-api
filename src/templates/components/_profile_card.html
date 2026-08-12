@@ -23,28 +23,18 @@
     </div>
   </div>
 
-  <div class="profile-meta-row">
-    <div class="profile-actions" style="display: flex; gap: 6px; flex-wrap: wrap;">
-      <a
-        href="{{ url_for('view_homework_logs', user_uuid=user_uuid) }}"
-        class="chip chip-action btn-primary"
-      >숙제 기록 보기</a>
-      <button
-        type="button"
-        class="chip chip-action btn-secondary"
-        onclick="openSubmissionLogsModal()"
-        style="cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
-      >📊 풀이 로그 보기</button>
+  <div class="profile-meta-row" style="margin-top: 14px;">
+    <div class="profile-actions" style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
       {% if is_admin or viewer_is_admin %}
       <button
         type="button"
-        class="chip chip-action"
+        class="btn btn-primary"
         onclick="openFeedbackModal('{{ username }}', '{{ username }}', '{{ user_uuid }}')"
-        style="cursor: pointer; background: #6c5ce7; color: white; border: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"
-      >✨ AI 피드백 & 알림장</button>
+        style="width: 100%; padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: 0.88rem; cursor: pointer; background: linear-gradient(135deg, #6c5ce7, #5b4bc4); color: white; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 14px rgba(108, 92, 231, 0.3);"
+      >✨ AI 피드백 & 알림장 작성</button>
       {% endif %}
     </div>
-    <p class="profile-last-login">최근 접속: {{ last_login }}</p>
+    <p class="profile-last-login" style="margin-top: 8px; font-size: 0.78rem; color: #94a3b8;">최근 접속: {{ last_login }}</p>
   </div>
 
   <div id="profile-stats">

@@ -15,6 +15,15 @@ def _legacy_to_server_id(legacy_id: str, legacy_to_server: dict) -> str:
     return legacy_to_server.get(legacy_id, legacy_id)
 
 
+def _normalize_code(code: str) -> str:
+    if not code:
+        return ""
+    import re
+    s = str(code).strip().lower()
+    m = re.match(r"^([a-z0-9]+)v0*(\d+)$", s)
+    return f"{m.group(1)}v{m.group(2)}" if m else s
+
+
 def _ensure_v2_schema(problem_data: dict) -> dict:
     """Converts V1 nested dict or Playwright flat micro-registry to Schema V2 flat schema on-the-fly."""
     if not isinstance(problem_data, dict):
@@ -141,17 +150,54 @@ def _ensure_v2_schema(problem_data: dict) -> dict:
 def summarize_progress(problem_file, solve_file, legacy_map_file=None):
     problem_raw = _load_json(problem_file)
     v2_data = _ensure_v2_schema(problem_raw)
-
     user_solves_raw = _load_json(solve_file)
     legacy_map = _load_json(legacy_map_file) if legacy_map_file else {}
 
     solves_by_sid = {}
+    solves_by_norm = {}
+    solves_by_title = {}
+
     if isinstance(user_solves_raw, dict):
         for record_key, rec in user_solves_raw.items():
-            sid = str(record_key).strip()
-            if not sid or not isinstance(rec, dict):
+            if not isinstance(rec, dict):
                 continue
-            solves_by_sid[sid] = rec.get("status")
+            st = rec.get("status")
+            sid = str(record_key).strip()
+            if sid:
+                solves_by_sid[sid] = st
+                norm = _normalize_code(sid)
+                if norm:
+                    solves_by_norm[norm] = st
+            _id = str(rec.get("_id", "")).strip()
+            if _id:
+                solves_by_sid[_id] = st
+                norm = _normalize_code(_id)
+                if norm:
+                    solves_by_norm[norm] = st
+            legacy_code = str(rec.get("legacy_code", "")).strip()
+            if legacy_code:
+                solves_by_sid[legacy_code] = st
+                norm = _normalize_code(legacy_code)
+                if norm:
+                    solves_by_norm[norm] = st
+            title = str(rec.get("title") or rec.get("problem_title") or "").strip()
+            if title:
+                solves_by_title[title] = st
+
+    def resolve_status(legacy_pid: str, p_title: str = ""):
+        sid = _legacy_to_server_id(legacy_pid, legacy_map)
+        st = solves_by_sid.get(sid)
+        if st is not None:
+            return st
+        st = solves_by_sid.get(legacy_pid)
+        if st is not None:
+            return st
+        norm = _normalize_code(legacy_pid)
+        if norm and norm in solves_by_norm:
+            return solves_by_norm[norm]
+        if p_title and p_title in solves_by_title:
+            return solves_by_title[p_title]
+        return None
 
     result = []
     groups_dict = v2_data.get("groups", {})
@@ -168,8 +214,10 @@ def summarize_progress(problem_file, solve_file, legacy_map_file=None):
             g_solved = g_wrong = g_partial = 0
 
             for legacy_pid in prob_ids:
-                sid = _legacy_to_server_id(legacy_pid, legacy_map)
-                status = solves_by_sid.get(sid)
+                p_item = v2_data.get("problems", {}).get(legacy_pid, {})
+                p_title = p_item.get("title", "")
+                status = resolve_status(legacy_pid, p_title)
+
                 if status == 0:
                     g_solved += 1
                 elif status == -1:
@@ -179,7 +227,7 @@ def summarize_progress(problem_file, solve_file, legacy_map_file=None):
 
             group_details.append(
                 {
-                    "group": group_id,
+                    "group_id": group_id,
                     "title": g_info.get("title", ""),
                     "solved": g_solved,
                     "partial": g_partial,
@@ -299,10 +347,18 @@ def summarize_drilldown_progress(problem_file, solve_file, legacy_map_file=None)
     solves_by_sid = {}
     if isinstance(user_solves_raw, dict):
         for record_key, rec in user_solves_raw.items():
-            sid = str(record_key).strip()
-            if not sid or not isinstance(rec, dict):
+            if not isinstance(rec, dict):
                 continue
-            solves_by_sid[sid] = rec.get("status")
+            st = rec.get("status")
+            sid = str(record_key).strip()
+            if sid:
+                solves_by_sid[sid] = st
+            _id = str(rec.get("_id", "")).strip()
+            if _id:
+                solves_by_sid[_id] = st
+            legacy_code = str(rec.get("legacy_code", "")).strip()
+            if legacy_code:
+                solves_by_sid[legacy_code] = st
 
     result = []
     groups_dict = v2_data.get("groups", {})
@@ -325,6 +381,8 @@ def summarize_drilldown_progress(problem_file, solve_file, legacy_map_file=None)
                 p_title = p_item.get("title", legacy_pid)
                 sid = _legacy_to_server_id(legacy_pid, legacy_map)
                 status = solves_by_sid.get(sid)
+                if status is None:
+                    status = solves_by_sid.get(legacy_pid)
 
                 if status == 0:
                     g_solved += 1

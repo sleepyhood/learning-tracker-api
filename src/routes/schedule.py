@@ -475,7 +475,7 @@ def index():
         "index.html",
         **vm,
         view_mode="me",
-        view_username="",
+        view_username=my_name,
         user_uuid=my_uuid,
         viewer_is_admin=role_ctx.get("is_admin", False),
     )

@@ -1,8 +1,8 @@
 /**
  * Main Index Page Module (index_view.js)
  */
-const CFG_MAIN = window.APP_CONFIG || {};
-const userUuid = CFG_MAIN.userUuid || "";
+const CFG_MAIN = window.APP_CONFIG || (typeof CFG_MAIN !== "undefined" ? CFG_MAIN : {});
+const userUuid = CFG_MAIN.userUuid || CFG_MAIN.viewUsername || (window.APP_CONFIG && (window.APP_CONFIG.userUuid || window.APP_CONFIG.viewUsername)) || "";
 
 (async function mountLatestHomeworkCard() {
   if (!userUuid) return;
@@ -22,70 +22,172 @@ const userUuid = CFG_MAIN.userUuid || "";
   if (!host) return;
 
   const log = data.log || data.homework;
-  if (!data || !data.ok || !log || (!log.id && !log.ts)) {
-    host.innerHTML = `<div class="card empty-state"><div class="empty-title">숙제 데이터가 없습니다</div><div class="empty-desc">목록을 새로고침하거나 수업 일정을 확인해 주세요.</div><div class="empty-actions"><button class="btn btn-primary" id="refresh-homework">숙제 새로고침</button></div></div>`;
-    document.getElementById("refresh-homework")?.addEventListener("click", updateProblems);
+  if (!data || !data.ok || !log || (!log.id && !log.ts && !log.created_at)) {
+    host.innerHTML = `
+      <article class="card empty-state" style="border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 16px rgba(0,0,0,0.04); padding:36px 20px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:260px; height:100%; gap:12px; box-sizing:border-box;">
+        <div style="font-size: 2.5rem; line-height: 1; margin-bottom: 2px;">📝</div>
+        <div class="empty-title" style="font-weight: 800; font-size: 1.1rem; color: #1e293b; margin: 0;">등록된 숙제 및 피드백 기록이 없습니다</div>
+        <div class="empty-desc" style="font-size: 0.85rem; color: #64748b; max-width: 360px; line-height: 1.5; margin: 0;">알림장 모달에서 학생에게 신규 숙제를 출제하거나 수업 피드백을 남겨주세요.</div>
+        <div class="empty-actions" style="margin-top: 8px;">
+          <button class="btn btn-primary" id="refresh-homework" style="padding: 9px 20px; border-radius: 10px; font-weight: 700; font-size: 0.83rem; background: #6c5ce7; color: white; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(108, 92, 231, 0.25);">🔄 새로고침</button>
+        </div>
+      </article>
+    `;
+    document.getElementById("refresh-homework")?.addEventListener("click", () => location.reload());
     return;
   }
 
+  const mode = log.mode || (log.problems && log.problems.length > 0 ? "homework" : "comment");
   const pct = (log.counts && log.counts.total) ? Math.round((log.counts.passed / log.counts.total) * 100) : 0;
 
-  const statusByLegacy = Object.fromEntries(
-    (log.problem_status || []).map((p) => [p.legacy_code, p.status])
-  );
-  const statusById = Object.fromEntries(
-    (log.problem_status || []).map((p) => [String(p.server_problem_id), p.status])
-  );
+  // 한글 날짜 파싱 헬퍼
+  const formatIsoDate = (isoStr) => {
+    if (!isoStr) return "-";
+    try {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return isoStr;
+      const days = ["일", "월", "화", "수", "목", "금", "토"];
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const dayName = days[d.getDay()];
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      return `${y}.${m}.${day}(${dayName}) ${hh}:${mm}`;
+    } catch (e) {
+      return isoStr;
+    }
+  };
+
+  let displayTitle = log.title || "수업 피드백 & 숙제";
+  const profileNameEl = document.querySelector(".profile-name");
+  const profileName = profileNameEl ? profileNameEl.textContent.trim() : "";
+  const uname = data.student_name || CFG_MAIN.viewUsername || profileName || "osw1110";
+  displayTitle = displayTitle.replace(/수강생\s*학생/g, `${uname} 학생`);
+  displayTitle = displayTitle.replace(/수강생/g, uname);
+  displayTitle = displayTitle.replace(/학생\s+학생/g, `${uname} 학생`);
+  displayTitle = displayTitle.replace(/([0-9a-f-]{36})\s*학생/gi, `${uname} 학생`);
+  displayTitle = displayTitle.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, uname);
 
   const problemLis = (log.problems || [])
     .map((p) => {
-      const st = p.legacy_code
-        ? statusByLegacy[p.legacy_code]
-        : statusById[String(p.server_problem_id)];
-      const icon = st === "passed" ? "✅" : st === "wrong" ? "❌" : "-";
-      const cls = st || "pending";
-      const code = p.legacy_code
-        ? `<code>${p.legacy_code}</code>`
-        : p.server_problem_id
-        ? `<code>#${p.server_problem_id}</code>`
-        : "";
+      const st = p.status || "pending";
+      let badge = `<span style="font-size:0.75rem; color:#64748b; background:#f1f5f9; border:1px solid #e2e8f0; padding:2px 8px; border-radius:12px; font-weight:700;">⚪ 대기</span>`;
+      if (st === "passed") {
+        badge = `<span style="font-size:0.75rem; color:#059669; background:#ecfdf5; border:1px solid #a7f3d0; padding:2px 8px; border-radius:12px; font-weight:700;">🟢 100점</span>`;
+      } else if (st === "partial") {
+        badge = `<span style="font-size:0.75rem; color:#d97706; background:#fffbeb; border:1px solid #fde68a; padding:2px 8px; border-radius:12px; font-weight:700;">🟡 ${p.score || "50"}점</span>`;
+      } else if (st === "wrong") {
+        badge = `<span style="font-size:0.75rem; color:#dc2626; background:#fef2f2; border:1px solid #fecaca; padding:2px 8px; border-radius:12px; font-weight:700;">🔴 0점</span>`;
+      }
+      const code = p.legacy_code ? `<code style="font-size:0.75rem; background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:6px; font-family:monospace; border:1px solid #e2e8f0;">${p.legacy_code}</code>` : "";
       const title = p.title || p.title_at_issue || "";
-      return `<li class="problem-row ${cls}" data-legacy-code="${p.legacy_code || ""}" data-server-problem-id="${p.server_problem_id || ""}">
-  <span class="mark">${icon}</span> ${code} <span class="title">${title}</span>
-</li>`;
+      return `<li style="display:flex; align-items:center; gap:8px; padding:6px 0; font-size:0.83rem; border-bottom:1px solid #f1f5f9;">
+        ${badge} ${code} <span style="flex:1; min-width:140px; color:#334155; font-weight:500;">${title}</span>
+      </li>`;
     })
     .join("");
 
+  let badgeHTML = `<span class="badge" style="background:#6c5ce7; color:white; font-size:0.75rem; padding:4px 10px; border-radius:8px; font-weight:700;">📘 숙제 출제</span>`;
+  if (mode === "review") {
+    badgeHTML = `<span class="badge" style="background:#10b981; color:white; font-size:0.75rem; padding:4px 10px; border-radius:8px; font-weight:700;">🔄 복습 안내</span>`;
+  } else if (mode === "comment") {
+    badgeHTML = `<span class="badge" style="background:#3b82f6; color:white; font-size:0.75rem; padding:4px 10px; border-radius:8px; font-weight:700;">📝 수업 피드백</span>`;
+  }
+
+  let progressHTML = "";
+  if (mode === "homework") {
+    const passedCnt = (log.counts && log.counts.passed) || 0;
+    const partialCnt = (log.counts && log.counts.partial) || 0;
+    const wrongCnt = (log.counts && log.counts.wrong) || 0;
+    const pendingCnt = (log.counts && log.counts.pending) || 0;
+    progressHTML = `
+      <div style="margin-top: 10px; background:#f8fafc; border:1px solid #e2e8f0; padding:12px 14px; border-radius:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:0.8rem; font-weight:700; color:#334155;">
+          <span>숙제 달성도</span>
+          <span style="color:#6c5ce7; font-size:0.9rem;">${pct}%</span>
+        </div>
+        <div class="progress-track" style="height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden;">
+          <div class="progress-fill" style="width:${pct}%; height:100%; background:linear-gradient(90deg, #6c5ce7, #a855f7); border-radius:4px; transition:width 0.3s ease;"></div>
+        </div>
+        <div style="display:flex; gap:12px; margin-top:8px; font-size:0.75rem; color:#64748b; font-weight:600; flex-wrap:wrap;">
+          <span>🟢 정답 ${passedCnt}</span>
+          <span>🟡 부분점수 ${partialCnt}</span>
+          <span>🔴 오답 ${wrongCnt}</span>
+          <span>⚪ 대기 ${pendingCnt}</span>
+        </div>
+      </div>`;
+  } else if (mode === "review") {
+    progressHTML = `
+      <div style="font-size: 0.82rem; color: #047857; font-weight: 700; background: #ecfdf5; border:1px solid #a7f3d0; padding: 8px 14px; border-radius: 10px; margin-top: 10px;">
+        🔄 오늘 복습 ${log.problems ? log.problems.length : 0}개 문항 안내 완료
+      </div>`;
+  }
+
+  const escHtml = (str) => String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+
+  let commentHTML = "";
+  const isHomeworkMode = (mode === "homework" && log.problems && log.problems.length > 0);
+
+  if (isHomeworkMode) {
+    if (log.comment) {
+      commentHTML = `
+        <div style="margin-top: 12px;">
+          <button class="btn-small btn-secondary" style="font-size:0.78rem; padding:5px 12px; border-radius:8px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; border:1px solid #cbd5e1; background:#ffffff; color:#334155;" onclick="const el = this.nextElementSibling; const isHidden = el.style.display === 'none'; el.style.display = isHidden ? 'block' : 'none'; this.innerHTML = isHidden ? '🔓 강사 피드백 닫기' : '🔒 강사 피드백 보기';">🔒 강사 피드백 보기</button>
+          <div style="display: none; margin-top: 8px; padding: 14px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 12px; font-size: 0.85rem; color: #3b0764; line-height: 1.5; white-space: pre-wrap;">${escHtml(log.comment)}</div>
+        </div>`;
+    }
+  } else {
+    // 피드백/복습 모드 (숙제 문제 목록이 없는 경우): 피드백 메시지를 바로 기본 자동 펼침으로 시원하게 노출
+    if (log.comment) {
+      commentHTML = `
+        <div style="margin-top: 14px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 14px; padding: 16px; box-shadow: 0 2px 8px rgba(108, 92, 231, 0.05);">
+          <div style="font-weight: 800; font-size: 0.88rem; color: #5b21b6; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <span>💬 오늘의 수업 피드백</span>
+          </div>
+          <div style="font-size: 0.88rem; color: #3b0764; line-height: 1.6; white-space: pre-wrap;">${escHtml(log.comment)}</div>
+        </div>`;
+    } else if (log.message) {
+      commentHTML = `
+        <div style="margin-top: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px;">
+          <div style="font-weight: 800; font-size: 0.88rem; color: #334155; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <span>📢 카카오톡 알림장 전송 내용</span>
+          </div>
+          <div style="font-size: 0.85rem; color: #475569; line-height: 1.6; white-space: pre-wrap;">${escHtml(log.message)}</div>
+        </div>`;
+    } else {
+      commentHTML = `
+        <div style="margin-top: 14px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 14px; padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">
+          📝 수업 피드백 알림장이 학생/학부모님께 정상 전송되었습니다.
+        </div>`;
+    }
+  }
+
+  const safeMsg = (log.message || "").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n");
+
   host.innerHTML = `
-<article class="card" data-log-id="${log.key || ""}" data-id="${log.id || ""}">
-  <div class="card-head">
-    <div class="card-title">${log.title || "제목 없는 숙제"}</div>
-    <span class="badge">${(log.channel || "kakao").toUpperCase()}</span>
+<article class="card" data-log-id="${log.key || ""}" data-id="${log.id || ""}" style="border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 16px rgba(0,0,0,0.04); padding:20px;">
+  <div class="card-head" style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:1px solid #f1f5f9;">
+    <div class="card-title" style="font-weight:800; font-size:1.05rem; color:#1e293b;">${displayTitle}</div>
+    ${badgeHTML}
   </div>
 
-  <div class="progress">
-    <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-    <div class="progress-text">정답 ${(log.counts && log.counts.passed) || 0} | 오답 ${(log.counts && log.counts.wrong) || 0} | 미제출 ${(log.counts && log.counts.pending) || 0}</div>
+  ${progressHTML}
+  ${commentHTML}
+
+  <div class="meta" style="margin-top: 12px; font-size: 0.78rem; color: #64748b; display:flex; align-items:center; gap:12px;">
+    <span>배정: <strong style="color:#334155;">${formatIsoDate(log.created_at || log.ts)}</strong></span>
+    ${log.due_at ? `<span>마감: <strong style="color:#334155;">${formatIsoDate(log.due_at)}</strong></span>` : ""}
   </div>
 
-  <div class="meta">
-    <span>배정: <span class="ts" data-iso="${log.ts}">${log.ts || "-"}</span></span>
-    ${log.due_at ? `<span>마감: <span class="ts" data-iso="${log.due_at}">${log.due_at}</span></span>` : ""}
-    ${log.url ? `<span>링크: <a href="${log.url}" target="_blank" rel="noopener">${log.url}</a></span>` : ""}
-  </div>
+  ${mode === "homework" && log.problems && log.problems.length ? `<ul class="problems" style="margin-top:12px; padding-left:0; list-style:none;">${problemLis}</ul>` : ""}
 
-  ${log.problems && log.problems.length ? `<ol class="problems">${problemLis}</ol>` : ""}
-
-  <div class="actions">
-    ${log.url ? `<a class="btn btn-secondary" href="${log.url}" target="_blank" rel="noopener">숙제 링크 열기</a>` : ""}
-    <button class="btn btn-quiet" id="reopen-homework">숙제 전체 보기</button>
+  <div class="actions" style="margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+    ${log.message ? `<button class="btn btn-secondary" style="font-size:0.8rem; padding:8px 14px; border-radius:10px; font-weight:700; background:#6c5ce7; color:white; border:none; cursor:pointer;" onclick="navigator.clipboard.writeText('${safeMsg}'); alert('📋 카카오톡 알림장 메시지가 클립보드에 복사되었습니다!');">📋 카톡 알림장 재복사</button>` : ""}
+    <button class="btn btn-quiet" style="font-size:0.8rem; padding:8px 14px; border-radius:10px; font-weight:700; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; cursor:pointer;" onclick="if(typeof openHomeworkHistoryModal==='function') openHomeworkHistoryModal('${userUuid}'); else alert('히스토리 모달 로딩 중');">📜 전체 히스토리</button>
   </div>
 </article>
 `;
-
-  document.getElementById("reopen-homework")?.addEventListener("click", () => {
-    window.open(`/students/${userUuid}/homework`, "_blank");
-  });
 })();
 
 // ─────────────────────────────────────────────────────────────────
@@ -427,14 +529,30 @@ if (chartsToggleBtn) {
   const listEl = document.getElementById("basket-items-list");
   const clearBtn = document.getElementById("basket-clear-btn");
   const submitBtn = document.getElementById("basket-submit-btn");
-  const toggleBtn = document.getElementById("basket-toggle-btn");
-  const basketBody = document.getElementById("basket-body");
+  function toggleBasketDrawer(forceOpen = null) {
+    const bBody = document.getElementById("basket-body");
+    const bFooter = document.querySelector("#quick-homework-basket .basket-footer");
+    const tBtn = document.getElementById("basket-toggle-btn");
+    if (!bBody || !tBtn) return;
 
-  if (toggleBtn && basketBody) {
-    toggleBtn.addEventListener("click", () => {
-      const isHidden = basketBody.style.display === "none";
-      basketBody.style.display = isHidden ? "block" : "none";
-      toggleBtn.textContent = isHidden ? "➖" : "➕";
+    const isCurrentlyHidden = bBody.style.display === "none";
+    const shouldOpen = forceOpen !== null ? Boolean(forceOpen) : isCurrentlyHidden;
+
+    bBody.style.display = shouldOpen ? "block" : "none";
+    if (bFooter) {
+      bFooter.style.display = shouldOpen ? "flex" : "none";
+    }
+    tBtn.textContent = shouldOpen ? "▼" : "▲";
+    tBtn.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+    tBtn.title = shouldOpen ? "장바구니 접기" : "장바구니 펼치기";
+  }
+
+  const toggleBtn = document.getElementById("basket-toggle-btn");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleBasketDrawer();
     });
   }
 
@@ -511,6 +629,7 @@ if (chartsToggleBtn) {
       };
       basketItems.push(itemToPush);
       updateBasketUI();
+      toggleBasketDrawer(true);
     }
   };
 
@@ -732,6 +851,8 @@ if (chartsToggleBtn) {
     });
   });
 
+  let showJsonView = false;
+
   // 3. Render Problems List & Checkboxes
   function renderProblems() {
     if (!selectedGroup) {
@@ -773,8 +894,14 @@ if (chartsToggleBtn) {
             ? '<span class="prob-status-badge wrong">❌ 오답</span>'
             : '<span class="prob-status-badge unsolved">⬜ 미풀이</span>';
 
+        const isUnmapped = (p.raw_status === null || p.raw_status === undefined);
+        const jsonTagHtml = `
+        <div class="prob-json-tag" style="margin-top: 3px; font-family: monospace; font-size: 0.68rem; color: ${isUnmapped ? '#991b1b' : '#6b21a8'}; background: ${isUnmapped ? '#fef2f2' : '#faf5ff'}; border: 1px solid ${isUnmapped ? '#fecaca' : '#e9d5ff'}; border-radius: 4px; padding: 1px 6px; display: ${showJsonView ? "block" : "none"}; width: fit-content; word-break: break-all;">
+          🔍 JSON: {"pid": "${p.pid}", "status": "${p.status}", "raw_status": ${p.raw_status !== undefined && p.raw_status !== null ? p.raw_status : "null"}} ${isUnmapped ? '⚠️ (미매핑 감지)' : ''}
+        </div>`;
+
         return `
-        <div class="prob-row-item" style="border-left: 3px solid ${
+        <div class="prob-row-item ${isChecked ? "checked-item" : ""}" style="border-left: 3px solid ${
           p.status === "solved"
             ? "#22c55e"
             : p.status === "wrong"
@@ -782,12 +909,15 @@ if (chartsToggleBtn) {
             : p.status === "partial"
             ? "#f59e0b"
             : "#cbd5e1"
-        };">
-          <div style="display: flex; align-items: center; gap: 8px; flex: 1; overflow: hidden;">
-            <input type="checkbox" class="prob-homework-checkbox" data-pid="${p.pid}" data-title="${p.title}" data-url="${p.url}" ${
-          isChecked ? "checked" : ""
-        } style="cursor: pointer; width: 16px; height: 16px; flex-shrink: 0;" />
-            <span style="font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.83rem;" title="${p.title}">${p.title}</span>
+        }; flex-wrap: wrap;">
+          <div style="display: flex; flex-direction: column; flex: 1; overflow: hidden; pointer-events: none;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" class="prob-homework-checkbox" data-pid="${p.pid}" data-title="${p.title}" data-url="${p.url}" ${
+            isChecked ? "checked" : ""
+          } style="cursor: pointer; width: 16px; height: 16px; flex-shrink: 0; pointer-events: auto;" />
+              <span style="font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.83rem;" title="${p.title}">${p.title}</span>
+            </div>
+            ${jsonTagHtml}
           </div>
           <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
             ${statusBadge}
@@ -798,39 +928,209 @@ if (chartsToggleBtn) {
       })
       .join("");
 
-    probListEl.querySelectorAll(".prob-homework-checkbox").forEach((cb) => {
-      cb.addEventListener("change", (e) => {
-        const pid = e.target.dataset.pid;
-        const title = e.target.dataset.title;
-        const url = e.target.dataset.url;
-        const chapter_code = (selectedGroup && selectedGroup.chapter_code) || (selectedChapter && selectedChapter.chapter_id) || "p102";
-        const group_title = (selectedGroup && selectedGroup.title) || (selectedChapter && selectedChapter.title) || "";
-        if (e.target.checked) {
-          if (window.addProblemToBasket) window.addProblemToBasket({ pid, legacy_code: pid, title, url, chapter_code, group_title });
-        } else {
-          if (window.removeProblemFromBasket) window.removeProblemFromBasket(pid);
+    attachProblemSelectionEvents();
+  }
+
+  // ── 문제 동기화 헬퍼 함수
+  function syncProblemCheckbox(cb, isChecked) {
+    if (!cb) return;
+    cb.checked = isChecked;
+    const row = cb.closest(".prob-row-item");
+    if (row) {
+      row.classList.toggle("checked-item", isChecked);
+    }
+    const pid = cb.dataset.pid;
+    const title = cb.dataset.title;
+    const url = cb.dataset.url;
+    const chapter_code = (selectedGroup && selectedGroup.chapter_code) || (selectedChapter && selectedChapter.chapter_id) || "p102";
+    const group_title = (selectedGroup && selectedGroup.title) || (selectedChapter && selectedChapter.title) || "";
+    if (isChecked) {
+      if (window.addProblemToBasket) window.addProblemToBasket({ pid, legacy_code: pid, title, url, chapter_code, group_title });
+    } else {
+      if (window.removeProblemFromBasket) window.removeProblemFromBasket(pid);
+    }
+  }
+
+  let lastCheckedIndex = null;
+
+  // ── Row 클릭 & Shift 클릭 이벤트 바인딩
+  function attachProblemSelectionEvents() {
+    lastCheckedIndex = null;
+    const rows = probListEl.querySelectorAll(".prob-row-item");
+
+    rows.forEach((row, idx) => {
+      row.addEventListener("click", (e) => {
+        // 링크 아이콘 🔗 클릭 시 이벤트 제외
+        if (e.target.closest("a")) return;
+
+        const cb = row.querySelector(".prob-homework-checkbox");
+        if (!cb) return;
+
+        const isDirectCb = e.target.classList.contains("prob-homework-checkbox");
+
+        // Shift + 클릭 범위 선택 (Range Selection)
+        if (e.shiftKey && lastCheckedIndex !== null && lastCheckedIndex !== idx) {
+          if (!isDirectCb) e.preventDefault();
+          const allRows = Array.from(probListEl.querySelectorAll(".prob-row-item"));
+          const targetState = isDirectCb ? cb.checked : !cb.checked;
+          const start = Math.min(lastCheckedIndex, idx);
+          const end = Math.max(lastCheckedIndex, idx);
+
+          for (let i = start; i <= end; i++) {
+            const r = allRows[i];
+            const itemCb = r ? r.querySelector(".prob-homework-checkbox") : null;
+            if (itemCb) syncProblemCheckbox(itemCb, targetState);
+          }
+          lastCheckedIndex = idx;
+          return;
         }
+
+        // 일반 클릭 (Row 또는 Checkbox)
+        if (!isDirectCb) {
+          e.preventDefault();
+          syncProblemCheckbox(cb, !cb.checked);
+        } else {
+          syncProblemCheckbox(cb, cb.checked);
+        }
+        lastCheckedIndex = idx;
       });
     });
   }
 
-  // Select All button event
-  if (btnSelectAll) {
-    btnSelectAll.addEventListener("click", () => {
-      if (!selectedGroup || !selectedGroup.problems) return;
-      const checkboxes = probListEl.querySelectorAll(".prob-homework-checkbox");
-      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-      
-      checkboxes.forEach(cb => {
-        cb.checked = !allChecked;
-        const pid = cb.dataset.pid;
-        const title = cb.dataset.title;
-        const url = cb.dataset.url;
-        if (!allChecked) {
-          if (window.addProblemToBasket) window.addProblemToBasket({ pid, legacy_code: pid, title, url });
-        } else {
-          if (window.removeProblemFromBasket) window.removeProblemFromBasket(pid);
+  // ── 🖱️ 마우스 드래그 다중선택 Engine (Rubber-band Drag Selection)
+  (function initDragToSelectEngine() {
+    let isDragging = false;
+    let dragBox = null;
+    let startX = 0, startY = 0;
+
+    probListEl.style.position = "relative";
+
+    probListEl.addEventListener("mousedown", (e) => {
+      // 🔗 링크 아이콘 또는 체크박스 직접 클릭 시 드래그 박스 미생성
+      if (e.target.closest("a") || e.target.classList.contains("prob-homework-checkbox")) return;
+      const rows = probListEl.querySelectorAll(".prob-row-item");
+      if (!rows.length) return;
+
+      const rect = probListEl.getBoundingClientRect();
+      startX = e.clientX - rect.left + probListEl.scrollLeft;
+      startY = e.clientY - rect.top + probListEl.scrollTop;
+
+      dragBox = document.createElement("div");
+      dragBox.className = "drag-select-box";
+      dragBox.style.left = `${startX}px`;
+      dragBox.style.top = `${startY}px`;
+      dragBox.style.width = "0px";
+      dragBox.style.height = "0px";
+      probListEl.appendChild(dragBox);
+
+      isDragging = false;
+
+      function onMouseMove(evt) {
+        const cRect = probListEl.getBoundingClientRect();
+        const curX = evt.clientX - cRect.left + probListEl.scrollLeft;
+        const curY = evt.clientY - cRect.top + probListEl.scrollTop;
+
+        const diffX = curX - startX;
+        const diffY = curY - startY;
+
+        if (!isDragging && (Math.abs(diffX) > 5 || Math.abs(diffY) > 5)) {
+          isDragging = true;
+          probListEl.classList.add("is-dragging");
         }
+
+        if (!isDragging || !dragBox) return;
+
+        const boxLeft = diffX < 0 ? curX : startX;
+        const boxTop = diffY < 0 ? curY : startY;
+        const boxWidth = Math.abs(diffX);
+        const boxHeight = Math.abs(diffY);
+
+        dragBox.style.left = `${boxLeft}px`;
+        dragBox.style.top = `${boxTop}px`;
+        dragBox.style.width = `${boxWidth}px`;
+        dragBox.style.height = `${boxHeight}px`;
+
+        const bRect = dragBox.getBoundingClientRect();
+        rows.forEach(r => {
+          const rRect = r.getBoundingClientRect();
+          const intersects = !(
+            rRect.right < bRect.left ||
+            rRect.left > bRect.right ||
+            rRect.bottom < bRect.top ||
+            rRect.top > bRect.bottom
+          );
+          r.classList.toggle("drag-selecting", intersects);
+        });
+      }
+
+      function onMouseUp() {
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+
+        if (dragBox && dragBox.parentNode) {
+          dragBox.parentNode.removeChild(dragBox);
+        }
+        dragBox = null;
+        probListEl.classList.remove("is-dragging");
+
+        if (isDragging) {
+          isDragging = false;
+          const selectingRows = probListEl.querySelectorAll(".prob-row-item.drag-selecting");
+          if (selectingRows.length > 0) {
+            const firstCb = selectingRows[0].querySelector(".prob-homework-checkbox");
+            const targetState = firstCb ? !firstCb.checked : true;
+            selectingRows.forEach(r => {
+              r.classList.remove("drag-selecting");
+              const cb = r.querySelector(".prob-homework-checkbox");
+              if (cb) syncProblemCheckbox(cb, targetState);
+            });
+          }
+        }
+      }
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    });
+  })();
+
+  // ── 스마트 퀵 선택 칩 버튼 연동
+  const btnSelectUnsolved = document.getElementById("btn-select-unsolved-problems");
+  const btnSelectWrong = document.getElementById("btn-select-wrong-problems");
+  const btnClearSelected = document.getElementById("btn-clear-selected-problems");
+
+  function setBatchSelection(predicateFn) {
+    if (!selectedGroup || !selectedGroup.problems) return;
+    const checkboxes = probListEl.querySelectorAll(".prob-homework-checkbox");
+    const probMap = new Map((selectedGroup.problems || []).map(p => [p.pid, p]));
+
+    checkboxes.forEach(cb => {
+      const p = probMap.get(cb.dataset.pid);
+      const shouldSelect = predicateFn(p);
+      syncProblemCheckbox(cb, shouldSelect);
+    });
+  }
+
+  if (btnSelectAll) {
+    btnSelectAll.addEventListener("click", () => setBatchSelection(() => true));
+  }
+  if (btnSelectUnsolved) {
+    btnSelectUnsolved.addEventListener("click", () => setBatchSelection(p => p && p.status === "unsolved"));
+  }
+  if (btnSelectWrong) {
+    btnSelectWrong.addEventListener("click", () => setBatchSelection(p => p && (p.status === "wrong" || p.status === "partial")));
+  }
+  if (btnClearSelected) {
+    btnClearSelected.addEventListener("click", () => setBatchSelection(() => false));
+  }
+
+  const btnToggleJsonView = document.getElementById("btn-toggle-json-view");
+  if (btnToggleJsonView) {
+    btnToggleJsonView.addEventListener("click", () => {
+      showJsonView = !showJsonView;
+      btnToggleJsonView.style.background = showJsonView ? "#6b21a8" : "#faf5ff";
+      btnToggleJsonView.style.color = showJsonView ? "#ffffff" : "#6b21a8";
+      probListEl.querySelectorAll(".prob-json-tag").forEach(tag => {
+        tag.style.display = showJsonView ? "block" : "none";
       });
     });
   }

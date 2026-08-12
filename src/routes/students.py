@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from datetime import datetime
 from flask import Blueprint, request, jsonify, render_template
 
@@ -46,22 +47,39 @@ def _latest_homework_status_map(user_doc: dict) -> dict:
     res = {}
     if not isinstance(user_doc, dict):
         return res
+    
+    probs_dict = user_doc.get("problems_dict") or {}
+    if isinstance(probs_dict, dict):
+        for k, v in probs_dict.items():
+            if isinstance(v, dict):
+                code = v.get("_id") or v.get("legacy_code") or k
+                st = v.get("status")
+                score = str(v.get("score") if v.get("score") is not None else "0")
+                if code:
+                    if st in [0, "0", "PASSED", "solved", "passed", "AC", "ACCEPTED"] or score == "100":
+                        res[str(code)] = "solved"
+                    elif st in [-1, "-1", "WRONG", "wrong", "FAILED", "failed"]:
+                        res[str(code)] = "wrong"
+
     logs = user_doc.get("homework_logs", [])
-    if not isinstance(logs, list):
-        return res
-    for log in logs:
-        if not isinstance(log, dict):
-            continue
-        problems = log.get("problems", [])
-        if not isinstance(problems, list):
-            continue
-        for p in problems:
-            if not isinstance(p, dict):
+    if isinstance(logs, list):
+        for log in logs:
+            if not isinstance(log, dict):
                 continue
-            lc = p.get("legacy_code")
-            st = p.get("status")
-            if lc and st:
-                res[str(lc)] = "solved" if st == "solved" else "wrong"
+            problems = log.get("problems", [])
+            if not isinstance(problems, list):
+                continue
+            for p in problems:
+                if not isinstance(p, dict):
+                    continue
+                lc = p.get("legacy_code") or p.get("code") or p.get("pid") or p.get("id")
+                st = str(p.get("status") or "").lower()
+                score = str(p.get("score") or "0")
+                if lc and str(lc) not in res:
+                    if st in ["solved", "passed", "0", "ac", "accepted"] or score == "100":
+                        res[str(lc)] = "solved"
+                    elif st in ["wrong", "failed", "-1"]:
+                        res[str(lc)] = "wrong"
     return res
 
 
@@ -123,7 +141,210 @@ def api_student_delete_homework_log(id_or_uuid, log_key):
     return jsonify({"ok": True})
 
 
-@students_bp.route("/api/students/<id_or_uuid>/homework_logs", methods=["POST", "OPTIONS"])
+def _enrich_log_problem_status(doc: dict, log: dict) -> dict:
+    if not log or not isinstance(log, dict):
+        return log
+    
+    from utils.utils_common import resolve_legacy_map_dict
+    legacy_to_server = resolve_legacy_map_dict()
+    server_to_legacy = {v: k for k, v in legacy_to_server.items()}
+
+    oi_probs = doc.get("oi_problems") or {}
+    oi_dict = {}
+    if isinstance(oi_probs, dict):
+        oi_dict = oi_probs
+    elif isinstance(oi_probs, list):
+        for item in oi_probs:
+            if isinstance(item, dict):
+                code = item.get("legacy_code") or item.get("code") or item.get("pid") or item.get("id")
+                if code:
+                    oi_dict[str(code)] = item
+
+    solved_set = set()
+    wrong_set = set()
+    submission_map = {}
+
+    def register_code(code_str, is_passed, is_wrong, entry):
+        if not code_str:
+            return
+        c_str = str(code_str).strip()
+        c_norm = re.sub(r'[^a-zA-Z0-9]', '', c_str).lower()
+        
+        codes_to_register = {c_str, c_str.lower(), c_norm}
+        if c_str in legacy_to_server:
+            srv = legacy_to_server[c_str]
+            codes_to_register.update({srv, srv.lower(), re.sub(r'[^a-zA-Z0-9]', '', srv).lower()})
+        if c_str in server_to_legacy:
+            leg = server_to_legacy[c_str]
+            codes_to_register.update({leg, leg.lower(), re.sub(r'[^a-zA-Z0-9]', '', leg).lower()})
+
+        for k in codes_to_register:
+            submission_map[k] = entry
+            if is_passed:
+                solved_set.add(k)
+            elif is_wrong:
+                wrong_set.add(k)
+
+    # 1. doc 내부 problems_dict 및 oi_problems 파싱
+    problems_dict = doc.get("problems_dict") or {}
+    if not isinstance(problems_dict, dict):
+        problems_dict = {}
+
+    oi_probs = doc.get("oi_problems") or {}
+    if isinstance(oi_probs, dict):
+        for k, v in oi_probs.items():
+            if k not in problems_dict:
+                problems_dict[k] = v
+    elif isinstance(oi_probs, list):
+        for item in oi_probs:
+            if isinstance(item, dict):
+                code = item.get("legacy_code") or item.get("code") or item.get("pid") or item.get("id")
+                if code:
+                    problems_dict[str(code)] = item
+
+    # 2. {username}.json 및 {uuid}.json 외부 파일 통합 파싱
+    prof = doc.get("profile") or {}
+    username = prof.get("username") or prof.get("student_id")
+    user_uuid_key = doc.get("user_uuid") or doc.get("uuid")
+    
+    for candidate in filter(None, [username, user_uuid_key]):
+        user_prob_file = os.path.join(USER_DATA_DIR, f"{candidate}.json")
+        if os.path.exists(user_prob_file):
+            try:
+                with open(user_prob_file, "r", encoding="utf-8") as f:
+                    file_data = json.load(f)
+                if isinstance(file_data, dict):
+                    # UUID 문서인 경우 oi_problems / problems_dict 추출
+                    target_dict = file_data
+                    if "user_uuid" in file_data or "homework_logs" in file_data:
+                        target_dict = file_data.get("oi_problems") or file_data.get("problems_dict") or {}
+                        if isinstance(target_dict, list):
+                            target_dict = {str(item.get("code") or item.get("legacy_code")): item for item in target_dict if isinstance(item, dict)}
+
+                    if isinstance(target_dict, dict):
+                        for k, v in target_dict.items():
+                            if k not in problems_dict:
+                                problems_dict[k] = v
+            except Exception:
+                pass
+
+    for k, v in problems_dict.items():
+        if isinstance(v, dict):
+            code = v.get("_id") or v.get("legacy_code") or k
+            raw_st = v.get("status")
+            score_val = str(v.get("score") if v.get("score") is not None else "0")
+            
+            is_passed = (raw_st == 0 or raw_st == "0" or score_val == "100")
+            is_wrong = (raw_st == -1 or raw_st == "-1") and not is_passed
+            
+            entry = {"score": score_val, "status": "PASSED" if is_passed else ("WRONG" if is_wrong else str(raw_st))}
+            register_code(code, is_passed, is_wrong, entry)
+            if k != code:
+                register_code(k, is_passed, is_wrong, entry)
+
+    def add_to_maps(raw_code, info_dict):
+        if not raw_code:
+            return
+        raw_res = info_dict.get("result")
+        raw_st = info_dict.get("status")
+        status = str(raw_st if raw_st is not None else raw_res if raw_res is not None else "").upper()
+        
+        stat_info = info_dict.get("statistic_info")
+        score = "0"
+        if isinstance(stat_info, dict) and "score" in stat_info:
+            score = str(stat_info.get("score") or "0")
+        elif "score" in info_dict:
+            score = str(info_dict.get("score") or "0")
+
+        is_passed = (
+            status in ["0", "PASSED", "SOLVED", "CORRECT", "AC", "ACCEPTED"] or 
+            raw_res == 0 or raw_st == 0 or score == "100"
+        )
+        is_wrong = (status in ["WRONG", "FAILED"] or raw_res in [-1, 1, 2, 3, 4, 5]) and not is_passed
+        
+        entry = {"score": score, "status": "PASSED" if is_passed else status}
+        register_code(raw_code, is_passed, is_wrong, entry)
+
+    for code, info in oi_dict.items():
+        if isinstance(info, dict):
+            add_to_maps(code, info)
+
+    for sub in doc.get("submissions", []) or []:
+        if isinstance(sub, dict):
+            code = sub.get("legacy_code") or sub.get("problem_id") or sub.get("code") or sub.get("problem")
+            if isinstance(code, dict):
+                code = code.get("_id") or code.get("id")
+            if code:
+                add_to_maps(code, sub)
+
+    for sp in doc.get("solved_problems", []) or []:
+        register_code(sp, is_passed=True, is_wrong=False, entry={"score": "100", "status": "PASSED"})
+
+    enriched_problems = []
+    counts = {"total": 0, "passed": 0, "wrong": 0, "partial": 0, "pending": 0}
+    
+    problems = log.get("problems", [])
+    counts["total"] = len(problems)
+
+    for p in problems:
+        if isinstance(p, dict):
+            # server_problem_id도 추출해 병행 검사
+            p_server_id = str(p.get("server_problem_id") or "").strip()
+            p_code = str(p.get("legacy_code") or p.get("code") or p.get("pid") or p.get("problem_id") or p.get("id") or p.get("_id") or "").strip()
+            p_title = p.get("title") or ""
+        else:
+            p_code = str(p).strip()
+            p_title = ""
+
+        p_norm = re.sub(r'[^a-zA-Z0-9]', '', p_code).lower()
+        # server_problem_id 기반 추가 조회 키 생성
+        p_server_norm = re.sub(r'[^a-zA-Z0-9]', '', p_server_id).lower() if p_server_id else ""
+        # legacy_code -> server_id 변환 키 및 역방향도 조회
+        p_mapped_server = legacy_to_server.get(p_code, "")
+        p_mapped_legacy = server_to_legacy.get(p_code, "")
+
+        def _find_in_map(m):
+            for key in filter(None, [p_code, p_code.lower(), p_norm, p_server_id, p_server_id.lower() if p_server_id else "", p_server_norm, p_mapped_server, p_mapped_legacy]):
+                if key and key in m:
+                    return m[key]
+            return None
+
+        sub_info = _find_in_map(submission_map) or {}
+        score = sub_info.get("score")
+        sub_status = sub_info.get("status", "")
+
+        def _in_set(s):
+            return any(k in s for k in filter(None, [p_code, p_code.lower(), p_norm, p_server_id, p_server_norm, p_mapped_server, p_mapped_legacy]))
+
+        status = "pending"
+        if (_in_set(solved_set) or score == "100" or sub_status in ["PASSED", "SOLVED", "CORRECT"]):
+            status = "passed"
+            counts["passed"] += 1
+        elif score and score != "0":
+            status = "partial"
+            counts["partial"] += 1
+        elif (_in_set(wrong_set) or sub_status in ["WRONG", "FAILED"]):
+            status = "wrong"
+            counts["wrong"] += 1
+        else:
+            counts["pending"] += 1
+
+        enriched_p = dict(p) if isinstance(p, dict) else {}
+        enriched_p["legacy_code"] = p_code
+        enriched_p["title"] = p_title
+        if p_server_id:
+            enriched_p["server_problem_id"] = p_server_id
+        enriched_p["status"] = status
+        enriched_p["score"] = score if (score is not None and score != "") else ("100" if status == "passed" else "0")
+        enriched_problems.append(enriched_p)
+
+    enriched_log = dict(log)
+    enriched_log["problems"] = enriched_problems
+    enriched_log["counts"] = counts
+    return enriched_log
+
+
+@students_bp.route("/api/students/<id_or_uuid>/homework_logs", methods=["GET", "POST", "OPTIONS"])
 def api_student_homework_logs(id_or_uuid):
     s, err = ensure_admin_or_403()
     if err:
@@ -132,9 +353,60 @@ def api_student_homework_logs(id_or_uuid):
     if request.method == "OPTIONS":
         return jsonify({"ok": True})
 
+    if request.method == "GET":
+        from utils.utils_common import ensure_user_cache_or_404
+        doc, _ = ensure_user_cache_or_404(id_or_uuid)
+        if not doc:
+            from utils.utils_user_doc import load_doc_by_any
+            doc = load_doc_by_any(id_or_uuid) or {}
+
+        prof = doc.get("profile") or {}
+        st_id = prof.get("student_id") or prof.get("username") or id_or_uuid
+        st_name = prof.get("name") or st_id
+
+        if st_id and st_id != id_or_uuid:
+            from config import USER_DATA_DIR
+            import os as _os
+            cache_path = _os.path.join(USER_DATA_DIR, f"{st_id}.json")
+            if _os.path.exists(cache_path):
+                try:
+                    import json as _json
+                    cache_data = _json.load(open(cache_path, encoding="utf-8"))
+                    if isinstance(cache_data, dict):
+                        oi = doc.get("oi_problems")
+                        if not oi:
+                            doc["oi_problems"] = cache_data
+                        elif isinstance(oi, dict):
+                            for k, v in cache_data.items():
+                                if k not in oi:
+                                    oi[k] = v
+                except Exception as _e:
+                    print(f"[hw_logs] cache merge failed: {_e}")
+
+        logs = doc.get("homework_logs", [])
+        try:
+            logs = sorted(logs, key=lambda x: str(x.get("created_at") or x.get("ts") or ""), reverse=True)
+        except Exception:
+            pass
+        enriched_logs = [_enrich_log_problem_status(doc, l) for l in logs]
+
+        return jsonify({
+            "ok": True, 
+            "homework_logs": enriched_logs, 
+            "logs": enriched_logs,
+            "student_id": st_id,
+            "student_name": st_name
+        })
+
     payload = request.get_json(force=True) or {}
     updated_doc = append_homework_log(id_or_uuid, payload)
-    return jsonify({"ok": True, "homework_logs": updated_doc.get("homework_logs", [])})
+    logs = updated_doc.get("homework_logs", [])
+    try:
+        logs = sorted(logs, key=lambda x: str(x.get("created_at") or x.get("ts") or ""), reverse=True)
+    except Exception:
+        pass
+    enriched_logs = [_enrich_log_problem_status(updated_doc, l) for l in logs]
+    return jsonify({"ok": True, "homework_logs": enriched_logs, "logs": enriched_logs})
 
 
 @students_bp.get("/api/students/<user_uuid>/homework_latest")
@@ -143,10 +415,57 @@ def api_student_homework_latest(user_uuid):
     if err:
         return err
 
-    doc = load_doc_by_any(user_uuid)
+    from utils.utils_user_doc import load_doc_by_any
+    from utils.utils_common import ensure_user_cache_or_404
+
+    # 1) UUID 문서 로드 (homework_logs + profile + oi_problems)
+    doc, _ = ensure_user_cache_or_404(user_uuid)
+    if not doc:
+        doc = load_doc_by_any(user_uuid) or {}
+
+    # 2) username 캐시 파일({username}.json)의 풀이 데이터를 oi_problems에 병합
+    #    → _enrich_log_problem_status가 doc 안에서 username을 찾아 캐시를 읽지만,
+    #      여기서 명시적으로 미리 병합해두면 더 안전하다.
+    prof = doc.get("profile") or {}
+    st_id = prof.get("student_id") or prof.get("username") or user_uuid
+    st_name = prof.get("name") or st_id
+
+    if st_id and st_id != user_uuid:
+        from config import USER_DATA_DIR
+        import os as _os
+        cache_path = _os.path.join(USER_DATA_DIR, f"{st_id}.json")
+        if _os.path.exists(cache_path):
+            try:
+                import json as _json
+                cache_data = _json.load(open(cache_path, encoding="utf-8"))
+                if isinstance(cache_data, dict):
+                    # 문제-only 캐시: {server_id: {_id, status, score}}
+                    # oi_problems가 비어있으면 캐시 데이터를 주입
+                    oi = doc.get("oi_problems")
+                    if not oi:
+                        doc["oi_problems"] = cache_data
+                    elif isinstance(oi, dict):
+                        for k, v in cache_data.items():
+                            if k not in oi:
+                                oi[k] = v
+            except Exception as _e:
+                print(f"[hw_latest] cache merge failed: {_e}")
+
     logs = doc.get("homework_logs", [])
-    recent = logs[-1] if logs else {}
-    return jsonify({"ok": True, "homework": recent, "log": recent})
+    try:
+        logs = sorted(logs, key=lambda x: str(x.get("created_at") or x.get("ts") or ""), reverse=True)
+    except Exception:
+        pass
+    recent = logs[0] if logs else {}
+    enriched_recent = _enrich_log_problem_status(doc, recent)
+
+    return jsonify({
+        "ok": True,
+        "homework": enriched_recent,
+        "log": enriched_recent,
+        "student_id": st_id,
+        "student_name": st_name
+    })
 
 
 @students_bp.post("/api/students/homework_latest_batch")
@@ -347,3 +666,29 @@ def api_schedule_delete_slot(slot_id):
     data["slots"] = new_slots
     save_schedule(data)
     return jsonify({"ok": True})
+
+
+@students_bp.route("/api/students/search_suggestions", methods=["GET"])
+def api_student_search_suggestions():
+    ws_students = _load_workspace_students()
+    suggestions = []
+    seen = set()
+
+    for st_uuid, st_info in ws_students.items():
+        display_id = (st_info.get("display_id") or "").strip()
+        name = (st_info.get("name") or "").strip()
+        if not display_id and not name:
+            continue
+        
+        key = (display_id.lower(), name.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        
+        suggestions.append({
+            "display_id": display_id or name,
+            "name": name or display_id
+        })
+
+    return jsonify({"ok": True, "suggestions": suggestions})
+

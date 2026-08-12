@@ -16,6 +16,31 @@ let streakCurrentDays = Number(CFG.streakDays || 7);
 let streakLatestCurrent = normalizeStreakData(INITIAL_STREAK_DATA);
 let streakLatestPrev = [];
 let streakActiveOnly = false;
+let timelineFilterMode = "all";
+
+window.setTimelineFilterMode = function(mode) {
+  timelineFilterMode = mode;
+  const allBtn = document.getElementById("tl-filter-all");
+  const wrongBtn = document.getElementById("tl-filter-wrong");
+  if (allBtn && wrongBtn) {
+    if (mode === "wrong") {
+      allBtn.style.background = "#ffffff";
+      allBtn.style.color = "#475569";
+      allBtn.style.border = "1px solid #cbd5e1";
+      wrongBtn.style.background = "#dc2626";
+      wrongBtn.style.color = "#ffffff";
+      wrongBtn.style.border = "none";
+    } else {
+      allBtn.style.background = "#6c5ce7";
+      allBtn.style.color = "#ffffff";
+      allBtn.style.border = "none";
+      wrongBtn.style.background = "#ffffff";
+      wrongBtn.style.color = "#dc2626";
+      wrongBtn.style.border = "1px solid #fecaca";
+    }
+  }
+  renderStreakByFilter();
+};
 
 const streakGrid = document.getElementById("streak-grid");
 const streakSummaryEl = document.getElementById("streak-summary");
@@ -48,6 +73,60 @@ const overlayEl = ensureEl("overlay", {
   className: "details",
   style: "display:none;",
 });
+
+window.openSubmissionCodeModal = async function(subId, title) {
+  let modal = document.getElementById("submissionCodeModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "submissionCodeModal";
+    modal.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.45); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 10010;";
+    modal.innerHTML = `
+      <div style="background: #ffffff; border-radius: 18px; width: 720px; max-width: 92vw; max-height: 85vh; padding: 24px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 50px rgba(0,0,0,0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+          <span style="font-weight: 800; font-size: 1.05rem; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+            <span>💻 제출 코드 확인</span>
+            <span id="scmCodeTitle" style="font-size: 0.85rem; color: #64748b; font-weight: 600;"></span>
+          </span>
+          <button style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b;" onclick="document.getElementById('submissionCodeModal').style.display='none'">×</button>
+        </div>
+        <div id="scmCodeContent" style="background: #0f172a; color: #f8fafc; padding: 14px; border-radius: 12px; font-family: monospace; font-size: 0.82rem; line-height: 1.5; white-space: pre-wrap; word-break: break-all; max-height: 55vh; overflow-y: auto;">⏳ 소스코드를 불러오는 중...</div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; background: #ffffff; border: 1px solid #cbd5e1; color: #334155;" onclick="navigator.clipboard.writeText(document.getElementById('scmCodeContent').textContent); alert('📋 소스코드가 클립보드에 복사되었습니다!');">📋 코드 복사</button>
+          <button class="btn btn-primary" style="font-size: 0.8rem; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; background: #64748b; color: white; border: none;" onclick="document.getElementById('submissionCodeModal').style.display='none'">닫기</button>
+        </div>
+      </div>
+    `;
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
+    document.body.appendChild(modal);
+  }
+  document.getElementById("scmCodeTitle").textContent = title ? `(${title})` : "";
+  document.getElementById("scmCodeContent").textContent = "⏳ 소스코드를 불러오는 중...";
+  modal.style.display = "flex";
+
+  try {
+    const res = await fetch(`/api/submission_code?id=${encodeURIComponent(subId)}`);
+    if (!res.ok) throw new Error("코드 페치 실패");
+    const data = await res.json();
+    if (data.code) {
+      document.getElementById("scmCodeContent").textContent = data.code;
+    } else {
+      document.getElementById("scmCodeContent").textContent = "// 저장된 제출 소스코드가 없습니다.";
+    }
+  } catch (e) {
+    document.getElementById("scmCodeContent").textContent = `// 소스코드 로드 오류: ${e.message}`;
+  }
+};
+
+window.jumpToProblemLocation = function(pid, groupId) {
+  if (typeof window.navigateToProblemChapter === "function") {
+    window.navigateToProblemChapter(pid, groupId);
+  } else {
+    const chartsSec = document.querySelector(".charts-section") || document.getElementById("charts-container");
+    if (chartsSec) {
+      chartsSec.scrollIntoView({ behavior: "smooth" });
+    }
+  }
+};
 
 function normalizeStreakData(data) {
   if (!Array.isArray(data)) return [];
@@ -450,66 +529,141 @@ function updateTodayLatestProblem(streakData) {
 function renderStreakGrid(streakData, { days = 7, prevData = [], summaryData = null } = {}) {
   if (!streakGrid) return;
   const data = normalizeStreakData(streakData);
-  const frag = document.createDocumentFragment();
-  const maxDaily = data.reduce((m, d) => Math.max(m, Number(d.count || 0)), 0);
+  const activeDays = data.filter((d) => Number(d.count || 0) > 0 || (d.details && d.details.length > 0));
 
-  if (!data.length) {
-    streakGrid.innerHTML = `<div class="streak-empty">조건에 맞는 활동일이 없습니다.</div>`;
-    setStreakSummary(days, summaryData || data, prevData);
-    updateTodayLatestProblem(summaryData || streakLatestCurrent || data);
+  setStreakSummary(days, summaryData || data, prevData);
+  updateTodayLatestProblem(summaryData || streakLatestCurrent || data);
+
+  if (!activeDays.length) {
+    streakGrid.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 40px; font-size: 0.9rem; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; grid-column: span 2;">🗓️ 선택된 기간(${days}일) 동안 등원 및 실습 기록이 없습니다.</div>`;
     return;
   }
 
-  data.forEach((day, idx) => {
-    const c = Number(day.count || 0);
-    const tier = calcTier(c);
-    const prevCount = idx > 0 ? Number(data[idx - 1].count || 0) : 0;
-    const state = getStreakState(day, c, prevCount, maxDaily);
-    const ratio = maxDaily > 0 ? Math.max(0, Math.min(100, Math.round((c / maxDaily) * 100))) : 0;
-    const ratioForUI = c === 0 ? 0 : Math.max(10, ratio);
-    const isWeekend = day.weekday === "토" || day.weekday === "일";
+  // 역순(최신 등원일 우선) 정렬
+  const sortedDays = [...activeDays].reverse();
+  const frag = document.createDocumentFragment();
+
+  sortedDays.forEach((day) => {
+    const details = Array.isArray(day.details) ? day.details : [];
     const dateLabel = formatDateLabel(day);
+    const totalCnt = details.length || day.count || 0;
 
-    const cell = document.createElement("div");
-    cell.className = "streak-cell";
-    if (isWeekend) cell.classList.add("weekend");
-    if (day.details && day.details.length) {
-      cell.classList.add("has-details");
+    let passedCnt = 0;
+    let partialCnt = 0;
+    let wrongCnt = 0;
+
+    details.forEach((p) => {
+      const score = Number(p.score ?? 0);
+      const isAC = p.result === 0 || p.status === "solved" || p.status === "passed" || p.passed === true || score >= 90;
+      if (isAC) passedCnt++;
+      else if (score > 0 && score < 90) partialCnt++;
+      else wrongCnt++;
+    });
+
+    let targetDetails = [...details];
+    if (timelineFilterMode === "wrong") {
+      targetDetails = targetDetails.filter((p) => {
+        const score = Number(p.score ?? 0);
+        const isAC = p.result === 0 || p.status === "solved" || p.status === "passed" || p.passed === true || score >= 90;
+        return !isAC;
+      });
+    }
+
+    // 기본 정렬: 제출 시간순 (최신순)
+    const sortedDetails = targetDetails.sort((a, b) => String(b.time || "").localeCompare(String(a.time || "")));
+
+    const card = document.createElement("div");
+    card.className = "timeline-day-card";
+    card.style.cssText = "background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;";
+
+    const headHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+        <div style="font-weight: 800; font-size: 0.95rem; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+          <span>📅 ${dateLabel} 등원</span>
+          <span style="font-size: 0.75rem; background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 12px; font-weight: 700;">실습 ${totalCnt}건</span>
+        </div>
+        <div style="font-size: 0.78rem; font-weight: 600; display: flex; gap: 8px; color: #64748b;">
+          <span style="color: #059669;">🟢 정답 ${passedCnt}</span>
+          ${partialCnt > 0 ? `<span style="color: #d97706;">🟡 부분 ${partialCnt}</span>` : ""}
+          ${wrongCnt > 0 ? `<span style="color: #dc2626; font-weight: 700;">🔴 오답 ${wrongCnt}</span>` : ""}
+        </div>
+      </div>
+    `;
+
+    // 40+ 문항 처리: 상위 4개 기본 표시, 나머지 숨김 토글
+    const visibleItems = sortedDetails.slice(0, 4);
+    const hiddenItems = sortedDetails.slice(4);
+
+      const renderItemHTML = (p) => {
+        const score = Number(p.score ?? 0);
+        const isAC = p.result === 0 || p.status === "solved" || p.status === "passed" || p.passed === true || score >= 90;
+        let statusBadge = `<span style="font-size:0.75rem; color:#059669; background:#ecfdf5; border:1px solid #a7f3d0; padding:2px 8px; border-radius:12px; font-weight:700; flex-shrink:0;">🟢 100점</span>`;
+        if (!isAC && score > 0) {
+          statusBadge = `<span style="font-size:0.75rem; color:#d97706; background:#fffbeb; border:1px solid #fde68a; padding:2px 8px; border-radius:12px; font-weight:700; flex-shrink:0;">🟡 ${score}점</span>`;
+        } else if (!isAC) {
+          statusBadge = `<span style="font-size:0.75rem; color:#dc2626; background:#fef2f2; border:1px solid #fecaca; padding:2px 8px; border-radius:12px; font-weight:700; flex-shrink:0;">🔴 0점</span>`;
+        }
+
+        const pTitle = escapeHtml(p.title || p.problem || "제목 없음");
+        const pUrl = p.problem_url || (p.problem ? `http://edu.doingcoding.com/problem/${encodeURIComponent(String(p.problem))}` : "#");
+        const subId = p.server_sub_id || p.serverSubId || p.sub_id || p.id || "";
+        const pid = p.pid || p.problem || p.problem_id || "";
+        const groupId = p.group_id || p.groupId || "";
+
+        const codeBtn = subId ? `<button type="button" class="btn-quiet" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; border: 1px solid #6c5ce7; background: #faf5ff; color: #6c5ce7; font-weight: 700; cursor: pointer;" onclick="openSubmissionCodeModal('${subId}', '${pTitle.replace(/'/g, "\\'")}')">💻 코드</button>` : "";
+        const jumpBtn = pid ? `<button type="button" class="btn-quiet" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; border: 1px solid #93c5fd; background: #eff6ff; color: #1d4ed8; font-weight: 700; cursor: pointer;" onclick="jumpToProblemLocation('${pid}', '${groupId}')">🎯 위치</button>` : "";
+
+        return `
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.83rem; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+              ${statusBadge}
+              <a href="${escapeHtml(pUrl)}" target="_blank" rel="noopener" style="color: #1e293b; font-weight: 600; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${pTitle}">${pTitle}</a>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+              <span style="font-size: 0.75rem; color: #94a3b8;">${escapeHtml(p.time || "")}</span>
+              ${codeBtn}
+              ${jumpBtn}
+              <button type="button" class="btn-quiet" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; color: #475569; font-weight: 600;" onclick="navigator.clipboard.writeText('${pTitle.replace(/'/g, "\\'")}'); if(typeof showToast==='function') showToast('제목 복사됨: ${pTitle.replace(/'/g, "\\'")}');">복사</button>
+            </div>
+          </div>
+        `;
+      };
+
+    let itemsHTML = `<div class="timeline-items-wrapper" style="display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; padding-right: 2px;">`;
+    if (!sortedDetails.length && timelineFilterMode === "wrong") {
+      itemsHTML += `<div style="text-align: center; color: #94a3b8; padding: 12px; font-size: 0.8rem;">🎉 해당 날짜에는 오답/부분점수 내역이 없습니다. (모두 정답통과)</div>`;
     } else {
-      cell.classList.add("no-details");
-    }
-    cell.dataset.count = String(c);
-    if (tier) cell.dataset.tier = String(tier);
-    if (day.date === TODAY_MMDD) cell.dataset.today = "1";
-    cell.dataset.state = state.key;
-    cell.style.setProperty("--streak-ratio", `${ratioForUI}%`);
-
-    cell.innerHTML = `
-<div class="date-info">
-  <div class="date-full">${dateLabel}</div>
-</div>
-<div class="count-wrap">
-  <span class="count">${c}</span>
-  <span class="count-label">제출</span>
-  <span class="streak-mini-track" aria-hidden="true"><span class="streak-mini-fill"></span></span>
-</div>
-<span class="streak-state-badge ${state.key}">${state.label}</span>
-`;
-
-    if (day.details && day.details.length) {
-      cell.dataset.details = JSON.stringify(day.details);
+      itemsHTML += visibleItems.map(renderItemHTML).join("");
     }
 
-    frag.appendChild(cell);
+    if (hiddenItems.length > 0) {
+      const hiddenHTML = hiddenItems.map(renderItemHTML).join("");
+      itemsHTML += `
+        <div class="timeline-more-items" style="display: none; flex-direction: column; gap: 6px; margin-top: 6px;">
+          ${hiddenHTML}
+        </div>
+        <button type="button" class="btn-secondary timeline-more-btn" style="margin-top: 6px; font-size: 0.78rem; padding: 6px 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-weight: 700; cursor: pointer; text-align: center;" onclick="const el = this.previousElementSibling; const isHidden = el.style.display === 'none'; el.style.display = isHidden ? 'flex' : 'none'; this.textContent = isHidden ? '🔼 ${hiddenItems.length}개 문제 접기' : '➕ 외 ${hiddenItems.length}개 문제 더보기';">
+          ➕ 외 ${hiddenItems.length}개 문제 더보기
+        </button>
+      `;
+    }
+    itemsHTML += `</div>`;
+
+    card.innerHTML = headHTML + itemsHTML;
+    frag.appendChild(card);
   });
 
   streakGrid.replaceChildren(frag);
-  setStreakSummary(days, summaryData || data, prevData);
-  updateTodayLatestProblem(summaryData || streakLatestCurrent || data);
 }
 
 async function fetchStreakData(days) {
-  const url = `/api/streak?viewMode=${viewMode}&viewUsername=${encodeURIComponent(viewUsername)}&username=${encodeURIComponent(viewUsername)}&days=${days}`;
+  const cfg = window.APP_CONFIG || (typeof CFG_MAIN !== "undefined" ? CFG_MAIN : (window.CFG_MAIN || {}));
+  const user = (typeof viewUsername !== "undefined" && viewUsername) ? viewUsername : "";
+  let targetUser = (user || cfg.userUuid || cfg.viewUsername || "").trim();
+  if (!targetUser) {
+    return [];
+  }
+  const url = `/api/streak?viewMode=${viewMode}&viewUsername=${encodeURIComponent(targetUser)}&username=${encodeURIComponent(targetUser)}&days=${days}`;
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) {
     const txt = await res.text();

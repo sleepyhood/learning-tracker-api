@@ -1,47 +1,38 @@
-<section class="streak-section">
-  <div class="streak-header">
+<section class="streak-section" style="border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(0,0,0,0.04); padding: 20px; margin-bottom: var(--space-4); background: #ffffff;">
+  <div class="streak-header" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; margin-bottom: 14px;">
     <div class="streak-head-left">
-      <div class="streak-title">최근 학습 스트릭</div>
-      <div class="streak-summary-row">
-        <span id="streak-summary" class="streak-summary">일별 제출 수 기준</span>
-        <span id="streak-compare" class="streak-compare neutral">비교 준비 중</span>
+      <div class="streak-title" style="font-weight: 800; font-size: 1.05rem; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+        <span>🗓️ 수업일 기반 학습 타임라인</span>
+      </div>
+      <div class="streak-summary-row" style="margin-top: 4px; font-size: 0.78rem; color: #64748b;">
+        <span id="streak-summary" class="streak-summary">최근 수업일 제출 현황</span>
+        <span id="streak-compare" class="streak-compare neutral" style="margin-left: 8px;">비교 준비 중</span>
       </div>
     </div>
 
-    <div class="streak-controls">
+    <div class="streak-controls" style="display: flex; gap: 6px; align-items: center;">
+      <div class="timeline-filter-chips" style="display: flex; gap: 4px; margin-right: 10px; border-right: 1px solid #e2e8f0; padding-right: 10px;">
+        <button id="tl-filter-all" type="button" class="btn-quiet active" style="padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; background: #6c5ce7; color: white; border: none; cursor: pointer;" onclick="setTimelineFilterMode('all')">⏱️ 시간순</button>
+        <button id="tl-filter-wrong" type="button" class="btn-quiet" style="padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; background: #ffffff; color: #dc2626; border: 1px solid #fecaca; cursor: pointer;" onclick="setTimelineFilterMode('wrong')">🔴 오답만</button>
+      </div>
       <button
         id="streak-active-only-toggle"
         type="button"
         class="btn-secondary streak-filter-toggle"
         aria-pressed="false"
+        style="display: none;"
       >
         활동일만
       </button>
-      <button class="streak-btn btn-quiet" data-days="7">7일</button>
-      <button class="streak-btn btn-quiet" data-days="30">30일</button>
-      <button class="streak-btn btn-quiet" data-days="90">90일</button>
+      <button class="streak-btn btn-quiet" data-days="7" style="padding: 4px 10px; border-radius: 6px; font-size: 0.78rem;">7일</button>
+      <button class="streak-btn btn-quiet" data-days="30" style="padding: 4px 10px; border-radius: 6px; font-size: 0.78rem;">30일</button>
+      <button class="streak-btn btn-quiet" data-days="90" style="padding: 4px 10px; border-radius: 6px; font-size: 0.78rem;">90일</button>
     </div>
   </div>
 
   <div class="streak-container">
-    <div id="streak-grid" class="streak-grid">
-      {% for day in streak_data %}
-      <div
-        class="streak-cell{% if day.weekday in ['토', '일'] %} weekend{% endif %}"
-        data-count="{{ day.count }}"
-        {% if day.details %}
-        data-details="{{ day.details | tojson | forceescape }}"
-        {% endif %}
-      >
-        <div class="date-info">
-          <div class="date-full">{{ day.date.replace('-', '/') if day.date else '-' }} ({{ day.weekday }})</div>
-        </div>
-        <div class="count-wrap">
-          <span class="count">{{ day.count }}</span>
-          <span class="count-label">제출</span>
-        </div>
-      </div>
-      {% endfor %}
+    <div id="streak-grid" class="timeline-grid" style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="text-align: center; color: #94a3b8; padding: 30px; font-size: 0.88rem;">⏳ 최근 학습 타임라인을 불러오는 중...</div>
     </div>
   </div>
 </section>

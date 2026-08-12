@@ -706,7 +706,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const RECENT_KEY = "learning_tracker_recent_usernames";
   const MAX_SUGGESTIONS = 8;
   const MAX_RECENT = 5;
-  let usernameList = [];
+  let studentList = [];
   let filteredSuggestions = [];
   let activeIndex = -1;
   let debounceTimer = null;
@@ -746,15 +746,24 @@ document.addEventListener("DOMContentLoaded", () => {
     filteredSuggestions = items;
     activeIndex = -1;
 
-    items.forEach((name, index) => {
+    items.forEach((item, index) => {
       const li = document.createElement("li");
-      li.textContent = name;
+      const displayText =
+        typeof item === "string"
+          ? item
+          : item.name && item.display_id && item.name !== item.display_id
+          ? `${item.name} (${item.display_id})`
+          : item.display_id || item.name;
+      const searchValue =
+        typeof item === "string" ? item : item.display_id || item.name;
+
+      li.textContent = displayText;
       li.dataset.index = String(index);
       li.addEventListener("mousedown", (e) => {
         e.preventDefault();
-        searchInput.value = name;
+        searchInput.value = searchValue;
         searchClearBtn?.classList.toggle("hidden", !searchInput.value.trim());
-        pushRecentSearch(name);
+        pushRecentSearch(searchValue);
         closeAutocomplete();
         searchForm.requestSubmit();
       });
@@ -772,23 +781,36 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const query = raw.toLowerCase();
-    const matches = usernameList
-      .filter((name) => name.toLowerCase().includes(query))
+    const matches = studentList
+      .filter((st) => {
+        if (typeof st === "string") return st.toLowerCase().includes(query);
+        const nameMatch = (st.name || "").toLowerCase().includes(query);
+        const displayMatch = (st.display_id || "").toLowerCase().includes(query);
+        return nameMatch || displayMatch;
+      })
       .slice(0, MAX_SUGGESTIONS);
+
     renderAutocomplete(matches);
   };
 
-  fetch("/proxy/user_rank")
-    .then((res) => {
-      if (!res.ok) return null;
-      return res.json().catch(() => null);
-    })
+  fetch("/api/students/search_suggestions")
+    .then((res) => (res.ok ? res.json() : null))
     .then((data) => {
-      if (!data) return;
-      usernameList = Array.isArray(data.usernames) ? data.usernames : [];
-      updateSuggestions();
+      if (data && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+        studentList = data.suggestions;
+        updateSuggestions();
+      } else {
+        return fetch("/proxy/user_rank")
+          .then((res) => (res.ok ? res.json() : null))
+          .then((rankData) => {
+            if (rankData && Array.isArray(rankData.usernames)) {
+              studentList = rankData.usernames;
+              updateSuggestions();
+            }
+          });
+      }
     })
-    .catch((err) => console.error("Error fetching user_rank:", err));
+    .catch((err) => console.error("Error fetching search suggestions:", err));
 
   searchInput.addEventListener("input", () => {
     if (debounceTimer) clearTimeout(debounceTimer);
@@ -811,8 +833,10 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const selected = filteredSuggestions[activeIndex];
       if (selected) {
-        searchInput.value = selected;
-        pushRecentSearch(selected);
+        const searchValue =
+          typeof selected === "string" ? selected : selected.display_id || selected.name;
+        searchInput.value = searchValue;
+        pushRecentSearch(searchValue);
         closeAutocomplete();
         searchForm.requestSubmit();
       }

@@ -1125,5 +1125,12 @@ def api_workspace_save_homework_log():
     if not user_uuid:
         return jsonify({"ok": False, "error": "Target user_uuid or display_id is required"}), 400
 
-    append_homework_log(user_uuid, {"problems": problems, "title": payload.get("title", "")})
+    log_payload = {
+        "problems": problems,
+        "title": payload.get("title", ""),
+        "comment": payload.get("comment", ""),
+        "message": payload.get("message", ""),
+        "mode": payload.get("mode", "homework" if len(problems) > 0 else "comment")
+    }
+    append_homework_log(user_uuid, log_payload)
     return jsonify({"ok": True})

@@ -344,10 +344,14 @@
             </label>
           </div>
           
-          <div class="feedback-checkbox-row" style="margin-top: 6px;">
-            <label class="feedback-checkbox">
+          <div class="feedback-checkbox-row" style="margin-top: 6px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <label class="feedback-checkbox" title="알림장 상단에 인사말 포함">
               <input type="checkbox" id="modalIncludeGreeting" checked />
               인사말 포함
+            </label>
+            <label class="feedback-checkbox" id="wrapperShowSolveAccount" title="학생의 로그인 계정 ID 포함">
+              <input type="checkbox" id="modalShowSolveAccount" checked />
+              🔑 풀이계정 명시
             </label>
             <label class="feedback-checkbox" id="wrapperShowHomeworkList">
               <input type="checkbox" id="modalShowHomeworkList" checked />
@@ -539,8 +543,27 @@
     });
   });
 
-  document.querySelectorAll('input[name="modalNoticeMode"], #modalIncludeGreeting, #modalShowHomeworkList, #modalShowReviewList').forEach((el) => {
+  function loadFeedbackOptionPreferences() {
+    const savedGreeting = localStorage.getItem("feedback_opt_greeting");
+    if (savedGreeting !== null) {
+      const el = document.getElementById("modalIncludeGreeting");
+      if (el) el.checked = (savedGreeting === "true");
+    }
+    const savedAccount = localStorage.getItem("feedback_opt_solve_account");
+    if (savedAccount !== null) {
+      const el = document.getElementById("modalShowSolveAccount");
+      if (el) el.checked = (savedAccount === "true");
+    }
+  }
+
+  document.querySelectorAll('input[name="modalNoticeMode"], #modalIncludeGreeting, #modalShowSolveAccount, #modalShowHomeworkList, #modalShowReviewList').forEach((el) => {
     el.addEventListener("change", () => {
+      if (el.id === "modalIncludeGreeting") {
+        localStorage.setItem("feedback_opt_greeting", el.checked);
+      }
+      if (el.id === "modalShowSolveAccount") {
+        localStorage.setItem("feedback_opt_solve_account", el.checked);
+      }
       updateLiveKakaoPreview();
     });
   });
@@ -578,10 +601,26 @@
   }
 
   async function openFeedbackModal(name, studentId, userUuid) {
+    loadFeedbackOptionPreferences();
     const basket = getActiveBasketProblems();
+    
+    let cleanName = name || studentId || "";
+    let cleanId = studentId || name || "";
+    const appUsername = (window.APP_CONFIG && (window.APP_CONFIG.viewUsername || window.APP_CONFIG.userUsername)) || "";
+    const profileNameEl = document.querySelector(".profile-name");
+    const profileName = profileNameEl ? profileNameEl.textContent.trim() : "";
+    const resolvedName = appUsername || profileName || "";
+
+    if (cleanName.match(/[0-9a-f]{8}-[0-9a-f]{4}/i) || cleanName === "수강생" || !cleanName) {
+      cleanName = resolvedName || "수강생";
+    }
+    if (cleanId.match(/[0-9a-f]{8}-[0-9a-f]{4}/i) || cleanId === "수강생" || !cleanId) {
+      cleanId = resolvedName || cleanName;
+    }
+
     feedbackModalState = {
-      name: name || studentId,
-      studentId: studentId || name,
+      name: cleanName,
+      studentId: cleanId,
       userUuid: userUuid || studentId,
       solvedTitles: [],
       wrongTitles: [],
@@ -828,6 +867,7 @@
     const { name, studentId, basketProblems, solvedTitles, todayProblems } = feedbackModalState;
     const basket = basketProblems && basketProblems.length > 0 ? basketProblems : getActiveBasketProblems();
     const includeGreeting = document.getElementById("modalIncludeGreeting")?.checked;
+    const includeSolveAccount = document.getElementById("modalShowSolveAccount")?.checked;
     
     const selectedMode = document.querySelector('input[name="modalNoticeMode"]:checked')?.value || "homework";
     const showHomeworkList = document.getElementById("modalShowHomeworkList")?.checked;
@@ -845,6 +885,11 @@
 
     if (includeGreeting) {
       text += "안녕하세요 두잉창의코딩학원입니다. 😊\n";
+    }
+
+    if (includeSolveAccount && studentId) {
+      const displayAcc = (name && name !== studentId) ? `${name} (${studentId})` : studentId;
+      text += `🔑 로그인 계정: ${displayAcc}\n`;
     }
 
     if (selectedMode === "homework" && basket.length > 0) {
@@ -999,7 +1044,8 @@
         problems: basket,
         message: finalMsg,
         comment: comment,
-        title: basket.length > 0 ? `${name} 학생 숙제 및 피드백 (${basket.length}개)` : `${name} 학생 수업 피드백`
+        mode: selectedMode,
+        title: selectedMode === "homework" && basket.length > 0 ? `${name} 학생 숙제 및 피드백 (${basket.length}개)` : (selectedMode === "review" ? `${name} 학생 수업 복습 안내` : `${name} 학생 수업 피드백`)
       };
 
       const res = await fetch(`/api/workspace/save_homework_log`, {

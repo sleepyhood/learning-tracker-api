@@ -220,18 +220,24 @@ def append_homework_log(user_uuid: str, payload: dict) -> dict:
         if isinstance(ent, dict):
             legacy_code = ent.get("legacy_code") or ent.get("code") or ent.get("pid") or ""
             title = ent.get("title") or ent.get("title_at_issue") or ""
+            server_id = ent.get("server_problem_id") or legacy_to_server.get(legacy_code) or None
         else:
             legacy_code = str(ent)
             title = ""
-        log["problems"].append(
-            {
-                "legacy_code": legacy_code,
-                "server_problem_id": legacy_to_server.get(legacy_code),
-                "title": title,
-            }
-        )
+            server_id = legacy_to_server.get(legacy_code) or None
 
-    log.setdefault("ts", datetime.now(tz=KST).isoformat())
+        prob_entry = {
+            "legacy_code": legacy_code,
+            "title": title,
+        }
+        # server_problem_id는 실제 값이 있을 때만 저장 (None 제거)
+        if server_id:
+            prob_entry["server_problem_id"] = server_id
+        log["problems"].append(prob_entry)
+
+    now_iso = datetime.now(tz=KST).isoformat()
+    log.setdefault("ts", now_iso)
+    log.setdefault("created_at", now_iso)  # homework_logs 정렬 기준으로 활용
     doc.setdefault("homework_logs", []).append(log)
 
     path = save_doc_by_any(user_uuid, doc)
