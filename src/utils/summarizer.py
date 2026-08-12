@@ -345,20 +345,51 @@ def summarize_drilldown_progress(problem_file, solve_file, legacy_map_file=None)
     legacy_map = _load_json(legacy_map_file) if legacy_map_file else {}
 
     solves_by_sid = {}
+    solves_by_norm = {}
+    solves_by_title = {}
+
     if isinstance(user_solves_raw, dict):
-        for record_key, rec in user_solves_raw.items():
+        solves_dict = user_solves_raw.get("oi_problems") if ("oi_problems" in user_solves_raw and isinstance(user_solves_raw.get("oi_problems"), dict)) else user_solves_raw
+        for record_key, rec in solves_dict.items():
             if not isinstance(rec, dict):
                 continue
             st = rec.get("status")
             sid = str(record_key).strip()
             if sid:
                 solves_by_sid[sid] = st
+                norm = _normalize_code(sid)
+                if norm:
+                    solves_by_norm[norm] = st
             _id = str(rec.get("_id", "")).strip()
             if _id:
                 solves_by_sid[_id] = st
+                norm = _normalize_code(_id)
+                if norm:
+                    solves_by_norm[norm] = st
             legacy_code = str(rec.get("legacy_code", "")).strip()
             if legacy_code:
                 solves_by_sid[legacy_code] = st
+                norm = _normalize_code(legacy_code)
+                if norm:
+                    solves_by_norm[norm] = st
+            title = str(rec.get("title") or rec.get("problem_title") or "").strip()
+            if title:
+                solves_by_title[title] = st
+
+    def resolve_status(legacy_pid: str, p_title: str = ""):
+        sid = _legacy_to_server_id(legacy_pid, legacy_map)
+        st = solves_by_sid.get(sid)
+        if st is not None:
+            return st
+        st = solves_by_sid.get(legacy_pid)
+        if st is not None:
+            return st
+        norm = _normalize_code(legacy_pid)
+        if norm and norm in solves_by_norm:
+            return solves_by_norm[norm]
+        if p_title and p_title in solves_by_title:
+            return solves_by_title[p_title]
+        return None
 
     result = []
     groups_dict = v2_data.get("groups", {})
@@ -379,10 +410,7 @@ def summarize_drilldown_progress(problem_file, solve_file, legacy_map_file=None)
             for legacy_pid in prob_ids:
                 p_item = problems_dict.get(legacy_pid, {})
                 p_title = p_item.get("title", legacy_pid)
-                sid = _legacy_to_server_id(legacy_pid, legacy_map)
-                status = solves_by_sid.get(sid)
-                if status is None:
-                    status = solves_by_sid.get(legacy_pid)
+                status = resolve_status(legacy_pid, p_title)
 
                 if status == 0:
                     g_solved += 1
