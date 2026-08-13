@@ -1,6 +1,68 @@
-# .gitignore에 추가
+# ==========================================
+# 1. Python & Byte-compiled / Cache files
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# ==========================================
+# 2. Sensitive & Environment Variables
+# ==========================================
 .env
-cookies.json
-students_data/
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ==========================================
+# 3. User & Runtime Data / Cookies / DB
+# ==========================================
+# 사용자 개인 정보 및 세션 쿠키
 users_data/
+src/users_data/
+students_data/
+src/students_data/
+cookies/
+src/cookies/
+src/active_user.json
+
+# 데이터베이스 파일
+*.db
+*.db-shm
+*.db-wal
+sqlite3/
+
+# 백업 폴더 및 임시 추출 데이터
+backup/
 problems_data/
+src/problems_data/
+
+# ==========================================
+# 4. IDE & Editor Files
+# ==========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ==========================================
+# 5. Miscellaneous / Temporary Files
+# ==========================================
+*.log
+*.zip
+*.tar.gz
+*.png
+*.jpg
+*.jpeg
+*.txt
+!requirements.txt
+!requirements.lock.txt
+!npm-deps.txt
+!README.md
