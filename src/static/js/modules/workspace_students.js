@@ -228,10 +228,15 @@
             this.selectedStudentId = studentKey;
             this.renderStudents();
 
+            if (window.WorkspaceCatalog && typeof window.WorkspaceCatalog.loadRecommendations === "function") {
+                window.WorkspaceCatalog.loadRecommendations(studentKey);
+            }
+
             if (typeof window.onStudentSelected === "function") {
                 window.onStudentSelected(studentKey);
             }
         }
     };
 })(window);
+
 

@@ -1,0 +1,23 @@
+{
+  "user_uuid": "390c5db4-0160-439a-aa97-d26a8592af02",
+  "homework_logs": [],
+  "profile": {
+    "student_id": "로블록스유튜버박성빈구독자백만도전",
+    "name": "로블록스유튜버박성빈구독자백만도전",
+    "class_id": null,
+    "last_login": "2025-07-18T10:15:48.779511Z"
+  },
+  "oi_problems": {
+    "751": {
+      "_id": "P601v5303",
+      "score": 30,
+      "status": 8
+    },
+    "1314": {
+      "_id": "P701v5903",
+      "score": 100,
+      "status": 0
+    }
+  },
+  "updated_at": "2026-08-06T14:53:50.331474+09:00"
+}

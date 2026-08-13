@@ -1,0 +1,48 @@
+/* ==========================================================
+   quick_basket.css
+   대시보드 하단 퀵 숙제 장바구니 Drawer 컴포넌트 스타일시트
+   ========================================================== */
+
+#quick-homework-basket {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+#quick-homework-basket .basket-header {
+  padding: 10px 14px;
+  background: #1e293b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+#quick-homework-basket .basket-body {
+  padding: 10px 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #f8fafc;
+}
+
+#quick-homework-basket .basket-footer {
+  padding: 10px 12px;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

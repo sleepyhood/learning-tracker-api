@@ -1,0 +1,297 @@
+{
+  "slots": [
+    {
+      "id": "9dc9a999-40c1-420b-95af-0e8664e595cb",
+      "weekday": 5,
+      "label": "C언어",
+      "order": 0,
+      "students": [
+        "2f47956a-3deb-4e28-bddc-1abb49dfd9d3",
+        "decdb0ae-7617-4527-b9f3-6bcf30a8aeef",
+        "b93ab96d-0fea-4950-a56b-8bf8af9b6738",
+        "a2f7d8b8-9efa-4bd6-bd9a-46057a86d53e",
+        "f478ee25-e92b-4bfc-8c8b-a7828c1326e6",
+        "418f9786-0210-463b-80af-595daf0b1c8d",
+        "487a32c4-4550-47f9-b843-a8174b7eb65f",
+        "9d4c3232-6af8-487b-ba90-6bbfdbb6988c",
+        "334a628c-c56e-4f92-aa73-59854a966a9a",
+        "47a2fb05-b63c-45b0-a059-e9a18e36d5b1",
+        "25a0bb38-0f3a-4b5a-b13a-40b7205993e7",
+        "7a2b39fd-e081-4220-81e4-1a4d9c070021",
+        "6070e521-e181-493c-96c3-c069158d6389",
+        "f4247f3a-8dea-49bd-bb6b-45286a1027e2",
+        "4acd5d46-c8fc-4951-bd7f-af3fee657c71",
+        "31ac2ef3-2a24-4d2c-85dc-757bf9647c92",
+        "33929ea0-2530-4c82-be8b-10321abe0808",
+        "517432f9-4dd9-4221-ad99-9886bcb0ec0d",
+        "d5f282ab-c252-4968-85c3-8416840076ab",
+        "32b1b6c3-b399-4089-bdd3-691d20727afb",
+        "30b6be2b-236f-4137-8f1d-84d0265c71ac",
+        "5819d984-621b-43e5-aea0-6e9080f23d91",
+        "2f6b0603-0515-4e65-a1a4-442f4cf0108f"
+      ],
+      "student_notes": {
+        "f478ee25-e92b-4bfc-8c8b-a7828c1326e6": "심규민",
+        "2f47956a-3deb-4e28-bddc-1abb49dfd9d3": "이준호",
+        "f4247f3a-8dea-49bd-bb6b-45286a1027e2": "학부모카톡",
+        "517432f9-4dd9-4221-ad99-9886bcb0ec0d": "양현준 부계정",
+        "2f6b0603-0515-4e65-a1a4-442f4cf0108f": "이준호"
+      }
+    },
+    {
+      "id": "d299eded-e4f0-4762-bdbd-74f0ce3f9b04",
+      "weekday": 5,
+      "label": "Python",
+      "order": 0,
+      "students": [
+        "14864f79-806f-432d-902d-acab9359ec8d",
+        "e28d1180-0fa8-45f9-82e1-b594cd10beb0",
+        "46a97893-cc09-4e1b-8c15-31fed50876ae",
+        "32b1b6c3-b399-4089-bdd3-691d20727afb",
+        "eff1ec3a-964b-4457-a586-e320dea90dfd",
+        "b93ab96d-0fea-4950-a56b-8bf8af9b6738",
+        "2a8ff72f-3719-46e8-a068-34932831f028",
+        "ce119cb3-8254-4f68-8673-8ff0cdb81f5f",
+        "c043343b-cae3-444c-8d61-63d6759c79d5",
+        "adcedd6b-fbee-451d-b7ea-54713d97ee4d"
+      ],
+      "student_notes": {
+        "46a97893-cc09-4e1b-8c15-31fed50876ae": "경명초"
+      }
+    },
+    {
+      "id": "caba6ab9-804a-452d-9bcf-cec1dc4e8d45",
+      "weekday": 5,
+      "label": "Java",
+      "order": 0,
+      "students": [
+        "390c5db4-0160-439a-aa97-d26a8592af02"
+      ],
+      "student_notes": {
+        "390c5db4-0160-439a-aa97-d26a8592af02": "유령"
+      }
+    },
+    {
+      "id": "9e11d2c9-f35f-4e79-8bb6-936e63e88000",
+      "weekday": 3,
+      "label": "C언어",
+      "order": 0,
+      "students": [
+        "f2f3fe57-0721-4114-aef7-ec0af32b9aba",
+        "469a5d72-9a39-448f-8ab6-f4aa54bfaefe"
+      ],
+      "student_notes": {}
+    },
+    {
+      "id": "1231136d-e148-479e-8a8d-10911e82e8be",
+      "weekday": 3,
+      "label": "Python",
+      "order": 0,
+      "students": [
+        "46a97893-cc09-4e1b-8c15-31fed50876ae",
+        "13745114-f32c-4609-a946-e8c15dfc8255",
+        "48841b4e-be55-43ce-af41-e0d07b89bd93",
+        "d5aca472-b95f-4462-9dac-934fdd527ac9",
+        "92454fb2-c350-4e69-b017-1f3b795bd8fb",
+        "a0bdd8d0-9c33-4b54-bc09-e44947ac4529"
+      ],
+      "student_notes": {
+        "13745114-f32c-4609-a946-e8c15dfc8255": "전서준"
+      }
+    },
+    {
+      "id": "9d5f250e-fe70-433d-9b4a-814a73195cca",
+      "weekday": 1,
+      "label": "Python",
+      "order": 0,
+      "students": [
+        "19c42601-813f-455d-bb3a-078e4f759820",
+        "48841b4e-be55-43ce-af41-e0d07b89bd93",
+        "13745114-f32c-4609-a946-e8c15dfc8255",
+        "d5aca472-b95f-4462-9dac-934fdd527ac9",
+        "92454fb2-c350-4e69-b017-1f3b795bd8fb"
+      ],
+      "student_notes": {
+        "19c42601-813f-455d-bb3a-078e4f759820": "격주마다 py와 스크래치 진행"
+      }
+    },
+    {
+      "id": "3965f9d5-1bdd-4fb4-aa17-9db759fe9b5a",
+      "weekday": 1,
+      "label": "C언어",
+      "order": 0,
+      "students": [
+        "f2f3fe57-0721-4114-aef7-ec0af32b9aba",
+        "31ae9adb-6939-4849-a63e-3144400189c1",
+        "469a5d72-9a39-448f-8ab6-f4aa54bfaefe"
+      ]
+    },
+    {
+      "id": "54b6a9f1-0412-4e7a-bb8b-fa53586f0f12",
+      "weekday": 1,
+      "label": "Java",
+      "order": 0,
+      "students": [
+        "6973f152-3e1e-4e4a-85ff-7f7e80c60706"
+      ]
+    },
+    {
+      "id": "5ef9c082-fc6f-4857-a01a-317c2214680f",
+      "weekday": 2,
+      "label": "C언어",
+      "order": 0,
+      "students": [
+        "334a628c-c56e-4f92-aa73-59854a966a9a",
+        "614dc750-15d6-4fbe-9ae3-6a2b36c5530d",
+        "5819d984-621b-43e5-aea0-6e9080f23d91"
+      ]
+    },
+    {
+      "id": "899b2a43-ba23-45df-8b0d-3bbbf3d90e81",
+      "weekday": 2,
+      "label": "Python",
+      "order": 0,
+      "students": [
+        "e28d1180-0fa8-45f9-82e1-b594cd10beb0",
+        "5e82df43-98bd-49bd-a2e2-d291afee485c",
+        "8a2e1f4a-f06d-4017-9edb-91400f0f65b1",
+        "1660e358-bcc9-4935-b7d0-d80f9752c76a"
+      ]
+    },
+    {
+      "id": "fe9ef2a0-9baa-4554-a13e-3182220026f2",
+      "weekday": 4,
+      "label": "Python",
+      "order": 0,
+      "students": [
+        "d0b7bbd0-a4f5-4e83-8cc7-31e0e7d7d0c9"
+      ]
+    },
+    {
+      "id": "54d28e46-6bc4-45d0-a64f-24aa4670542c",
+      "weekday": 4,
+      "label": "C언어",
+      "order": 0,
+      "students": [
+        "decdb0ae-7617-4527-b9f3-6bcf30a8aeef",
+        "d50c11ee-c090-4040-b209-fdd53320ee39",
+        "614dc750-15d6-4fbe-9ae3-6a2b36c5530d",
+        "32b1b6c3-b399-4089-bdd3-691d20727afb",
+        "418f9786-0210-463b-80af-595daf0b1c8d"
+      ],
+      "student_notes": {
+        "d50c11ee-c090-4040-b209-fdd53320ee39": "금요일만 숙제냄"
+      }
+    },
+    {
+      "id": "6437872b-4023-45f5-8f53-db68c84582b2",
+      "weekday": 6,
+      "label": "일정불확실",
+      "order": 0,
+      "students": []
+    },
+    {
+      "id": "c748a46a-441c-4f2e-88d7-a39aee5a11fb",
+      "weekday": -1,
+      "label": "임시/변동",
+      "order": 0,
+      "students": []
+    },
+    {
+      "id": "2d7a5af9-f784-4635-adc3-8d13378397f0",
+      "weekday": 4,
+      "label": "Java",
+      "order": 0,
+      "students": [
+        "559d91be-f8a5-49ec-a9a4-6485be15aeb8",
+        "8055115d-bdf9-4e1e-b2cd-b0ac8d1d77c0"
+      ]
+    },
+    {
+      "id": "88297a28-2fbf-4ba2-a72e-76967fabe606",
+      "weekday": 3,
+      "label": "Java",
+      "order": 0,
+      "students": []
+    },
+    {
+      "id": "b1bd2283-73d1-439c-a775-2aea7a669c43",
+      "weekday": 2,
+      "label": "Java",
+      "order": 0,
+      "students": [
+        "0e9311bd-d6eb-4f11-b4a4-0ff0152887ad",
+        "559d91be-f8a5-49ec-a9a4-6485be15aeb8"
+      ],
+      "student_notes": {
+        "0e9311bd-d6eb-4f11-b4a4-0ff0152887ad": "이용건"
+      }
+    },
+    {
+      "id": "9a586bf3-4c2e-4298-8a66-c1f4d4d9f75b",
+      "weekday": 1,
+      "label": "C++",
+      "order": 0,
+      "students": [
+        "5fc9eb29-9ff6-45c9-9cba-976dd57d30eb",
+        "05dc1b5e-5a3b-4610-accf-58969bd420dd",
+        "4d00bd57-cb25-4716-a11f-70fe63e32580"
+      ]
+    },
+    {
+      "id": "b713e14a-9f4d-4798-a02d-c8c98111d957",
+      "weekday": 2,
+      "label": "C++",
+      "order": 0,
+      "students": [
+        "5fc9eb29-9ff6-45c9-9cba-976dd57d30eb"
+      ]
+    },
+    {
+      "id": "0c34c7bb-d4c4-4065-9340-64809d330525",
+      "weekday": 3,
+      "label": "C++",
+      "order": 0,
+      "students": [
+        "05dc1b5e-5a3b-4610-accf-58969bd420dd"
+      ]
+    },
+    {
+      "id": "9c053e3a-4e5a-4f18-ba6c-2f6f05d6ee28",
+      "weekday": 5,
+      "label": "C++",
+      "order": 0,
+      "students": [
+        "5fc9eb29-9ff6-45c9-9cba-976dd57d30eb",
+        "07dab7d6-1332-410c-b6fb-4d6fc48be8e8"
+      ]
+    },
+    {
+      "id": "ac536089-3978-4b98-a362-ceb1ecffb562",
+      "weekday": 5,
+      "label": "기타",
+      "order": 0,
+      "students": [
+        "01dd0bf5-0193-47c3-8657-2067bbda9928",
+        "c974c287-4481-4ca3-bcfd-16c5c9ca4faa",
+        "6a8d2fd9-0ccf-419f-9043-3555b157af78"
+      ]
+    },
+    {
+      "id": "aa5a030b-cbb0-4a13-9c8b-9edd1c913c25",
+      "weekday": 1,
+      "label": "기타",
+      "order": 0,
+      "students": []
+    },
+    {
+      "id": "ad4abd38-634a-4429-81d6-c052f548a899",
+      "weekday": 3,
+      "label": "블록",
+      "order": 0,
+      "students": [
+        "2fad3d6f-0c33-430e-91d8-e6537ab3ec83"
+      ]
+    }
+  ]
+}

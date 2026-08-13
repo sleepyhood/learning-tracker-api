@@ -488,23 +488,21 @@ function buildKakaoMessage(comment) {
     const groupsMap = new Map();
     basket.forEach((prob) => {
       let chapterCode = prob.chapter_code || prob.chapter_id || prob.curriculum || "";
-      let subTitle = prob.group_title || prob.sub || prob.chapter_title || "";
-      if (!subTitle) {
-        const match = (prob.title || prob.legacy_code || "").match(/\[(.*?)\]/);
-        if (match && match[1]) subTitle = match[1];
-      }
-      if (!subTitle) subTitle = "코딩 실습 및 숙제";
+      let subTitle = prob.group_title || prob.sub || prob.chapter_title || "코딩 실습 및 숙제";
       const groupKey = `${chapterCode || "nocode"}:::${subTitle}`;
       if (!groupsMap.has(groupKey)) groupsMap.set(groupKey, { chapterCode, subTitle, problems: [] });
       groupsMap.get(groupKey).problems.push(prob);
     });
+
+    const formatDoingcodingTag = (str) => String(str || "").trim().replace(/^([A-Za-z]*Lv\d+)\.\s*/i, "$1 ").trim();
 
     const domain = "http://edu.doingcoding.com";
     const groupEntries = Array.from(groupsMap.values());
     groupEntries.forEach((grp, idx) => {
       text += `📘 ${grp.subTitle}\n`;
       if (grp.chapterCode) {
-        text += `🔗 ${domain}/${grp.chapterCode}?tag=${encodeURIComponent(grp.subTitle)}\n`;
+        const cleanTag = formatDoingcodingTag(grp.subTitle);
+        text += `🔗 ${domain}/${grp.chapterCode}?tag=${encodeURIComponent(cleanTag)}\n`;
       } else if (grp.problems && grp.problems.length === 1 && (grp.problems[0].url || grp.problems[0].pid || grp.problems[0].legacy_code)) {
         const pUrl = grp.problems[0].url || `${domain}/problem/${grp.problems[0].pid || grp.problems[0].legacy_code}`;
         text += `🔗 ${pUrl}\n`;
@@ -534,10 +532,8 @@ function buildKakaoMessage(comment) {
       const problemItems = (todayProblems && todayProblems.length > 0) ? todayProblems : (solvedTitles || []).map(t => ({ title: t }));
       problemItems.forEach((prob) => {
         let chapterCode = (typeof prob === "object" && (prob.chapter_code || prob.chapter_id || prob.curriculum)) || "";
-        let subTitle = (typeof prob === "object" && (prob.group_title || prob.sub || prob.chapter_title)) || "";
+        let subTitle = (typeof prob === "object" && (prob.group_title || prob.sub || prob.chapter_title)) || "기타 실습 문제";
         const probTitle = typeof prob === "object" ? (prob.title || prob.legacy_code || "") : String(prob || "");
-        if (!subTitle && probTitle) { const match = probTitle.match(/\[(.*?)\]/); if (match && match[1]) subTitle = match[1]; }
-        if (!subTitle) subTitle = "기타 실습 문제";
         const groupKey = `${chapterCode || "nocode"}:::${subTitle}`;
         if (!groupsMap.has(groupKey)) groupsMap.set(groupKey, { chapterCode, subTitle, problems: [] });
         groupsMap.get(groupKey).problems.push(probTitle);

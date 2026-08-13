@@ -101,7 +101,14 @@
   window.addProblemToBasket = function(probObj) {
     if (!probObj || (!probObj.pid && !probObj.legacy_code)) return;
     const pid = probObj.pid || probObj.legacy_code;
-    if (!basketItems.some((item) => (item.pid || item.legacy_code) === pid)) {
+    const existing = basketItems.find((item) => (item.pid || item.legacy_code) === pid);
+    if (existing) {
+      if (probObj.group_title && !existing.group_title) existing.group_title = probObj.group_title;
+      if (probObj.chapter_code && !existing.chapter_code) {
+        existing.chapter_code = probObj.chapter_code;
+        existing.chapter_id = probObj.chapter_code;
+      }
+    } else {
       basketItems.push({
         pid,
         legacy_code: probObj.legacy_code || pid,

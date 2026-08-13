@@ -226,13 +226,17 @@
           🔍 JSON: {"pid": "${p.pid}", "status": "${p.status}", "raw_status": ${p.raw_status !== undefined && p.raw_status !== null ? p.raw_status : "null"}} ${isUnmapped ? "⚠️ (미매핑 감지)" : ""}
         </div>`;
 
+      const escAttr = (str) => String(str || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#039;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const currentGroupTitle = (selectedGroup && selectedGroup.title) || (p && p.group_title) || "";
+      const currentChapterCode = (selectedGroup && (selectedGroup.chapter_code || selectedGroup.chapter_id)) || (p && (p.chapter_code || p.chapter_id)) || (selectedChapter && (selectedChapter.chapter_code || selectedChapter.chapter_id)) || "";
+
       const borderColor = p.status === "solved" ? "#22c55e" : p.status === "wrong" ? "#ef4444" : p.status === "partial" ? "#f59e0b" : "#cbd5e1";
       return `
         <div class="prob-row-item ${isChecked ? "checked-item" : ""}" style="border-left: 3px solid ${borderColor}; flex-wrap: wrap;">
           <div style="display: flex; flex-direction: column; flex: 1; overflow: hidden; pointer-events: none;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" class="prob-homework-checkbox" data-pid="${p.pid}" data-title="${p.title}" data-url="${p.url}" ${isChecked ? "checked" : ""} style="cursor: pointer; width: 16px; height: 16px; flex-shrink: 0; pointer-events: auto;" />
-              <span style="font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.83rem;" title="${p.title}">${p.title}</span>
+              <input type="checkbox" class="prob-homework-checkbox" data-pid="${p.pid}" data-title="${escAttr(p.title)}" data-url="${escAttr(p.url)}" data-group-title="${escAttr(currentGroupTitle)}" data-chapter-code="${escAttr(currentChapterCode)}" ${isChecked ? "checked" : ""} style="cursor: pointer; width: 16px; height: 16px; flex-shrink: 0; pointer-events: auto;" />
+              <span style="font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.83rem;" title="${escAttr(p.title)}">${p.title}</span>
             </div>
             ${jsonTagHtml}
           </div>
@@ -256,8 +260,8 @@
     const pid = cb.dataset.pid;
     const title = cb.dataset.title;
     const url = cb.dataset.url;
-    const chapter_code = (selectedGroup && (selectedGroup.chapter_code || selectedGroup.chapter_id)) || (selectedChapter && (selectedChapter.chapter_code || selectedChapter.chapter_id)) || "";
-    const group_title  = (selectedGroup && selectedGroup.title) || (selectedChapter && selectedChapter.title) || "";
+    const chapter_code = cb.dataset.chapterCode || (selectedGroup && (selectedGroup.chapter_code || selectedGroup.chapter_id)) || (selectedChapter && (selectedChapter.chapter_code || selectedChapter.chapter_id)) || "";
+    const group_title  = cb.dataset.groupTitle || (selectedGroup && selectedGroup.title) || (selectedChapter && selectedChapter.title) || "";
     if (isChecked) {
       if (window.addProblemToBasket) window.addProblemToBasket({ pid, legacy_code: pid, title, url, chapter_code, group_title });
     } else {

@@ -347,6 +347,97 @@
                     showToast("문제 검색에 실패했습니다.", true);
                 }
             }
+        },
+
+        loadRecommendations: async function(userUuid) {
+            if (!userUuid) {
+                this.clearRecommendationBanner();
+                return;
+            }
+            try {
+                const res = await fetch(`/api/students/${encodeURIComponent(userUuid)}/recommendations`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.ok) {
+                    this.renderRecommendationBanner(data);
+                }
+            } catch (e) {
+                console.error("Failed to load recommendations", e);
+            }
+        },
+
+        clearRecommendationBanner: function() {
+            const el = document.getElementById("recommendation-banner-container");
+            if (el) el.remove();
+        },
+
+        renderRecommendationBanner: function(data) {
+            const container = document.getElementById("problem-list-container");
+            if (!container) return;
+
+            let banner = document.getElementById("recommendation-banner-container");
+            if (!banner) {
+                banner = document.createElement("div");
+                banner.id = "recommendation-banner-container";
+                container.parentNode.insertBefore(banner, container);
+            }
+
+            const recs = data.recommendations || [];
+            const weakGroups = data.weak_groups || [];
+
+            if (recs.length === 0 && weakGroups.length === 0) {
+                banner.innerHTML = "";
+                return;
+            }
+
+            let weakTagsHTML = weakGroups.map(wg => {
+                const color = wg.status === "DANGER" ? "#ff4d4f" : (wg.status === "WARNING" ? "#faad14" : "#52c41a");
+                const icon = wg.status === "DANGER" ? "🔴" : (wg.status === "WARNING" ? "🟡" : "🟢");
+                return `<span style="display:inline-block; background:white; border:1px solid ${color}; color:${color}; font-size:0.72rem; padding:1px 6px; border-radius:10px; margin-right:4px; font-weight:600;">${icon} ${wg.group_title}</span>`;
+            }).join("");
+
+            let recItemsHTML = recs.map(r => {
+                const safeR = JSON.stringify({
+                    legacy_code: r.legacy_code,
+                    server_problem_id: r.server_problem_id,
+                    title: r.title,
+                }).replace(/"/g, "&quot;");
+
+                return `
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:white; padding:6px 10px; border-radius:6px; margin-top:6px; border:1px solid #e6f7ff;">
+                        <div style="flex:1; min-width:0; margin-right:8px;">
+                            <span style="font-weight:bold; font-size:0.8rem; color:#1890ff; margin-right:4px;">[${r.legacy_code || '추천'}]</span>
+                            <span style="font-size:0.8rem; color:#262626;">${r.title}</span>
+                            <span style="font-size:0.7rem; color:#8c8c8c; margin-left:6px;">(${r.reason})</span>
+                        </div>
+                        <button class="btn-small btn-primary" style="padding:2px 8px; font-size:0.75rem; border-radius:4px;" onclick="event.stopPropagation(); if(typeof window.addToBasket==='function') window.addToBasket(${safeR});">+ 담기</button>
+                    </div>
+                `;
+            }).join("");
+
+            const safeAllRecs = JSON.stringify(recs.map(r => ({
+                legacy_code: r.legacy_code,
+                server_problem_id: r.server_problem_id,
+                title: r.title
+            }))).replace(/"/g, "&quot;");
+
+            banner.innerHTML = `
+                <div style="background:#f0f5ff; border:1px solid #adc6ff; border-radius:8px; padding:10px 12px; margin-bottom:12px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                        <div style="font-weight:bold; font-size:0.85rem; color:#1d39c4; display:flex; align-items:center; gap:6px;">
+                            <span>💡 AI 맞춤 추천 문제</span>
+                            <div>${weakTagsHTML}</div>
+                        </div>
+                        ${recs.length > 0 ? `
+                            <button class="btn-small" style="background:#2f54eb; color:white; border:none; padding:3px 10px; font-size:0.75rem; border-radius:4px; font-weight:600; cursor:pointer;" onclick="event.stopPropagation(); if(typeof window.addToBasket==='function'){ JSON.parse('${safeAllRecs}').forEach(p => window.addToBasket(p)); }">
+                                + 추천 ${recs.length}문항 한 번에 담기
+                            </button>
+                        ` : ''}
+                    </div>
+                    <div>${recItemsHTML}</div>
+                </div>
+            `;
         }
     };
 })(window);
+

@@ -43,3 +43,6 @@ CORS_ALLOWED_ORIGINS = [
 
 if not BASE_URL:
     raise RuntimeError("환경 변수 API_BASE_URL이 설정되지 않았습니다.")
+
+DATABASE_URL = os.environ.get("DATABASE_URL")  # None이면 SQLite 기본값 사용
+USE_RDB_STORE = os.environ.get("USE_RDB_STORE", "true").strip().lower() in ("1", "true", "yes", "on")

@@ -13,14 +13,20 @@
   const userUuid = CFG.userUuid || CFG.viewUsername || "";
   if (!userUuid) return;
 
+  // Non-blocking background refresh trigger (Phase 5-2)
   try {
     const ttlMs = 60_000;
-    const first = await fetch(`/api/students/${userUuid}/homework_status`).then((r) => r.json());
-    const updatedAt = first.updated_at ? Date.parse(first.updated_at) : 0;
-    if (!updatedAt || Date.now() - updatedAt > ttlMs) {
-      await fetch(`/api/students/${userUuid}/refresh`, { method: "POST" });
-    }
+    fetch(`/api/students/${userUuid}/homework_status`)
+      .then((r) => r.json())
+      .then((first) => {
+        const updatedAt = first.updated_at ? Date.parse(first.updated_at) : 0;
+        if (!updatedAt || Date.now() - updatedAt > ttlMs) {
+          fetch(`/api/students/${userUuid}/refresh`, { method: "POST" }).catch(() => {});
+        }
+      })
+      .catch(() => {});
   } catch (e) {}
+
 
   const data = await fetch(`/api/students/${userUuid}/homework_latest`)
     .then((r) => r.json())
@@ -81,13 +87,7 @@
 
   const getProblemChapterInfo = (p) => {
     let chapterCode = p.chapter_code || p.chapter_id || p.curriculum || "";
-    let subTitle = p.group_title || p.chapter_title || p.group_name || p.chapter_name || p.sub || "";
-    const titleStr = p.title || p.title_at_issue || p.legacy_code || "";
-    if (!subTitle && titleStr) {
-      const match = titleStr.match(/\[(.*?)\]/);
-      if (match && match[1]) subTitle = match[1].trim();
-    }
-    if (!subTitle) subTitle = "주요 학습 단원";
+    let subTitle = p.group_title || p.chapter_title || p.group_name || p.chapter_name || p.sub || "주요 학습 단원";
     return { chapterCode, subTitle };
   };
 
@@ -121,6 +121,8 @@
       </li>`;
   };
 
+  const formatDoingcodingTag = (str) => String(str || "").trim().replace(/^([A-Za-z]*Lv\d+)\.\s*/i, "$1 ").trim();
+
   const domain = "http://edu.doingcoding.com";
   const renderProblemsByChapterHTML = (probList) => {
     const gMap = new Map();
@@ -132,7 +134,8 @@
     });
     let html = "";
     gMap.forEach((grp) => {
-      const chapterUrl = grp.chapterCode ? `${domain}/${grp.chapterCode}?tag=${encodeURIComponent(grp.subTitle)}` : domain;
+      const cleanTag = formatDoingcodingTag(grp.subTitle);
+      const chapterUrl = grp.chapterCode ? `${domain}/${grp.chapterCode}?tag=${encodeURIComponent(cleanTag)}` : domain;
       html += `
         <div class="homework-chapter-group" style="margin-bottom: 8px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px; padding-bottom: 2px; border-bottom: 1px dashed #cbd5e1;">

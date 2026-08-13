@@ -57,8 +57,16 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(schedule_bp)
 app.register_blueprint(students_bp)
 
-# Legacy template url_for endpoint alias compatibility
 app.add_url_rule("/students/<user_uuid>/homework", endpoint="view_homework_logs", view_func=app.view_functions["students.view_homework_logs"])
+
+# Initialize RDB store & Background Worker
+try:
+    from db.session import init_db
+    from workers.background_sync import start_background_sync_worker
+    init_db()
+    start_background_sync_worker(app)
+except Exception as _e:
+    print(f"[AppInit] DB/Worker init error: {_e}")
 
 
 CHAPTER_WORKSPACE_BETA_ENABLED = (

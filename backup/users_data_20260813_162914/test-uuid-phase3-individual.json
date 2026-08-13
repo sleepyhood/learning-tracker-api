@@ -1,0 +1,26 @@
+{
+  "user_uuid": "test-uuid-phase3-individual",
+  "homework_logs": [
+    {
+      "problems": [
+        {
+          "legacy_code": "",
+          "server_problem_id": null,
+          "title": "01. [출력-기본1] Hello 출력"
+        },
+        {
+          "legacy_code": "",
+          "server_problem_id": null,
+          "title": "02. [출력-기본2] 줄바꿈 출력"
+        }
+      ],
+      "title": "개별 문제 퀵 출제 테스트",
+      "channel": "kakao",
+      "message": "",
+      "url": "",
+      "id": "c5876e22-fba0-4faf-b9e4-24ff4e9e87e7",
+      "log_id": "c5876e22-fba0-4faf-b9e4-24ff4e9e87e7",
+      "ts": "2026-08-08T01:28:19.389207+09:00"
+    }
+  ]
+}

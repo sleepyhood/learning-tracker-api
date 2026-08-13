@@ -415,6 +415,24 @@ def api_student_homework_latest(user_uuid):
     if err:
         return err
 
+    from db.dual_store import USE_RDB_STORE
+    if USE_RDB_STORE:
+        try:
+            from db.session import get_db_session
+            from db.repo import get_latest_assignment_for_user
+            with get_db_session() as session:
+                rdb_res = get_latest_assignment_for_user(session, user_uuid)
+                if rdb_res and rdb_res.get("ok") and rdb_res.get("log"):
+                    return jsonify({
+                        "ok": True,
+                        "homework": rdb_res["log"],
+                        "log": rdb_res["log"],
+                        "student_id": user_uuid,
+                        "student_name": rdb_res.get("student_name") or user_uuid,
+                    })
+        except Exception as e:
+            print(f"[api_student_homework_latest] RDB lookup fallback: {e}")
+
     from utils.utils_user_doc import load_doc_by_any
     from utils.utils_common import ensure_user_cache_or_404
 
@@ -424,8 +442,6 @@ def api_student_homework_latest(user_uuid):
         doc = load_doc_by_any(user_uuid) or {}
 
     # 2) username 캐시 파일({username}.json)의 풀이 데이터를 oi_problems에 병합
-    #    → _enrich_log_problem_status가 doc 안에서 username을 찾아 캐시를 읽지만,
-    #      여기서 명시적으로 미리 병합해두면 더 안전하다.
     prof = doc.get("profile") or {}
     st_id = prof.get("student_id") or prof.get("username") or user_uuid
     st_name = prof.get("name") or st_id
@@ -439,8 +455,6 @@ def api_student_homework_latest(user_uuid):
                 import json as _json
                 cache_data = _json.load(open(cache_path, encoding="utf-8"))
                 if isinstance(cache_data, dict):
-                    # 문제-only 캐시: {server_id: {_id, status, score}}
-                    # oi_problems가 비어있으면 캐시 데이터를 주입
                     oi = doc.get("oi_problems")
                     if not oi:
                         doc["oi_problems"] = cache_data
@@ -477,6 +491,31 @@ def api_students_homework_latest_batch():
     payload = request.get_json(force=True) or {}
     uuids = payload.get("user_uuids", [])
     result = {}
+
+    from db.dual_store import USE_RDB_STORE
+    if USE_RDB_STORE:
+        try:
+            from db.session import get_db_session
+            from db.repo import get_latest_assignment_for_user
+            with get_db_session() as session:
+                for u in uuids:
+                    rdb_res = get_latest_assignment_for_user(session, u)
+                    if rdb_res and rdb_res.get("log"):
+                        result[u] = rdb_res["log"]
+                    else:
+                        # RDB에 없으면 JSON fallback
+                        try:
+                            from utils.utils_user_doc import load_doc_by_any
+                            doc = load_doc_by_any(u)
+                            logs = doc.get("homework_logs", []) if doc else []
+                            result[u] = logs[-1] if logs else {}
+                        except Exception:
+                            result[u] = {}
+                return jsonify({"ok": True, "batch": result})
+        except Exception as e:
+            print(f"[api_students_homework_latest_batch] RDB batch fallback: {e}")
+
+    from utils.utils_user_doc import load_doc_by_any
     for u in uuids:
         try:
             doc = load_doc_by_any(u)
@@ -486,6 +525,7 @@ def api_students_homework_latest_batch():
             result[u] = {}
 
     return jsonify({"ok": True, "batch": result})
+
 
 
 @students_bp.get("/students/<user_uuid>/homework", endpoint="view_homework_logs")
@@ -691,4 +731,54 @@ def api_student_search_suggestions():
         })
 
     return jsonify({"ok": True, "suggestions": suggestions})
+
+
+@students_bp.get("/api/students/<user_uuid>/recommendations")
+def api_student_recommendations(user_uuid):
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
+
+    from db.dual_store import USE_RDB_STORE
+    if USE_RDB_STORE:
+        try:
+            from db.session import get_db_session
+            from db.repo import analyze_user_weakness, get_recommended_problems
+            with get_db_session() as session:
+                weak_groups = analyze_user_weakness(session, user_uuid)
+                recommendations = get_recommended_problems(session, user_uuid, limit=3)
+                return jsonify({
+                    "ok": True,
+                    "weak_groups": weak_groups,
+                    "recommendations": recommendations,
+                    "user_uuid": user_uuid,
+                })
+        except Exception as e:
+            print(f"[api_student_recommendations] RDB lookup fallback: {e}")
+
+    # RDB 미구축 시 JSON Fallback
+    from utils.utils_user_doc import load_doc_by_any
+    doc = load_doc_by_any(user_uuid) or {}
+    hw_map = _latest_homework_status_map(doc)
+
+    wrong_codes = [code for code, status in hw_map.items() if status == "wrong"]
+    recs = []
+    for code in wrong_codes[:3]:
+        recs.append({
+            "problem_id": None,
+            "legacy_code": code,
+            "server_problem_id": code,
+            "title": f"오답 문항 ({code})",
+            "tier": 1,
+            "reason": "오답 재도전 (JSON)",
+            "difficulty": 1,
+        })
+
+    return jsonify({
+        "ok": True,
+        "weak_groups": [],
+        "recommendations": recs,
+        "user_uuid": user_uuid,
+    })
+
 

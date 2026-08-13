@@ -491,6 +491,7 @@ def summarize_drilldown_progress(problem_file, solve_file, legacy_map_file=None)
                     "raw_status": status,
                     "chapter_code": group_chapter_code,
                     "chapter_id": group_chapter_code,
+                    "group_title": g_info.get("title", ""),
                     "url": f"http://edu.doingcoding.com/problem/{legacy_pid}"
                 })
 

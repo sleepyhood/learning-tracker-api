@@ -1,0 +1,21 @@
+{
+  "user_uuid": "test-uuid-1234",
+  "homework_logs": [
+    {
+      "problems": [
+        {
+          "legacy_code": "",
+          "server_problem_id": null,
+          "title": "📌 [챕터] 1. 기초문법1"
+        }
+      ],
+      "title": "테스트 퀵 출제",
+      "channel": "kakao",
+      "message": "",
+      "url": "",
+      "id": "74cefe2e-35d0-4a48-9b53-c1cf9179a6b7",
+      "log_id": "74cefe2e-35d0-4a48-9b53-c1cf9179a6b7",
+      "ts": "2026-08-08T00:57:21.603931+09:00"
+    }
+  ]
+}
