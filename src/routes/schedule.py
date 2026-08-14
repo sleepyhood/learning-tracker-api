@@ -2,7 +2,7 @@ import json
 import os
 import requests
 from datetime import datetime, timezone, timedelta
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for, Response
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, Response, flash
 
 from config import (
     PROBLEM_DIR,
@@ -492,26 +492,37 @@ def user_dashboard(username):
 
     try:
         other_json = fetch_profile(s, username=username)
+        if not other_json or not isinstance(other_json, dict) or other_json.get("error") or not other_json.get("data"):
+            prev_url = request.referrer or "/"
+            if f"/user/{username}" in prev_url:
+                prev_url = "/"
+            flash(f"⚠️ '{username}' 수강생 계정 정보를 찾을 수 없습니다. 목록에서 등록된 학생을 선택해주세요.", "warning")
+            return redirect(prev_url)
+
+        days = int(request.args.get("days", 7))
+        curr_key = request.args.get("curr", "prog1")
+        vm = build_dashboard_viewmodel(s, other_json, is_me=False, days=days, curr_key=curr_key)
+        vm["streak_days"] = days
+
+        other_name = other_json.get("data", {}).get("user", {}).get("username") if isinstance(other_json, dict) else username
+        other_uuid = resolve_uuid(other_name)
+
+        role_ctx = role_ctx_from_session()
+        return render_template(
+            "index.html",
+            **vm,
+            view_mode="user",
+            view_username=username,
+            user_uuid=other_uuid,
+            viewer_is_admin=role_ctx.get("is_admin", False),
+        )
     except Exception as e:
-        return f"❌ 사용자 정보를 불러오지 못했습니다: {e}", 500
-
-    days = int(request.args.get("days", 7))
-    curr_key = request.args.get("curr", "prog1")
-    vm = build_dashboard_viewmodel(s, other_json, is_me=False, days=days, curr_key=curr_key)
-    vm["streak_days"] = days
-
-    other_name = other_json.get("data", {}).get("user", {}).get("username") if isinstance(other_json, dict) else username
-    other_uuid = resolve_uuid(other_name)
-
-    role_ctx = role_ctx_from_session()
-    return render_template(
-        "index.html",
-        **vm,
-        view_mode="user",
-        view_username=username,
-        user_uuid=other_uuid,
-        viewer_is_admin=role_ctx.get("is_admin", False),
-    )
+        print(f"[user_dashboard] Error loading user '{username}':", e)
+        prev_url = request.referrer or "/"
+        if f"/user/{username}" in prev_url:
+            prev_url = "/"
+        flash(f"⚠️ '{username}' 수강생을 조회하는 도중 문제가 발생했습니다: {e}", "warning")
+        return redirect(prev_url)
 
 
 

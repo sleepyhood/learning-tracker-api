@@ -1,0 +1,462 @@
+/* Student Accounts Modal Styles */
+
+.student-accounts-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: samFadeIn 0.2s ease-out;
+}
+
+@keyframes samFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.student-accounts-modal-dialog {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #c9d6ea);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(15, 31, 58, 0.2);
+  width: 100%;
+  max-width: 860px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: samSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes samSlideUp {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Header */
+.sam-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 24px 16px 24px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  background: var(--surface-soft, #f8fafc);
+}
+
+.sam-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text, #0f1f3a);
+  letter-spacing: -0.02em;
+}
+
+.sam-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 0.82rem;
+  color: var(--muted, #64748b);
+}
+
+.sam-btn-close {
+  background: none;
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted, #64748b);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.15s ease;
+}
+
+.sam-btn-close:hover {
+  background: #fee2e2;
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+
+/* Top Controls */
+.sam-top-controls {
+  padding: 16px 24px 12px 24px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sam-search-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.sam-search-input-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.sam-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.95rem;
+  color: var(--muted, #94a3b8);
+  pointer-events: none;
+}
+
+.sam-search-input {
+  width: 100%;
+  padding: 10px 14px 10px 38px;
+  border-radius: 12px;
+  border: 1px solid var(--border, #cbd5e1);
+  background: var(--surface, #ffffff);
+  color: var(--text, #0f1f3a);
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.sam-search-input:focus {
+  border-color: var(--accent, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.sam-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  border: none;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  transition: all 0.15s ease;
+}
+
+.sam-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+}
+
+/* Unlinked Accounts Bar */
+.sam-unlinked-bar {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sam-unlinked-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sam-unlinked-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sam-unlinked-badge {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #92400e;
+  background: #fef3c7;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid #fcd34d;
+}
+
+.sam-unlinked-desc {
+  font-size: 0.78rem;
+  color: #78350f;
+}
+
+.sam-unlinked-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sam-unlinked-chip {
+  background: #ffffff;
+  border: 1px dashed #d97706;
+  color: #b45309;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.sam-unlinked-chip:hover {
+  background: #fef3c7;
+  border-style: solid;
+  transform: translateY(-1px);
+}
+
+/* Scroll Area & Cards Grid */
+.sam-cards-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+  background: var(--surface-soft, #f8fafc);
+  max-height: 520px;
+}
+
+.sam-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sam-card {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(15, 31, 58, 0.04);
+  transition: all 0.15s ease;
+}
+
+.sam-card:hover {
+  border-color: var(--accent, #3b82f6);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+}
+
+.sam-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sam-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sam-student-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text, #0f1f3a);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.sam-student-name:hover {
+  background: var(--surface-soft, #f1f5f9);
+  color: var(--accent, #2563eb);
+}
+
+.sam-name-edit-input {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text, #0f1f3a);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--accent, #2563eb);
+  outline: none;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.sam-badge-birth {
+  font-size: 0.72rem;
+  color: var(--muted, #64748b);
+  background: var(--surface-soft, #f1f5f9);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.sam-badge-custom-id {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.sam-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sam-btn-delete-student {
+  background: none;
+  border: none;
+  color: var(--muted, #94a3b8);
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.sam-btn-delete-student:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Accounts List & Chips */
+.sam-accounts-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sam-acc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  transition: all 0.15s ease;
+}
+
+.sam-acc-chip.is-primary {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.sam-acc-chip .sam-chip-del {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.sam-acc-chip .sam-chip-del:hover {
+  color: #ef4444;
+}
+
+.sam-acc-chip.is-primary .sam-primary-star {
+  font-size: 0.72rem;
+}
+
+/* Add Account Input Box in Card */
+.sam-add-acc-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sam-add-acc-input {
+  font-size: 0.78rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px dashed var(--border, #cbd5e1);
+  background: #ffffff;
+  outline: none;
+  width: 110px;
+  transition: all 0.15s ease;
+}
+
+.sam-add-acc-input:focus {
+  border-style: solid;
+  border-color: var(--accent, #2563eb);
+  width: 140px;
+}
+
+.sam-btn-add-acc {
+  background: var(--surface-soft, #f1f5f9);
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text, #0f1f3a);
+  cursor: pointer;
+}
+
+.sam-btn-add-acc:hover {
+  background: #e2e8f0;
+  color: var(--accent, #2563eb);
+}
+
+/* Empty State */
+.sam-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted, #64748b);
+  font-size: 0.9rem;
+}
+
+/* Footer */
+.sam-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px;
+  border-top: 1px solid var(--border, #e2e8f0);
+  background: var(--surface, #ffffff);
+}
+
+.sam-footer-stats {
+  font-size: 0.82rem;
+  color: var(--muted, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sam-stat-divider {
+  color: var(--border, #cbd5e1);
+}
+
+.sam-btn-secondary {
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: var(--surface-soft, #f1f5f9);
+  border: 1px solid var(--border, #cbd5e1);
+  color: var(--text, #0f1f3a);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sam-btn-secondary:hover {
+  background: #e2e8f0;
+}

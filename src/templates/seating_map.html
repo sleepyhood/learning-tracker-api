@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>🪑 좌석별 체류 시간 시각화 & 강사 동선 최적화</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --bg: radial-gradient(circle at top left, #1d2435 0%, #050814 60%);
+      --panel: rgba(16, 23, 43, 0.96);
+      --panel-soft: rgba(17, 24, 39, 0.85);
+      --border: rgba(148, 163, 184, 0.28);
+      --border-bright: rgba(96, 165, 250, 0.5);
+      --muted: #9ca3af;
+      --text: #e5e7eb;
+      --accent: #60a5fa;
+      --accent-soft: rgba(96, 165, 250, 0.15);
+      --green: #10b981;
+      --green-soft: rgba(16, 185, 129, 0.2);
+      --yellow: #f59e0b;
+      --yellow-soft: rgba(245, 158, 11, 0.2);
+      --red: #ef4444;
+      --red-soft: rgba(239, 68, 68, 0.25);
+      --purple: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px 16px 40px;
+    }
+
+    .page {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Page Header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .title-area h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title-area p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .date-picker-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 14px;
+    }
+
+    .date-picker-wrap input[type="date"] {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .btn {
+      appearance: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0b1020;
+      border-color: var(--accent);
+    }
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 0 12px rgba(96, 165, 250, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(30, 41, 59, 0.8);
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-secondary:hover {
+      background: rgba(51, 65, 85, 0.9);
+      border-color: var(--border-bright);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.35);
+    }
+
+    .btn-edit-active {
+      background: rgba(168, 85, 247, 0.25);
+      color: #e9d5ff;
+      border-color: var(--purple);
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+    }
+
+    /* Main Grid Layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 1080px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--panel-soft);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 14px 35px rgba(15, 23, 42, 0.6);
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Edit Toolbar */
+    .edit-toolbar {
+      display: none;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px dashed var(--purple);
+      margin-bottom: 16px;
+    }
+    .edit-toolbar.is-active {
+      display: flex;
+    }
+    .edit-toolbar label {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .edit-toolbar input[type="number"] {
+      width: 54px;
+      background: rgba(2, 6, 23, 0.7);
+      border: 1px solid var(--border);
+      color: #fff;
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 0.85rem;
+    }
+
+    /* Seating Grid Canvas */
+    .seating-canvas {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .seat-cell {
+      min-height: 90px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.9);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .seat-cell:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Cell Types */
+    .seat-cell.cell-type-aisle {
+      background: rgba(15, 23, 42, 0.25);
+      border: 1px dashed rgba(148, 163, 184, 0.15);
+      cursor: default;
+    }
+    .seat-cell.cell-type-aisle:hover {
+      transform: none;
+      box-shadow: none;
+    }
+    .edit-mode .seat-cell.cell-type-aisle {
+      cursor: pointer;
+    }
+    .edit-mode .seat-cell.cell-type-aisle:hover {
+      border-color: var(--purple);
+    }
+
+    .seat-cell.cell-type-monitor {
+      background: rgba(30, 64, 175, 0.2);
+      border-color: rgba(96, 165, 250, 0.4);
+      color: #93c5fd;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+      font-weight: 700;
+      font-size: 0.82rem;
+    }
+
+    .seat-cell.cell-type-door {
+      background: rgba(180, 83, 9, 0.2);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fde68a;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+      font-weight: 700;
+      font-size: 0.82rem;
+    }
+
+    /* Occupied States */
+    .seat-cell.status-normal {
+      border-color: rgba(16, 185, 129, 0.6);
+      background: linear-gradient(135deg, rgba(6, 78, 59, 0.4), rgba(15, 23, 42, 0.9));
+    }
+    .seat-cell.status-caution {
+      border-color: rgba(245, 158, 11, 0.7);
+      background: linear-gradient(135deg, rgba(124, 45, 18, 0.45), rgba(15, 23, 42, 0.9));
+    }
+    .seat-cell.status-urgent {
+      border-color: rgba(239, 68, 68, 0.8);
+      background: linear-gradient(135deg, rgba(127, 29, 29, 0.6), rgba(15, 23, 42, 0.95));
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+      animation: pulseAlert 2s infinite alternate;
+    }
+
+    @keyframes pulseAlert {
+      0% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.2); }
+      100% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.6); }
+    }
+
+    .cell-delete-btn {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--red);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+      transition: transform 0.15s ease;
+    }
+    .cell-delete-btn:hover {
+      transform: scale(1.2);
+    }
+
+    .seat-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .seat-student-name {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .seat-badges {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 999px;
+      line-height: 1.2;
+    }
+    .badge-time {
+      background: rgba(96, 165, 250, 0.2);
+      color: #bfdbfe;
+      border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+    .badge-status-normal {
+      background: var(--green-soft);
+      color: #6ee7b7;
+    }
+    .badge-status-caution {
+      background: var(--yellow-soft);
+      color: #fde047;
+    }
+    .badge-status-urgent {
+      background: var(--red-soft);
+      color: #fca5a5;
+    }
+    .badge-manual {
+      background: rgba(168, 85, 247, 0.2);
+      color: #e9d5ff;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    /* Timeline Section */
+    .summary-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .chip {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .chip-val {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .timeline-container {
+      margin-top: 14px;
+      overflow-x: auto;
+    }
+    .timeline-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+    .timeline-table th, .timeline-table td {
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      padding: 6px 4px;
+      text-align: center;
+    }
+    .timeline-table th {
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .timeline-slot-filled {
+      border-radius: 4px;
+      height: 18px;
+    }
+
+    /* Modal Backdrop & Dialog */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.75);
+      backdrop-filter: blur(6px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.is-open {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--panel);
+      border: 1px solid var(--border-bright);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .modal-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 4px;
+      border-radius: 12px;
+    }
+    .modal-tab {
+      flex: 1;
+      text-align: center;
+      padding: 7px 10px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.2s ease;
+    }
+    .modal-tab.is-active {
+      background: var(--accent);
+      color: #0b1020;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .form-control {
+      width: 100%;
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+    }
+    .form-control:focus {
+      border-color: var(--accent);
+    }
+
+    .duration-presets {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .duration-chip {
+      flex: 1;
+      padding: 6px;
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border-radius: 8px;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .duration-chip.is-selected {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .status-radios {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .status-option {
+      padding: 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .status-option.is-selected[data-val="normal"] {
+      border-color: var(--green);
+      background: var(--green-soft);
+      color: #6ee7b7;
+    }
+    .status-option.is-selected[data-val="caution"] {
+      border-color: var(--yellow);
+      background: var(--yellow-soft);
+      color: #fde047;
+    }
+    .status-option.is-selected[data-val="urgent"] {
+      border-color: var(--red);
+      background: var(--red-soft);
+      color: #fca5a5;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    /* Student Autocomplete Search Widget */
+    .student-autocomplete-wrap {
+      position: relative;
+    }
+    .student-search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #0f172a;
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      max-height: 180px;
+      overflow-y: auto;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
+      margin-top: 4px;
+    }
+    .student-search-results.is-open {
+      display: block;
+    }
+    .search-result-item {
+      padding: 9px 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      color: var(--text);
+    }
+    .search-result-item:hover {
+      background: rgba(96, 165, 250, 0.2);
+      color: #93c5fd;
+    }
+    .selected-student-badge {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    /* Multi-Session per Seat Styles */
+    .assigned-sessions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    .session-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+    }
+    .session-item-row.is-conflict {
+      border-color: var(--yellow);
+      background: rgba(124, 45, 18, 0.4);
+    }
+    .conflict-warning-box {
+      display: none;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid var(--red);
+      color: #fca5a5;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      margin-bottom: 14px;
+      line-height: 1.45;
+    }
+
+    /* Vacant Seat Display */
+    .seat-cell.status-vacant {
+      border: 1px dashed rgba(148, 163, 184, 0.25);
+      background: rgba(15, 23, 42, 0.35);
+      opacity: 0.75;
+    }
+    .seat-cell.status-vacant:hover {
+      opacity: 1;
+      border-color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="title-area">
+      <h1>🪑 좌석별 체류 시각화 & 동선 최적화</h1>
+      <p>학생별 체류 시간(30분 단위)과 질문 필요도를 한눈에 파악하고 강사의 이동 동선을 최소화합니다.</p>
+    </div>
+    <div class="header-controls">
+      <div class="date-picker-wrap">
+        <span>📅</span>
+        <input type="date" id="datePicker" />
+      </div>
+      <button class="btn btn-secondary" id="btnExportJson">📥 JSON 내보내기</button>
+      <button class="btn btn-secondary" id="btnExportCsv">📊 엑셀/CSV 내보내기</button>
+      <button class="btn btn-secondary" id="btnImportJson">📤 JSON 불러오기</button>
+      <input type="file" id="jsonFileInput" accept=".json" style="display:none;" />
+      <button class="btn btn-secondary" id="btnCopyLayoutSummary">📋 배치 요약 복사</button>
+      <button class="btn btn-secondary" id="btnToggleEdit">🛠️ 좌석 구조 편집</button>
+      <a href="/schedule" class="btn btn-secondary">📅 수업 스케줄</a>
+      <a href="/" class="btn btn-secondary">🏠 메인 대시보드</a>
+    </div>
+  </header>
+
+  <!-- Edit Toolbar -->
+  <div class="edit-toolbar" id="editToolbar">
+    <span style="font-weight:700; color:#e9d5ff;">⚙️ 배치 편집 모드</span>
+    <label>행(Rows): <input type="number" id="inputRows" min="1" max="15" value="8"></label>
+    <label>열(Cols): <input type="number" id="inputCols" min="1" max="15" value="7"></label>
+    <button class="btn btn-secondary" id="btnApplyGridSize" style="padding:4px 10px; font-size:0.8rem;">크기 변경</button>
+    <button class="btn btn-secondary" id="btnResetDefaultLayout" style="padding:4px 10px; font-size:0.8rem;">🔄 기본배치 복원</button>
+    <span style="font-size:0.78rem; color:var(--muted); margin-left:auto;">* 셀을 클릭하면 [좌석/통로/모니터/문] 유형과 라벨을 변경할 수 있습니다.</span>
+  </div>
+
+  <!-- Time Slider Controls Bar -->
+  <div class="card" style="margin-bottom:20px; padding:14px 20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:1.1rem;">⏱️</span>
+        <span style="font-size:1.0rem; font-weight:800;">타임라인 시간대 필터:</span>
+        <span id="sliderTimeBadge" class="badge" style="background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent); font-size:0.88rem; padding:4px 12px; font-weight:800;">
+          모든 시간대 (종합 요약)
+        </span>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn btn-secondary" id="btnTimeModeAll" style="padding:4px 12px; font-size:0.8rem;">전체 요약</button>
+        <button class="btn btn-secondary" id="btnTimeModeNow" style="padding:4px 12px; font-size:0.8rem;">⏰ 현재 시각</button>
+        <button class="btn btn-primary" id="btnPlayTimeAnimation" style="padding:4px 14px; font-size:0.8rem;">▶️ 타임라인 재생</button>
+      </div>
+    </div>
+    
+    <div style="display:flex; align-items:center; gap:14px;">
+      <span style="font-size:0.8rem; font-weight:700; color:var(--muted);">10:00</span>
+      <input type="range" id="timeSlider" min="600" max="1320" step="30" value="840" style="flex:1; cursor:pointer; accent-color:var(--accent);" />
+      <span style="font-size:0.8rem; font-weight:700; color:var(--muted);">22:00</span>
+    </div>
+    
+    <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--muted); margin-top:4px; padding:0 36px;">
+      <span>10:00</span>
+      <span>12:00</span>
+      <span>14:00</span>
+      <span>16:00</span>
+      <span>18:00</span>
+      <span>20:00</span>
+      <span>22:00</span>
+    </div>
+  </div>
+
+  <!-- Main Grid Container -->
+  <div class="main-grid">
+    <!-- Left: Classroom Seating Canvas -->
+    <div class="card">
+      <div class="card-title">
+        <span>🏫 교실 좌석배치도</span>
+        <span style="font-size:0.82rem; font-weight:normal; color:var(--muted);" id="seatCountMeta">좌석 0개 사용중</span>
+      </div>
+      <div id="seatingCanvas" class="seating-canvas"></div>
+    </div>
+
+    <!-- Right: Stay Timeline & Analytics Panel -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <!-- Analytics Summary Card -->
+      <div class="card">
+        <div class="card-title">📊 수강생 체류 요약</div>
+        <div class="summary-chips">
+          <div class="chip">
+            <span>착석 인원</span>
+            <span class="chip-val" id="chipTotalOccupied">0명</span>
+          </div>
+          <div class="chip">
+            <span>손 많이 감/주의</span>
+            <span class="chip-val" id="chipAttentionCount" style="color:var(--yellow);">0명</span>
+          </div>
+          <div class="chip">
+            <span>평균 체류시간</span>
+            <span class="chip-val" id="chipAvgDuration" style="color:#6ee7b7;">0.0h</span>
+          </div>
+        </div>
+        <div style="font-size:0.82rem; color:var(--muted); line-height:1.45;" id="distanceGuideMeta">
+          💡 강사 모니터/교탁 기준 밀착 지도가 필요한 학생까지의 동선 점수가 산출됩니다.
+        </div>
+      </div>
+
+      <!-- 30-min Timeline Visualizer Card -->
+      <div class="card">
+        <div class="card-title">
+          <span>⏱️ 30분 단위 체류 타임라인</span>
+          <span style="font-size:0.78rem; font-weight:normal; color:var(--muted);">13:00 ~ 22:00</span>
+        </div>
+        <div class="timeline-container">
+          <table class="timeline-table">
+            <thead>
+              <tr id="timelineHeadRow">
+                <th style="width:70px;">좌석</th>
+                <!-- Time slots dynamically rendered -->
+              </tr>
+            </thead>
+            <tbody id="timelineBody">
+              <!-- Rows dynamically rendered -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 1: Student Assignment Modal -->
+<div class="modal-backdrop" id="assignModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="modalSeatTitle">🪑 좌석 수강생 배정</div>
+      <button class="btn btn-secondary" style="padding:2px 8px;" id="btnCloseAssignModal">✕</button>
+    </div>
+
+    <!-- Assigned Sessions on this Seat -->
+    <div id="assignedSessionsWrap" style="display:none; margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="font-size:0.8rem; font-weight:700; color:var(--muted);">📋 현재 좌석에 배정된 시간대 목록:</span>
+        <button type="button" class="btn btn-secondary" id="btnAddNewSessionSlot" style="padding:2px 8px; font-size:0.75rem;">➕ 새 시간대 추가</button>
+      </div>
+      <div id="assignedSessionsList" class="assigned-sessions-list"></div>
+    </div>
+
+    <!-- Conflict Warning Box -->
+    <div id="conflictWarningBox" class="conflict-warning-box"></div>
+
+    <div class="modal-tabs">
+      <div class="modal-tab is-active" id="tabAuto" onclick="switchAssignTab('auto')">자동 (등록 수강생)</div>
+      <div class="modal-tab" id="tabManual" onclick="switchAssignTab('manual')">수동 입력</div>
+    </div>
+
+    <!-- Auto Tab Form with Live Search Autocomplete -->
+    <div id="formAuto" class="form-group">
+      <label>등록 수강생 검색 및 선택</label>
+      <div class="student-autocomplete-wrap">
+        <input type="text" id="studentSearchInput" class="form-control" placeholder="🔍 학생 이름/아이디 검색 (예: 홍)..." autocomplete="off" />
+        <input type="hidden" id="selectStudentVal" value="" />
+        <div id="studentSearchResults" class="student-search-results"></div>
+      </div>
+      <div id="selectedStudentBadge" class="selected-student-badge">
+        <span id="selectedStudentText">✅ 선택된 수강생</span>
+        <button type="button" class="btn btn-secondary" id="btnUnselectStudent" style="padding:2px 8px; font-size:0.75rem;">변경</button>
+      </div>
+      <select id="selectStudent" class="form-control" style="display:none;">
+        <option value="">-- 수강생 선택 --</option>
+      </select>
+    </div>
+
+    <!-- Manual Tab Form -->
+    <div id="formManual" style="display:none;">
+      <div class="form-group">
+        <label>수강생 이름 / 임시 ID</label>
+        <input type="text" id="inputManualName" class="form-control" placeholder="예: 홍길동 (외부생)" />
+      </div>
+    </div>
+
+    <!-- Common Duration & Start Time -->
+    <div class="form-group">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <label style="margin:0;">입실/시작 시각</label>
+        <button type="button" class="btn btn-secondary" id="btnSetNowTime" style="padding:2px 8px; font-size:0.75rem;">⏰ 현재 시각</button>
+      </div>
+      <input type="time" id="inputStartTime" class="form-control" value="14:00" step="1800" />
+    </div>
+
+    <div class="form-group">
+      <label>체류 예정 시간 (30분 단위)</label>
+      <input type="number" id="inputDurationHours" class="form-control" value="1.5" min="0.5" max="8.0" step="0.5" />
+      <div class="duration-presets">
+        <div class="duration-chip" onclick="setDurationPreset(0.5)">0.5시간</div>
+        <div class="duration-chip" onclick="setDurationPreset(1.0)">1.0시간</div>
+        <div class="duration-chip is-selected" onclick="setDurationPreset(1.5)">1.5시간</div>
+        <div class="duration-chip" onclick="setDurationPreset(2.0)">2.0시간</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>도움/케어 상태</label>
+      <div class="status-radios">
+        <div class="status-option is-selected" data-val="normal" onclick="setStatusPreset('normal')">🟢 원활</div>
+        <div class="status-option" data-val="caution" onclick="setStatusPreset('caution')">🟡 주의</div>
+        <div class="status-option" data-val="urgent" onclick="setStatusPreset('urgent')">🔴 손많이감</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>메모 / 비고</label>
+      <input type="text" id="inputMemo" class="form-control" placeholder="예: Python 루프 개념 재설명 필요" />
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="btnClearAssignment">🗑️ 배정 해제</button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-secondary" id="btnCancelAssign">취소</button>
+        <button class="btn btn-primary" id="btnSaveAssignment">💾 저장 및 배치</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 2: Cell Editor Modal (Edit Mode) -->
+<div class="modal-backdrop" id="cellEditorModal">
+  <div class="modal-content" style="max-width:380px;">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ 그리드 셀 속성 편집</div>
+      <button class="btn btn-secondary" style="padding:2px 8px;" id="btnCloseCellModal">✕</button>
+    </div>
+    <div class="form-group">
+      <label>셀 유형</label>
+      <select id="cellTypeSelect" class="form-control">
+        <option value="seat">🪑 좌석 (Seat)</option>
+        <option value="aisle">⬛ 통로/의자 (Aisle)</option>
+        <option value="monitor">🖥️ 선생님 모니터/교탁</option>
+        <option value="door">🚪 출입문</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>라벨 / 표기명</label>
+      <input type="text" id="cellLabelInput" class="form-control" placeholder="예: STD31, 선생님 모니터" />
+    </div>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="btn btn-danger" id="btnClearCellModalBtn">🗑️ 통로로 초기화</button>
+      <button class="btn btn-primary" id="btnSaveCellProps">확인</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/modules/seating_map.js"></script>
+</body>
+</html>

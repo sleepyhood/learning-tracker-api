@@ -442,7 +442,28 @@ async function copyModalAiPrompt() {
   }
 
   const finalMemo = memoVal || "오늘 수업에 차분하고 성실하게 임함 (특이사항 없음)";
-  const promptText = getAiPrompt(problemsSummary, finalMemo, todaySolvingLogStr);
+  
+  let promptText = "";
+  if (typeof getAiPrompt === "function") {
+    promptText = getAiPrompt(problemsSummary, finalMemo, todaySolvingLogStr);
+  } else {
+    // 안전 fallback 프롬프트
+    promptText = `[역할]
+너는 코딩학원 전문 강사의 학부모 알림장 작성 전문 비서야.
+아래 제공된 [오늘 수업 실습 로그 및 제출 코드], [숙제/복습 지정 내역], [교사 관찰 메모]를 바탕으로 학부모님께 오늘 수업의 실제 과정과 학습 보완점을 명확히 전달하는 정중하고 차분한 피드백 코멘트(존댓말, 2~3문장, 약 150~250자)를 작성해줘.
+
+[작성 조건]
+1. 무조건적인 칭찬을 지양하고, [실제 겪은 시행착오나 실수 ➔ 수업 중 지도 및 해결 과정 ➔ 앞으로의 보완점/과제 연계]의 3단 인과관계로 사실에 기반하여 전문성 있게 서술해줘.
+2. 오답, 부분점수, 컴파일에러 또는 관찰 메모의 특이사항이 있다면 이를 숨기지 말고 객관적으로 짚고 어떻게 수정했는지 명시해줘.
+3. 과장되거나 상투적인 AI 어투 및 감탄사("눈부신 발전", "화이팅! 🚀")를 배제하고 담백한 서술체(~했습니다, ~하도록 지도했습니다)로 작성해줘.
+4. 문장 끝에 '앞으로도 세심히 지도하겠습니다' 등의 상투적인 마무리 다짐 멘트는 절대로 작성하지 말고 2~3문장으로 깔끔하게 끝맺어줘.
+5. 오직 복사해서 알림장에 바로 쓸 최종 코멘트 텍스트만 출력해줘.
+
+[정보]
+${todaySolvingLogStr ? `- 오늘 수업 실습 로그 및 학생 제출 코드:\n${todaySolvingLogStr}\n` : ""}- 숙제/복습 지정 내역:
+${problemsSummary.trim()}
+- 교사 관찰 메모: ${finalMemo}`;
+  }
 
   try {
     await modalCopyToClipboard(promptText);

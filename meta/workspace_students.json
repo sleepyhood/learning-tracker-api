@@ -9,7 +9,8 @@
     "user_uuid": "d50c11ee-c090-4040-b209-fdd53320ee39",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "6973f152-3e1e-4e4a-85ff-7f7e80c60706": {
     "display_id": "osw1110",
@@ -21,7 +22,8 @@
     "user_uuid": "6973f152-3e1e-4e4a-85ff-7f7e80c60706",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "277e05d6-86ef-424d-927d-90bad1bded25": {
     "display_id": "김태윤0901",
@@ -33,7 +35,8 @@
     "user_uuid": "277e05d6-86ef-424d-927d-90bad1bded25",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "9c39a188-82a8-409c-8c9e-dab18c9ff94c": {
     "display_id": "몰?루",
@@ -45,7 +48,8 @@
     "user_uuid": "9c39a188-82a8-409c-8c9e-dab18c9ff94c",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "c442de80-bb9b-4a05-b949-f7f0fcb96a6f": {
     "display_id": "김진우0126",
@@ -57,7 +61,8 @@
     "user_uuid": "c442de80-bb9b-4a05-b949-f7f0fcb96a6f",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "87591b68-b2c6-4780-bf0b-6270d175d2d3": {
     "display_id": "김시윤1009",
@@ -69,23 +74,21 @@
     "user_uuid": "87591b68-b2c6-4780-bf0b-6270d175d2d3",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "5ab084d1-5e31-43b6-8adb-5ffb91c73892": {
     "display_id": "11781cd0-dcb2-4e37-9bc4-9d2b9adc04aa",
     "name": "11781cd0-dcb2-4e37-9bc4-9d2b9adc04aa",
     "birth_md": "",
     "accounts": [
-      {
-        "type": "academy",
-        "label": "학원",
-        "username": "11781cd0-dcb2-4e37-9bc4-9d2b9adc04aa"
-      }
+      "11781cd0-dcb2-4e37-9bc4-9d2b9adc04aa"
     ],
     "user_uuid": "5ab084d1-5e31-43b6-8adb-5ffb91c73892",
     "weekdays": [],
     "subjects": [],
-    "note": "11781cd0-dcb2-4e37-9bc4-9d2b9adc04aa"
+    "note": "11781cd0-dcb2-4e37-9bc4-9d2b9adc04aa",
+    "status": "active"
   },
   "b025c9fb-6c79-403c-af10-517d85d698ea": {
     "display_id": "6973f152-3e1e-4e4a-85ff-7f7e80c60706",
@@ -97,7 +100,8 @@
     "user_uuid": "b025c9fb-6c79-403c-af10-517d85d698ea",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "2f47956a-3deb-4e28-bddc-1abb49dfd9d3": {
     "display_id": "김독자",
@@ -109,7 +113,8 @@
     "user_uuid": "2f47956a-3deb-4e28-bddc-1abb49dfd9d3",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "3a6d3624-e1c3-4797-9aba-5de8c37aa5e0": {
     "display_id": "2f47956a-3deb-4e28-bddc-1abb49dfd9d3",
@@ -121,7 +126,8 @@
     "user_uuid": "3a6d3624-e1c3-4797-9aba-5de8c37aa5e0",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "e6278e13-07e4-48fc-87b9-fa6edd3d19ba": {
     "display_id": "전지효0420",
@@ -133,7 +139,8 @@
     "user_uuid": "e6278e13-07e4-48fc-87b9-fa6edd3d19ba",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "adcedd6b-fbee-451d-b7ea-54713d97ee4d": {
     "display_id": "신승현1222_2",
@@ -145,7 +152,8 @@
     "user_uuid": "adcedd6b-fbee-451d-b7ea-54713d97ee4d",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "0787bd6d-ce0d-48a8-9869-0d2714385050": {
     "display_id": "김도헌111122",
@@ -157,7 +165,8 @@
     "user_uuid": "0787bd6d-ce0d-48a8-9869-0d2714385050",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "b6b1d2e8-20d1-447c-a5df-7fab2a28e341": {
     "display_id": "계동현1027",
@@ -169,7 +178,8 @@
     "user_uuid": "b6b1d2e8-20d1-447c-a5df-7fab2a28e341",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "d1214dd1-97b7-403f-a712-7daaf6e51fac": {
     "display_id": "틱토커박성빈버거킹에서챌린지찍다쫓겨남",
@@ -181,7 +191,8 @@
     "user_uuid": "d1214dd1-97b7-403f-a712-7daaf6e51fac",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "492f3e13-14b6-409f-9a3a-6a1d429620e1": {
     "display_id": "신승호0312",
@@ -193,7 +204,8 @@
     "user_uuid": "492f3e13-14b6-409f-9a3a-6a1d429620e1",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "c0c837c9-c00e-4db1-8696-6fc49bedc4fc": {
     "display_id": "이은혁0312",
@@ -205,7 +217,8 @@
     "user_uuid": "c0c837c9-c00e-4db1-8696-6fc49bedc4fc",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "299ad422-7d5d-43b8-b9cb-4e7ce923b037": {
     "display_id": "김시후0421",
@@ -217,7 +230,8 @@
     "user_uuid": "299ad422-7d5d-43b8-b9cb-4e7ce923b037",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "b4486af2-5c30-47de-8e9d-80f6d87c2b65": {
     "display_id": "손연서0707",
@@ -229,7 +243,8 @@
     "user_uuid": "b4486af2-5c30-47de-8e9d-80f6d87c2b65",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "35f42f74-81b4-4021-877e-09f8f9191110": {
     "display_id": "강한빛0626",
@@ -241,7 +256,8 @@
     "user_uuid": "35f42f74-81b4-4021-877e-09f8f9191110",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "0ad3fd87-0df2-41f0-a7b7-0d4b5d41cdff": {
     "display_id": "이유건0425",
@@ -253,7 +269,8 @@
     "user_uuid": "0ad3fd87-0df2-41f0-a7b7-0d4b5d41cdff",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "0c97bcab-abc7-475d-8f4b-e238086cf47f": {
     "display_id": "정지훈0531",
@@ -265,7 +282,8 @@
     "user_uuid": "0c97bcab-abc7-475d-8f4b-e238086cf47f",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "c895785d-cb2f-4935-b7f9-a8bed6e006ec": {
     "display_id": "이강국",
@@ -277,7 +295,8 @@
     "user_uuid": "c895785d-cb2f-4935-b7f9-a8bed6e006ec",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "96708525-b078-452b-9032-2077a23936cf": {
     "display_id": "학교가기 싫다",
@@ -289,7 +308,8 @@
     "user_uuid": "96708525-b078-452b-9032-2077a23936cf",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "67b75344-047c-4aa7-a015-426db03834f0": {
     "display_id": "이준호0502",
@@ -301,7 +321,8 @@
     "user_uuid": "67b75344-047c-4aa7-a015-426db03834f0",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "950aad4e-c5f6-4bd1-8380-ead0e31e73f8": {
     "display_id": "저축은행마스코트",
@@ -313,7 +334,8 @@
     "user_uuid": "950aad4e-c5f6-4bd1-8380-ead0e31e73f8",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "abccde7b-2920-4b07-8a84-4c684f193126": {
     "display_id": "김민준0805",
@@ -325,7 +347,8 @@
     "user_uuid": "abccde7b-2920-4b07-8a84-4c684f193126",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "d182266f-9bd6-4d46-a6ca-e7143f6cc316": {
     "display_id": "박준서0916",
@@ -337,7 +360,8 @@
     "user_uuid": "d182266f-9bd6-4d46-a6ca-e7143f6cc316",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "8549eac2-8639-4068-8020-cf1c4fe07e5b": {
     "display_id": "이도희0916",
@@ -349,7 +373,8 @@
     "user_uuid": "8549eac2-8639-4068-8020-cf1c4fe07e5b",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "d5f282ab-c252-4968-85c3-8416840076ab": {
     "display_id": "재현0527",
@@ -361,7 +386,8 @@
     "user_uuid": "d5f282ab-c252-4968-85c3-8416840076ab",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "2a8ff72f-3719-46e8-a068-34932831f028": {
     "display_id": "신승현1222",
@@ -373,7 +399,8 @@
     "user_uuid": "2a8ff72f-3719-46e8-a068-34932831f028",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "a3046e49-9741-4ad3-868e-90df1403dcf9": {
     "display_id": "손형민0105",
@@ -385,7 +412,8 @@
     "user_uuid": "a3046e49-9741-4ad3-868e-90df1403dcf9",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "9d4c3232-6af8-487b-ba90-6bbfdbb6988c": {
     "display_id": "김건우0408c",
@@ -397,7 +425,8 @@
     "user_uuid": "9d4c3232-6af8-487b-ba90-6bbfdbb6988c",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "dd06f504-b9f7-4503-8686-ebf44e55d785": {
     "display_id": "최우녕0110",
@@ -409,7 +438,8 @@
     "user_uuid": "dd06f504-b9f7-4503-8686-ebf44e55d785",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "174f4ed2-eb4c-45f2-a0f7-c3717a50071d": {
     "display_id": "정창휘0825",
@@ -421,7 +451,8 @@
     "user_uuid": "174f4ed2-eb4c-45f2-a0f7-c3717a50071d",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "14864f79-806f-432d-902d-acab9359ec8d": {
     "display_id": "전지효04201",
@@ -433,7 +464,8 @@
     "user_uuid": "14864f79-806f-432d-902d-acab9359ec8d",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "5ade8cfd-d19a-4cfc-9583-afc7976aa3a5": {
     "display_id": "이지명0325",
@@ -445,7 +477,8 @@
     "user_uuid": "5ade8cfd-d19a-4cfc-9583-afc7976aa3a5",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "1853f48d-ddd2-475c-bd77-9c2d2c6837bd": {
     "display_id": "유민엽1125",
@@ -457,7 +490,8 @@
     "user_uuid": "1853f48d-ddd2-475c-bd77-9c2d2c6837bd",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "4b46769b-2c31-4fcc-88e2-c30dcbb1ba1b": {
     "display_id": "송선우0809",
@@ -469,7 +503,8 @@
     "user_uuid": "4b46769b-2c31-4fcc-88e2-c30dcbb1ba1b",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "3faacaaf-a096-43c2-823e-b5c4f3dbb0c7": {
     "display_id": "이용건0907",
@@ -481,7 +516,8 @@
     "user_uuid": "3faacaaf-a096-43c2-823e-b5c4f3dbb0c7",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "0e9311bd-d6eb-4f11-b4a4-0ff0152887ad": {
     "display_id": "ethan0907",
@@ -493,7 +529,8 @@
     "user_uuid": "0e9311bd-d6eb-4f11-b4a4-0ff0152887ad",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "82236c58-ddfe-43ed-8c60-eb3a8eda2950": {
     "display_id": "유민엽8289",
@@ -505,7 +542,8 @@
     "user_uuid": "82236c58-ddfe-43ed-8c60-eb3a8eda2950",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "13745114-f32c-4609-a946-e8c15dfc8255": {
     "display_id": "leo0719",
@@ -517,7 +555,8 @@
     "user_uuid": "13745114-f32c-4609-a946-e8c15dfc8255",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "c30254de-92d9-4fd9-9f2e-7a6bad890f8f": {
     "display_id": "조항현08301",
@@ -529,7 +568,8 @@
     "user_uuid": "c30254de-92d9-4fd9-9f2e-7a6bad890f8f",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "8ff2833a-e3fc-4697-aa29-90e86d98f5e7": {
     "display_id": "임세빈0910",
@@ -541,7 +581,8 @@
     "user_uuid": "8ff2833a-e3fc-4697-aa29-90e86d98f5e7",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "4f18192c-c9c3-436b-9517-2bad44e9d87a": {
     "display_id": "이주호0530",
@@ -553,7 +594,8 @@
     "user_uuid": "4f18192c-c9c3-436b-9517-2bad44e9d87a",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "6d5c0f72-9315-471b-a4bd-27f36029fbbf": {
     "display_id": "이해준0409",
@@ -565,7 +607,8 @@
     "user_uuid": "6d5c0f72-9315-471b-a4bd-27f36029fbbf",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "418f9786-0210-463b-80af-595daf0b1c8d": {
     "display_id": "김도윤0912",
@@ -577,7 +620,8 @@
     "user_uuid": "418f9786-0210-463b-80af-595daf0b1c8d",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "b119a333-115c-450c-b4af-86e30b7a8195": {
     "display_id": "권성하0418",
@@ -589,7 +633,8 @@
     "user_uuid": "b119a333-115c-450c-b4af-86e30b7a8195",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "e7c1de4a-0c27-453f-895e-61afff7ba676": {
     "display_id": "jayden0709",
@@ -601,7 +646,8 @@
     "user_uuid": "e7c1de4a-0c27-453f-895e-61afff7ba676",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "0e0044b3-2ff5-43c0-b571-9cb6678060a0": {
     "display_id": "국승우0605",
@@ -613,7 +659,8 @@
     "user_uuid": "0e0044b3-2ff5-43c0-b571-9cb6678060a0",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "4ae0cf75-29b5-466a-b1ff-12c93a7de4fc": {
     "display_id": "김준현07041",
@@ -625,7 +672,8 @@
     "user_uuid": "4ae0cf75-29b5-466a-b1ff-12c93a7de4fc",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "64087ccd-d5b0-45da-b7d8-87acb3c37ad0": {
     "display_id": "이도희2",
@@ -637,7 +685,8 @@
     "user_uuid": "64087ccd-d5b0-45da-b7d8-87acb3c37ad0",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "664ce06d-b023-457f-91e7-c52e9914a539": {
     "display_id": "이지명03251",
@@ -649,7 +698,8 @@
     "user_uuid": "664ce06d-b023-457f-91e7-c52e9914a539",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "1260b892-a448-470d-abee-6c761dec1f7e": {
     "display_id": "이도희3",
@@ -661,7 +711,8 @@
     "user_uuid": "1260b892-a448-470d-abee-6c761dec1f7e",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "5819d984-621b-43e5-aea0-6e9080f23d91": {
     "display_id": "노우진0803",
@@ -673,7 +724,8 @@
     "user_uuid": "5819d984-621b-43e5-aea0-6e9080f23d91",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "0cf23b34-7cac-4e55-9456-529ef1a952c9": {
     "display_id": "윤준혁0810",
@@ -685,7 +737,8 @@
     "user_uuid": "0cf23b34-7cac-4e55-9456-529ef1a952c9",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "94e8b6de-5090-4b02-ab4e-4b9e112692f8": {
     "display_id": "천서윤0630",
@@ -697,7 +750,8 @@
     "user_uuid": "94e8b6de-5090-4b02-ab4e-4b9e112692f8",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "4dcdf06e-7f3f-4369-a9f3-075f91094dcc": {
     "display_id": "이시안080116",
@@ -709,7 +763,8 @@
     "user_uuid": "4dcdf06e-7f3f-4369-a9f3-075f91094dcc",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "949e02c3-dfba-4103-9d27-c94d2ceaea85": {
     "display_id": "최효린0514",
@@ -721,7 +776,8 @@
     "user_uuid": "949e02c3-dfba-4103-9d27-c94d2ceaea85",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "efe030b4-c1c2-4ad8-98b0-cf64e8359faf": {
     "display_id": "전효빈 0731",
@@ -733,7 +789,8 @@
     "user_uuid": "efe030b4-c1c2-4ad8-98b0-cf64e8359faf",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "f957ff98-d91f-42f2-9a58-9750af4b0e7e": {
     "display_id": "이시안",
@@ -745,7 +802,8 @@
     "user_uuid": "f957ff98-d91f-42f2-9a58-9750af4b0e7e",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "08e5d9cf-fc28-4f5c-9380-01add6708eac": {
     "display_id": "원용",
@@ -757,7 +815,8 @@
     "user_uuid": "08e5d9cf-fc28-4f5c-9380-01add6708eac",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "edd366f7-a99e-4b9a-8007-cf7c3325c454": {
     "display_id": "임건우",
@@ -769,7 +828,8 @@
     "user_uuid": "edd366f7-a99e-4b9a-8007-cf7c3325c454",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "7a2b39fd-e081-4220-81e4-1a4d9c070021": {
     "display_id": "박태희130412",
@@ -781,7 +841,8 @@
     "user_uuid": "7a2b39fd-e081-4220-81e4-1a4d9c070021",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "2c1f476e-aceb-4c80-8e57-dc5149192f17": {
     "display_id": "임세빈",
@@ -793,7 +854,8 @@
     "user_uuid": "2c1f476e-aceb-4c80-8e57-dc5149192f17",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "908d0ca7-f048-4e91-aa8a-4d24d94ed16c": {
     "display_id": "안유찬0206",
@@ -805,7 +867,8 @@
     "user_uuid": "908d0ca7-f048-4e91-aa8a-4d24d94ed16c",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "05dc1b5e-5a3b-4610-accf-58969bd420dd": {
     "display_id": "이성현20110808",
@@ -817,7 +880,8 @@
     "user_uuid": "05dc1b5e-5a3b-4610-accf-58969bd420dd",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "31ae9adb-6939-4849-a63e-3144400189c1": {
     "display_id": "임건우11251",
@@ -829,7 +893,8 @@
     "user_uuid": "31ae9adb-6939-4849-a63e-3144400189c1",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "32b1b6c3-b399-4089-bdd3-691d20727afb": {
     "display_id": "고은결0624",
@@ -841,7 +906,8 @@
     "user_uuid": "32b1b6c3-b399-4089-bdd3-691d20727afb",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "296d6057-5b52-428c-8ac9-7685b07bbfeb": {
     "display_id": "박준성0715",
@@ -853,7 +919,8 @@
     "user_uuid": "296d6057-5b52-428c-8ac9-7685b07bbfeb",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "22e328bd-b985-4fde-8de7-0dfce2f47b89": {
     "display_id": "박준성0715old",
@@ -865,7 +932,8 @@
     "user_uuid": "22e328bd-b985-4fde-8de7-0dfce2f47b89",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "3f9ff6ec-4198-419a-b1fe-e80f1827398f": {
     "display_id": "이은혁",
@@ -877,7 +945,8 @@
     "user_uuid": "3f9ff6ec-4198-419a-b1fe-e80f1827398f",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "f2f3fe57-0721-4114-aef7-ec0af32b9aba": {
     "display_id": "강동현1103",
@@ -889,7 +958,8 @@
     "user_uuid": "f2f3fe57-0721-4114-aef7-ec0af32b9aba",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "6070e521-e181-493c-96c3-c069158d6389": {
     "display_id": "최시훈0807",
@@ -901,7 +971,8 @@
     "user_uuid": "6070e521-e181-493c-96c3-c069158d6389",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "12a97366-24fa-4642-b8c1-2f5fed11080c": {
     "display_id": "천서",
@@ -913,23 +984,21 @@
     "user_uuid": "12a97366-24fa-4642-b8c1-2f5fed11080c",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "7b30239a-7d21-48aa-a2c3-45bd61d0b3dc": {
     "display_id": "정승유0825",
     "name": "정승유0825",
     "birth_md": "",
     "accounts": [
-      {
-        "type": "academy",
-        "label": "학원",
-        "username": "정승유0825"
-      }
+      "정승유0825"
     ],
     "user_uuid": "7b30239a-7d21-48aa-a2c3-45bd61d0b3dc",
     "weekdays": [],
     "subjects": [],
-    "note": "정승유0825"
+    "note": "정승유0825",
+    "status": "active"
   },
   "cae84d42-b3a2-4ab3-a369-b299f2446458": {
     "display_id": "김진서1127",
@@ -941,7 +1010,8 @@
     "user_uuid": "cae84d42-b3a2-4ab3-a369-b299f2446458",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "33929ea0-2530-4c82-be8b-10321abe0808": {
     "display_id": "김용준0903",
@@ -953,7 +1023,8 @@
     "user_uuid": "33929ea0-2530-4c82-be8b-10321abe0808",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "49d486f1-4e7c-4a6c-b8bb-2e4c9e2fa672": {
     "display_id": "오정민0321",
@@ -965,7 +1036,8 @@
     "user_uuid": "49d486f1-4e7c-4a6c-b8bb-2e4c9e2fa672",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "8837de4c-2042-4806-a7fe-4acc5ccdb326": {
     "display_id": "김도진0225",
@@ -977,7 +1049,8 @@
     "user_uuid": "8837de4c-2042-4806-a7fe-4acc5ccdb326",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "6f1531d5-4c84-46c0-84aa-471333fa5a4c": {
     "display_id": "임현진1214",
@@ -989,7 +1062,8 @@
     "user_uuid": "6f1531d5-4c84-46c0-84aa-471333fa5a4c",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "7eab5ef2-879f-48b4-9e5d-50e9de7da85f": {
     "display_id": "오정만",
@@ -1001,7 +1075,8 @@
     "user_uuid": "7eab5ef2-879f-48b4-9e5d-50e9de7da85f",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "a4f39b35-049c-4eec-9a9f-0a75f8737909": {
     "display_id": "오정만0321",
@@ -1013,7 +1088,8 @@
     "user_uuid": "a4f39b35-049c-4eec-9a9f-0a75f8737909",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "a2f7d8b8-9efa-4bd6-bd9a-46057a86d53e": {
     "display_id": "유준혁_0129",
@@ -1025,7 +1101,8 @@
     "user_uuid": "a2f7d8b8-9efa-4bd6-bd9a-46057a86d53e",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "decdb0ae-7617-4527-b9f3-6bcf30a8aeef": {
     "display_id": "박서진1128",
@@ -1037,7 +1114,8 @@
     "user_uuid": "decdb0ae-7617-4527-b9f3-6bcf30a8aeef",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "5add43a5-2199-45cf-8631-f58d09182571": {
     "display_id": "강한빛 부계",
@@ -1049,7 +1127,8 @@
     "user_uuid": "5add43a5-2199-45cf-8631-f58d09182571",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "a85d0186-6c28-4e27-b5ef-9d6794428b9f": {
     "display_id": "정진우",
@@ -1061,7 +1140,8 @@
     "user_uuid": "a85d0186-6c28-4e27-b5ef-9d6794428b9f",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "b93ab96d-0fea-4950-a56b-8bf8af9b6738": {
     "display_id": "정진우0801",
@@ -1073,7 +1153,8 @@
     "user_uuid": "b93ab96d-0fea-4950-a56b-8bf8af9b6738",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "b148be49-2757-444e-bfa3-7a80bce0db79": {
     "display_id": "임건건우11251",
@@ -1085,7 +1166,8 @@
     "user_uuid": "b148be49-2757-444e-bfa3-7a80bce0db79",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "eab7d995-99d6-44cd-91e7-53ab3bc07231": {
     "display_id": "김건우0710",
@@ -1097,7 +1179,8 @@
     "user_uuid": "eab7d995-99d6-44cd-91e7-53ab3bc07231",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "b624ab02-c67f-415d-ad85-3b2290105c96": {
     "display_id": "김준현0704",
@@ -1109,7 +1192,8 @@
     "user_uuid": "b624ab02-c67f-415d-ad85-3b2290105c96",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "38396016-31eb-4dc8-92ca-bdf0ce5eee20": {
     "display_id": "qwerty3",
@@ -1121,7 +1205,8 @@
     "user_uuid": "38396016-31eb-4dc8-92ca-bdf0ce5eee20",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "8a2e1f4a-f06d-4017-9edb-91400f0f65b1": {
     "display_id": "오혁준",
@@ -1133,7 +1218,8 @@
     "user_uuid": "8a2e1f4a-f06d-4017-9edb-91400f0f65b1",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "47a2fb05-b63c-45b0-a059-e9a18e36d5b1": {
     "display_id": "장원형0427",
@@ -1145,7 +1231,8 @@
     "user_uuid": "47a2fb05-b63c-45b0-a059-e9a18e36d5b1",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "9ed6b912-911e-48dc-a2eb-3c54104bff20": {
     "display_id": "qwerty4",
@@ -1157,7 +1244,8 @@
     "user_uuid": "9ed6b912-911e-48dc-a2eb-3c54104bff20",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "ff763baa-5b86-4760-a52e-699d8e692384": {
     "display_id": "전상빈0702",
@@ -1169,7 +1257,8 @@
     "user_uuid": "ff763baa-5b86-4760-a52e-699d8e692384",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "77ee634f-28d1-4456-943c-9bada6aa1314": {
     "display_id": "유준혁_0129_2",
@@ -1181,7 +1270,8 @@
     "user_uuid": "77ee634f-28d1-4456-943c-9bada6aa1314",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "9695f753-483c-4c0d-a298-937e2fe273b0": {
     "display_id": "송선우1234",
@@ -1193,11 +1283,12 @@
     "user_uuid": "9695f753-483c-4c0d-a298-937e2fe273b0",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "f478ee25-e92b-4bfc-8c8b-a7828c1326e6": {
     "display_id": "kevin0410",
-    "name": "kevin0410",
+    "name": "심규민",
     "birth_md": "",
     "accounts": [
       "kevin0410"
@@ -1205,7 +1296,8 @@
     "user_uuid": "f478ee25-e92b-4bfc-8c8b-a7828c1326e6",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "6b4f2f48-4806-4205-86df-e3a7c14271b9": {
     "display_id": "최우진0506",
@@ -1217,7 +1309,8 @@
     "user_uuid": "6b4f2f48-4806-4205-86df-e3a7c14271b9",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "63ce4986-cdad-46ec-9757-6bfdb2a89fc0": {
     "display_id": "최우진0506_2",
@@ -1229,7 +1322,8 @@
     "user_uuid": "63ce4986-cdad-46ec-9757-6bfdb2a89fc0",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "fb5b1dcf-f4d9-4775-9876-9357b1a28ecc": {
     "display_id": "이성현0808",
@@ -1241,7 +1335,8 @@
     "user_uuid": "fb5b1dcf-f4d9-4775-9876-9357b1a28ecc",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "4d8fa5f7-a3ea-40c4-be1f-a676a408928a": {
     "display_id": "김용준1106",
@@ -1253,7 +1348,8 @@
     "user_uuid": "4d8fa5f7-a3ea-40c4-be1f-a676a408928a",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "5e82df43-98bd-49bd-a2e2-d291afee485c": {
     "display_id": "박지한0820",
@@ -1265,7 +1361,8 @@
     "user_uuid": "5e82df43-98bd-49bd-a2e2-d291afee485c",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "a4b5f896-fa08-4854-a318-972cacf962ad": {
     "display_id": "qwerty7",
@@ -1277,7 +1374,8 @@
     "user_uuid": "a4b5f896-fa08-4854-a318-972cacf962ad",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "fa854e53-5733-46f1-a377-c373c5f6b9fb": {
     "display_id": "임현진121407",
@@ -1289,7 +1387,8 @@
     "user_uuid": "fa854e53-5733-46f1-a377-c373c5f6b9fb",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "c043343b-cae3-444c-8d61-63d6759c79d5": {
     "display_id": "이은혁 파이썬 계정",
@@ -1301,7 +1400,8 @@
     "user_uuid": "c043343b-cae3-444c-8d61-63d6759c79d5",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "487a32c4-4550-47f9-b843-a8174b7eb65f": {
     "display_id": "김용준09032",
@@ -1313,7 +1413,8 @@
     "user_uuid": "487a32c4-4550-47f9-b843-a8174b7eb65f",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "eb4c1f2e-fdf7-4896-bdc5-6b1b83994197": {
     "display_id": "천서윤063012",
@@ -1325,7 +1426,8 @@
     "user_uuid": "eb4c1f2e-fdf7-4896-bdc5-6b1b83994197",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "e28d1180-0fa8-45f9-82e1-b594cd10beb0": {
     "display_id": "강지후110419",
@@ -1337,23 +1439,21 @@
     "user_uuid": "e28d1180-0fa8-45f9-82e1-b594cd10beb0",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "334a628c-c56e-4f92-aa73-59854a966a9a": {
     "display_id": "정시원0222",
     "name": "정시원",
     "birth_md": "",
     "accounts": [
-      {
-        "type": "academy",
-        "label": "학원",
-        "username": "정시원0222"
-      }
+      "정시원0222"
     ],
     "user_uuid": "334a628c-c56e-4f92-aa73-59854a966a9a",
     "note": "정시원02221",
     "weekdays": [],
-    "subjects": []
+    "subjects": [],
+    "status": "active"
   },
   "614dc750-15d6-4fbe-9ae3-6a2b36c5530d": {
     "display_id": "김준수0730",
@@ -1365,7 +1465,8 @@
     "user_uuid": "614dc750-15d6-4fbe-9ae3-6a2b36c5530d",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "e1d8aff7-8720-4a74-91c8-6677342ba652": {
     "display_id": "유채원0525",
@@ -1377,7 +1478,8 @@
     "user_uuid": "e1d8aff7-8720-4a74-91c8-6677342ba652",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "25a0bb38-0f3a-4b5a-b13a-40b7205993e7": {
     "display_id": "양현준0929",
@@ -1389,7 +1491,8 @@
     "user_uuid": "25a0bb38-0f3a-4b5a-b13a-40b7205993e7",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "c527e326-a0c8-4cb0-90c1-af8396fed48d": {
     "display_id": "윤준혁08102",
@@ -1401,7 +1504,8 @@
     "user_uuid": "c527e326-a0c8-4cb0-90c1-af8396fed48d",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "f255d5ba-e354-4337-8417-7ddca465af5e": {
     "display_id": "시우0605",
@@ -1413,7 +1517,8 @@
     "user_uuid": "f255d5ba-e354-4337-8417-7ddca465af5e",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "f4247f3a-8dea-49bd-bb6b-45286a1027e2": {
     "display_id": "함서준0803",
@@ -1425,7 +1530,8 @@
     "user_uuid": "f4247f3a-8dea-49bd-bb6b-45286a1027e2",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "46a97893-cc09-4e1b-8c15-31fed50876ae": {
     "display_id": "박준영0507",
@@ -1437,7 +1543,8 @@
     "user_uuid": "46a97893-cc09-4e1b-8c15-31fed50876ae",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "9f26b4dc-adb1-4bb6-ad6f-4480608b4c3a": {
     "display_id": "김건우0408c2",
@@ -1449,7 +1556,8 @@
     "user_uuid": "9f26b4dc-adb1-4bb6-ad6f-4480608b4c3a",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "4acd5d46-c8fc-4951-bd7f-af3fee657c71": {
     "display_id": "박찬이08161",
@@ -1461,7 +1569,8 @@
     "user_uuid": "4acd5d46-c8fc-4951-bd7f-af3fee657c71",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "915fe723-a645-46e6-8979-354378b22e2b": {
     "display_id": "이주안1121",
@@ -1473,7 +1582,8 @@
     "user_uuid": "915fe723-a645-46e6-8979-354378b22e2b",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "e4765611-3c10-4932-ba24-71ab68bd6299": {
     "display_id": "이주안",
@@ -1485,7 +1595,8 @@
     "user_uuid": "e4765611-3c10-4932-ba24-71ab68bd6299",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "71eff3a4-8e68-4ed4-9154-c342094b2ee8": {
     "display_id": "1103강동현",
@@ -1497,7 +1608,8 @@
     "user_uuid": "71eff3a4-8e68-4ed4-9154-c342094b2ee8",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "469a5d72-9a39-448f-8ab6-f4aa54bfaefe": {
     "display_id": "강지원0401",
@@ -1509,7 +1621,8 @@
     "user_uuid": "469a5d72-9a39-448f-8ab6-f4aa54bfaefe",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "31ac2ef3-2a24-4d2c-85dc-757bf9647c92": {
     "display_id": "박서진1128임 아무튼",
@@ -1521,7 +1634,8 @@
     "user_uuid": "31ac2ef3-2a24-4d2c-85dc-757bf9647c92",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "19c42601-813f-455d-bb3a-078e4f759820": {
     "display_id": "이준영0405",
@@ -1533,7 +1647,8 @@
     "user_uuid": "19c42601-813f-455d-bb3a-078e4f759820",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "39c4ee92-55b9-4929-8648-ab48b471f6ac": {
     "display_id": "최시훈",
@@ -1545,7 +1660,8 @@
     "user_uuid": "39c4ee92-55b9-4929-8648-ab48b471f6ac",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "d0b7bbd0-a4f5-4e83-8cc7-31e0e7d7d0c9": {
     "display_id": "최시훈0807파이썬",
@@ -1557,7 +1673,8 @@
     "user_uuid": "d0b7bbd0-a4f5-4e83-8cc7-31e0e7d7d0c9",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "9dade686-2df4-4972-8f39-349848b4f438": {
     "display_id": "박태희130412-1환생",
@@ -1569,7 +1686,8 @@
     "user_uuid": "9dade686-2df4-4972-8f39-349848b4f438",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "48841b4e-be55-43ce-af41-e0d07b89bd93": {
     "display_id": "백건우0509",
@@ -1581,7 +1699,8 @@
     "user_uuid": "48841b4e-be55-43ce-af41-e0d07b89bd93",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "36025223-abd8-4915-b192-1429e53a8ca2": {
     "display_id": "1105강동현",
@@ -1593,7 +1712,8 @@
     "user_uuid": "36025223-abd8-4915-b192-1429e53a8ca2",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "4d00bd57-cb25-4716-a11f-70fe63e32580": {
     "display_id": "조우혁0211",
@@ -1605,7 +1725,8 @@
     "user_uuid": "4d00bd57-cb25-4716-a11f-70fe63e32580",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "d5aca472-b95f-4462-9dac-934fdd527ac9": {
     "display_id": "jeremy0228",
@@ -1617,7 +1738,8 @@
     "user_uuid": "d5aca472-b95f-4462-9dac-934fdd527ac9",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "517432f9-4dd9-4221-ad99-9886bcb0ec0d": {
     "display_id": "전독시러버1",
@@ -1629,7 +1751,8 @@
     "user_uuid": "517432f9-4dd9-4221-ad99-9886bcb0ec0d",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "eff1ec3a-964b-4457-a586-e320dea90dfd": {
     "display_id": "김건우0408",
@@ -1641,7 +1764,8 @@
     "user_uuid": "eff1ec3a-964b-4457-a586-e320dea90dfd",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "92454fb2-c350-4e69-b017-1f3b795bd8fb": {
     "display_id": "전서현1122",
@@ -1653,7 +1777,8 @@
     "user_uuid": "92454fb2-c350-4e69-b017-1f3b795bd8fb",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "5fc9eb29-9ff6-45c9-9cba-976dd57d30eb": {
     "display_id": "조우진0801",
@@ -1665,7 +1790,8 @@
     "user_uuid": "5fc9eb29-9ff6-45c9-9cba-976dd57d30eb",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "a2114f78-3f66-4193-9955-178e4455952d": {
     "display_id": "김윤우0208",
@@ -1677,7 +1803,8 @@
     "user_uuid": "a2114f78-3f66-4193-9955-178e4455952d",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "559d91be-f8a5-49ec-a9a4-6485be15aeb8": {
     "display_id": "이용건09072",
@@ -1689,7 +1816,8 @@
     "user_uuid": "559d91be-f8a5-49ec-a9a4-6485be15aeb8",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "8055115d-bdf9-4e1e-b2cd-b0ac8d1d77c0": {
     "display_id": "jaydenjava",
@@ -1701,7 +1829,8 @@
     "user_uuid": "8055115d-bdf9-4e1e-b2cd-b0ac8d1d77c0",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "30b6be2b-236f-4137-8f1d-84d0265c71ac": {
     "display_id": "허이삭0923",
@@ -1713,7 +1842,8 @@
     "user_uuid": "30b6be2b-236f-4137-8f1d-84d0265c71ac",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "1660e358-bcc9-4935-b7d0-d80f9752c76a": {
     "display_id": "김건우0408부",
@@ -1725,7 +1855,8 @@
     "user_uuid": "1660e358-bcc9-4935-b7d0-d80f9752c76a",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "390c5db4-0160-439a-aa97-d26a8592af02": {
     "display_id": "로블록스유튜버박성빈구독자백만도전",
@@ -1737,7 +1868,8 @@
     "user_uuid": "390c5db4-0160-439a-aa97-d26a8592af02",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "ce119cb3-8254-4f68-8673-8ff0cdb81f5f": {
     "display_id": "유최성0104",
@@ -1749,7 +1881,8 @@
     "user_uuid": "ce119cb3-8254-4f68-8673-8ff0cdb81f5f",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "01dd0bf5-0193-47c3-8657-2067bbda9928": {
     "display_id": "정준원",
@@ -1761,7 +1894,8 @@
     "user_uuid": "01dd0bf5-0193-47c3-8657-2067bbda9928",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "c974c287-4481-4ca3-bcfd-16c5c9ca4faa": {
     "display_id": "박성빈20101227",
@@ -1773,7 +1907,8 @@
     "user_uuid": "c974c287-4481-4ca3-bcfd-16c5c9ca4faa",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "2f6b0603-0515-4e65-a1a4-442f4cf0108f": {
     "display_id": "유중혁",
@@ -1785,7 +1920,8 @@
     "user_uuid": "2f6b0603-0515-4e65-a1a4-442f4cf0108f",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "906fa8e3-d617-4239-8cf2-37ac8b5ee4d7": {
     "display_id": "김도윤0419",
@@ -1797,7 +1933,8 @@
     "user_uuid": "906fa8e3-d617-4239-8cf2-37ac8b5ee4d7",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "a0bdd8d0-9c33-4b54-bc09-e44947ac4529": {
     "display_id": "강지후0419",
@@ -1809,7 +1946,8 @@
     "user_uuid": "a0bdd8d0-9c33-4b54-bc09-e44947ac4529",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "733bf790-c9c5-40fa-8d69-f3d2dab61f90": {
     "display_id": "오혁준2",
@@ -1821,7 +1959,8 @@
     "user_uuid": "733bf790-c9c5-40fa-8d69-f3d2dab61f90",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "528da701-6b8a-49ee-ab94-d4a35be42117": {
     "display_id": "박준영0813",
@@ -1833,7 +1972,8 @@
     "user_uuid": "528da701-6b8a-49ee-ab94-d4a35be42117",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "6a8d2fd9-0ccf-419f-9043-3555b157af78": {
     "display_id": "박준영",
@@ -1845,7 +1985,8 @@
     "user_uuid": "6a8d2fd9-0ccf-419f-9043-3555b157af78",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "07dab7d6-1332-410c-b6fb-4d6fc48be8e8": {
     "display_id": "이세나0526",
@@ -1857,7 +1998,8 @@
     "user_uuid": "07dab7d6-1332-410c-b6fb-4d6fc48be8e8",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "2fad3d6f-0c33-430e-91d8-e6537ab3ec83": {
     "display_id": "홍준기",
@@ -1869,7 +2011,8 @@
     "user_uuid": "2fad3d6f-0c33-430e-91d8-e6537ab3ec83",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "9224393c-a0b8-40e9-b6d3-5ed5f058b858": {
     "display_id": "김재진0530",
@@ -1881,7 +2024,8 @@
     "user_uuid": "9224393c-a0b8-40e9-b6d3-5ed5f058b858",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "27d94421-b5c2-4fd4-9ade-bcf3e9d0be3d": {
     "display_id": "test_user",
@@ -1893,7 +2037,8 @@
     "user_uuid": "27d94421-b5c2-4fd4-9ade-bcf3e9d0be3d",
     "weekdays": [],
     "subjects": [],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "07a328db-f615-4b9d-8957-23e1bdeb8690": {
     "user_uuid": "07a328db-f615-4b9d-8957-23e1bdeb8690",
@@ -1903,13 +2048,10 @@
     "weekdays": [],
     "subjects": [],
     "accounts": [
-      {
-        "type": "academy",
-        "label": "학원",
-        "username": "김민준080502"
-      }
+      "김민준080502"
     ],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "11781cd0-dcb2-4e37-9bc4-9d2b9adc04aa": {
     "user_uuid": "11781cd0-dcb2-4e37-9bc4-9d2b9adc04aa",
@@ -1919,13 +2061,10 @@
     "weekdays": [],
     "subjects": [],
     "accounts": [
-      {
-        "type": "academy",
-        "label": "학원",
-        "username": "김시온2011"
-      }
+      "김시온2011"
     ],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "6ddb8734-dae5-42e8-8319-7073a489d955": {
     "user_uuid": "6ddb8734-dae5-42e8-8319-7073a489d955",
@@ -1935,13 +2074,10 @@
     "weekdays": [],
     "subjects": [],
     "accounts": [
-      {
-        "type": "academy",
-        "label": "학원",
-        "username": "원용우1023"
-      }
+      "원용우1023"
     ],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "1927785a-03da-467f-8cf3-e7a35a0bb476": {
     "user_uuid": "1927785a-03da-467f-8cf3-e7a35a0bb476",
@@ -1951,13 +2087,10 @@
     "weekdays": [],
     "subjects": [],
     "accounts": [
-      {
-        "type": "academy",
-        "label": "학원",
-        "username": "이도희1"
-      }
+      "이도희1"
     ],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "22cbe41d-42fd-4c64-9072-003231247836": {
     "user_uuid": "22cbe41d-42fd-4c64-9072-003231247836",
@@ -1967,13 +2100,10 @@
     "weekdays": [],
     "subjects": [],
     "accounts": [
-      {
-        "type": "academy",
-        "label": "학원",
-        "username": "몰"
-      }
+      "몰"
     ],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "3ba94912-e0ed-496e-9a27-9852d6ed7a12": {
     "user_uuid": "3ba94912-e0ed-496e-9a27-9852d6ed7a12",
@@ -1983,13 +2113,10 @@
     "weekdays": [],
     "subjects": [],
     "accounts": [
-      {
-        "type": "academy",
-        "label": "학원",
-        "username": "정진우우"
-      }
+      "정진우우"
     ],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "14f2db4d-c7d7-4be5-a46e-f815a2e2aac7": {
     "user_uuid": "14f2db4d-c7d7-4be5-a46e-f815a2e2aac7",
@@ -1999,13 +2126,10 @@
     "weekdays": [],
     "subjects": [],
     "accounts": [
-      {
-        "type": "academy",
-        "label": "학원",
-        "username": "오정만0321만"
-      }
+      "오정만0321만"
     ],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "408e1c36-2f33-477d-abff-da8215160030": {
     "user_uuid": "408e1c36-2f33-477d-abff-da8215160030",
@@ -2015,13 +2139,10 @@
     "weekdays": [],
     "subjects": [],
     "accounts": [
-      {
-        "type": "academy",
-        "label": "학원",
-        "username": "강한빛"
-      }
+      "강한빛"
     ],
-    "note": ""
+    "note": "",
+    "status": "active"
   },
   "bf869678-398f-46d4-a04f-26ac9df00bf3": {
     "user_uuid": "bf869678-398f-46d4-a04f-26ac9df00bf3",
@@ -2031,12 +2152,74 @@
     "weekdays": [],
     "subjects": [],
     "accounts": [
-      {
-        "type": "academy",
-        "label": "학원",
-        "username": "임건우1125"
-      }
+      "임건우1125"
     ],
-    "note": ""
+    "note": "",
+    "status": "active"
+  },
+  "4c528ec9-c871-4952-8319-e259102f6833": {
+    "user_uuid": "4c528ec9-c871-4952-8319-e259102f6833",
+    "display_id": "test",
+    "name": "test",
+    "birth_md": "",
+    "weekdays": [],
+    "subjects": [],
+    "accounts": [
+      "test"
+    ],
+    "note": "",
+    "status": "active"
+  },
+  "ff8f3982-3485-4d2d-b0c9-c025b563343d": {
+    "user_uuid": "ff8f3982-3485-4d2d-b0c9-c025b563343d",
+    "display_id": "nonexistent_fake_uuid_12345",
+    "name": "nonexistent_fake_uuid_12345",
+    "birth_md": "",
+    "weekdays": [],
+    "subjects": [],
+    "accounts": [
+      "nonexistent_fake_uuid_12345"
+    ],
+    "note": "",
+    "status": "active"
+  },
+  "8645a1d1-f239-45ea-93bc-c718001ffca9": {
+    "user_uuid": "8645a1d1-f239-45ea-93bc-c718001ffca9",
+    "display_id": "nonexistent_test_user",
+    "name": "nonexistent_test_user",
+    "birth_md": "",
+    "weekdays": [],
+    "subjects": [],
+    "accounts": [
+      "nonexistent_test_user"
+    ],
+    "note": "",
+    "status": "active"
+  },
+  "968143db-32ff-4b4f-aeaa-2d30808280d3": {
+    "user_uuid": "968143db-32ff-4b4f-aeaa-2d30808280d3",
+    "display_id": "nonexistent_fake_uuid_99999",
+    "name": "nonexistent_fake_uuid_99999",
+    "birth_md": "",
+    "weekdays": [],
+    "subjects": [],
+    "accounts": [
+      "nonexistent_fake_uuid_99999"
+    ],
+    "note": "",
+    "status": "active"
+  },
+  "8d984cc3-7676-43d5-9044-146f9b847bf8": {
+    "user_uuid": "8d984cc3-7676-43d5-9044-146f9b847bf8",
+    "display_id": "지원0401",
+    "name": "지원0401",
+    "birth_md": "",
+    "weekdays": [],
+    "subjects": [],
+    "accounts": [
+      "지원0401"
+    ],
+    "note": "",
+    "status": "active"
   }
 }

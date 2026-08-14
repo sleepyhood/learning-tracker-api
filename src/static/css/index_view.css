@@ -503,12 +503,12 @@
     padding: 6px;
     margin: 0;
     border-radius: var(--radius-md);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-md);
-    max-height: 280px;
+    background: var(--surface, #ffffff);
+    border: 1px solid var(--border, #c9d6ea);
+    box-shadow: 0 12px 28px rgba(15, 31, 58, 0.12);
+    max-height: 320px;
     overflow-y: auto;
-    z-index: 20;
+    z-index: 50;
     display: none;
   }
 
@@ -516,17 +516,81 @@
     display: block;
   }
 
-  .autocomplete-box li {
+  .autocomplete-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px 8px 10px;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    margin-bottom: 4px;
+    cursor: default !important;
+  }
+
+  .autocomplete-header-row:hover {
+    background: transparent !important;
+  }
+
+  .autocomplete-item-row {
     padding: 9px 12px;
     border-radius: 10px;
     font-size: 0.88rem;
     cursor: pointer;
-    color: var(--text);
+    color: var(--text, #0f1f3a);
+    transition: all 0.15s ease;
   }
 
-  .autocomplete-box li:hover,
-  .autocomplete-box li.active {
-    background: var(--accent-soft);
+  .autocomplete-item-row:hover,
+  .autocomplete-item-row.is-active {
+    background: var(--surface-soft, #f2f6fd);
+    color: var(--accent, #1663e8);
+  }
+
+  .badge-custom-id {
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    font-weight: 600;
+  }
+
+  .search-warning-tooltip {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    color: #dc2626;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    z-index: 60;
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.12);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    animation: fadeInTooltip 0.2s ease-out;
+  }
+
+  @keyframes fadeInTooltip {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .btn-remove-recent-item {
+    color: var(--muted, #64748b) !important;
+  }
+
+  .btn-remove-recent-item:hover {
+    color: #ef4444 !important;
+  }
+
+  .btn-clear-recent-all:hover {
+    text-decoration: underline;
+    color: #dc2626 !important;
   }
 
   .header-tools {

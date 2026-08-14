@@ -51,11 +51,13 @@ from routes.workspace import workspace_bp
 from routes.auth import auth_bp
 from routes.schedule import schedule_bp
 from routes.students import students_bp
+from routes.seating import seating_bp
 
 app.register_blueprint(workspace_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(schedule_bp)
 app.register_blueprint(students_bp)
+app.register_blueprint(seating_bp)
 
 app.add_url_rule("/students/<user_uuid>/homework", endpoint="view_homework_logs", view_func=app.view_functions["students.view_homework_logs"])
 
@@ -100,6 +102,8 @@ from collections import defaultdict
 ADMIN_ONLY_PREFIXES = (
     "/schedule",
     "/api/schedule",
+    "/seating",
+    "/api/seating",
     "/update_problems",
     "/api/students",
     "/students",

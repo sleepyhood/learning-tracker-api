@@ -703,7 +703,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!searchInput || !searchForm || !autocompleteList) return;
 
-  const RECENT_KEY = "learning_tracker_recent_usernames";
+  const RECENT_VIEWED_KEY = "learning_tracker_recent_viewed_students_v2";
   const MAX_SUGGESTIONS = 8;
   const MAX_RECENT = 5;
   let studentList = [];
@@ -711,28 +711,82 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeIndex = -1;
   let debounceTimer = null;
 
-  const getRecentSearches = () => {
+  // Korean Choseong (초성) Disassembler Engine
+  const CHOSEONG_LIST = [
+    'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ',
+    'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
+  ];
+
+  const getChoseong = (text) => {
+    if (!text || typeof text !== 'string') return '';
+    let result = '';
+    for (let i = 0; i < text.length; i++) {
+      const code = text.charCodeAt(i);
+      if (code >= 0xAC00 && code <= 0xD7A3) {
+        const choseongIndex = Math.floor((code - 0xAC00) / 588);
+        result += CHOSEONG_LIST[choseongIndex] || '';
+      } else {
+        result += text[i].toLowerCase();
+      }
+    }
+    return result;
+  };
+
+  const getRelativeTimeStr = (timestamp) => {
+    if (!timestamp) return '';
+    const diffSec = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+    if (diffSec < 60) return '방금 전';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}분 전`;
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return `${diffHour}시간 전`;
+    const diffDay = Math.floor(diffHour / 24);
+    return `${diffDay}일 전`;
+  };
+
+  const getRecentViewed = () => {
     try {
-      const parsed = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+      const parsed = JSON.parse(localStorage.getItem(RECENT_VIEWED_KEY) || "[]");
       return Array.isArray(parsed) ? parsed : [];
     } catch (err) {
-      console.error("recent parse error:", err);
       return [];
     }
   };
 
-  const saveRecentSearches = (items) => {
-    localStorage.setItem(RECENT_KEY, JSON.stringify(items));
+  const pushRecentViewed = (stObjOrString) => {
+    if (!stObjOrString) return;
+    const name = typeof stObjOrString === 'string' ? stObjOrString : (stObjOrString.name || stObjOrString.display_id || '');
+    const displayId = typeof stObjOrString === 'string' ? stObjOrString : (stObjOrString.display_id || stObjOrString.name || '');
+    const username = typeof stObjOrString === 'object' ? (stObjOrString.username || '') : '';
+    const userUuid = typeof stObjOrString === 'object' ? (stObjOrString.user_uuid || '') : '';
+
+    const currentList = getRecentViewed().filter(item => {
+      if (typeof item === 'string') return item !== name && item !== displayId;
+      return item.display_id !== displayId && item.name !== name;
+    });
+
+    const newEntry = {
+      name: name,
+      display_id: displayId,
+      username: username,
+      user_uuid: userUuid,
+      timestamp: Date.now()
+    };
+
+    const next = [newEntry, ...currentList].slice(0, MAX_RECENT);
+    localStorage.setItem(RECENT_VIEWED_KEY, JSON.stringify(next));
   };
 
-  const pushRecentSearch = (name) => {
-    const value = (name || "").trim();
-    if (!value) return;
-    const next = [value, ...getRecentSearches().filter((item) => item !== value)].slice(
-      0,
-      MAX_RECENT
-    );
-    saveRecentSearches(next);
+  const removeRecentViewed = (displayIdToRemove) => {
+    const next = getRecentViewed().filter(item => {
+      const id = typeof item === 'string' ? item : item.display_id;
+      return id !== displayIdToRemove;
+    });
+    localStorage.setItem(RECENT_VIEWED_KEY, JSON.stringify(next));
+  };
+
+  const clearAllRecentViewed = () => {
+    localStorage.removeItem(RECENT_VIEWED_KEY);
   };
 
   const closeAutocomplete = () => {
@@ -741,29 +795,156 @@ document.addEventListener("DOMContentLoaded", () => {
     activeIndex = -1;
   };
 
+  // Check standard academy ID format: {한글 이름 2~4자리 OR 영문 2~15자리}{생년월일 중 4자리}
+  const isStandardAcademyId = (str) => {
+    if (!str || typeof str !== 'string') return false;
+    return /^([가-힣]{2,4}|[a-zA-Z]{2,15})\d{4}$/.test(str.trim());
+  };
+
+  let warningTooltipEl = null;
+  const showSearchWarning = (msg) => {
+    if (warningTooltipEl) warningTooltipEl.remove();
+    warningTooltipEl = document.createElement("div");
+    warningTooltipEl.className = "search-warning-tooltip";
+    warningTooltipEl.innerHTML = `<span>⚠️</span> <span>${msg}</span>`;
+    
+    const wrapper = searchForm.querySelector(".search-wrapper");
+    if (wrapper) {
+      wrapper.style.position = "relative";
+      wrapper.appendChild(warningTooltipEl);
+    }
+
+    setTimeout(() => {
+      if (warningTooltipEl) {
+        warningTooltipEl.remove();
+        warningTooltipEl = null;
+      }
+    }, 3500);
+  };
+
+  const hideSearchWarning = () => {
+    if (warningTooltipEl) {
+      warningTooltipEl.remove();
+      warningTooltipEl = null;
+    }
+  };
+
+  const renderRecentViewed = (items) => {
+    autocompleteList.innerHTML = "";
+    filteredSuggestions = items;
+    activeIndex = -1;
+
+    if (!items || items.length === 0) {
+      closeAutocomplete();
+      return;
+    }
+
+    // Header with Clear All Button
+    const headerLi = document.createElement("li");
+    headerLi.className = "autocomplete-header-row";
+    headerLi.innerHTML = `
+      <span style="font-size:0.75rem; font-weight:700; color:var(--muted, #64748b);">🕒 최근 조회 수강생</span>
+      <button type="button" class="btn-clear-recent-all" style="background:none; border:none; color:#f87171; font-size:0.72rem; cursor:pointer; padding:2px 4px;">전체 삭제</button>
+    `;
+    const btnClearAll = headerLi.querySelector(".btn-clear-recent-all");
+    btnClearAll.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      clearAllRecentViewed();
+      closeAutocomplete();
+    });
+    autocompleteList.appendChild(headerLi);
+
+    items.forEach((item, index) => {
+      const li = document.createElement("li");
+      li.className = "autocomplete-item-row recent-item-row";
+      
+      const name = typeof item === 'string' ? item : (item.name || item.display_id);
+      const displayId = typeof item === 'string' ? item : (item.display_id || item.name);
+      const timeStr = typeof item === 'object' && item.timestamp ? getRelativeTimeStr(item.timestamp) : '';
+      const searchValue = displayId || name;
+      const isCustomId = !isStandardAcademyId(displayId) && !isStandardAcademyId(name);
+
+      li.innerHTML = `
+        <div class="autocomplete-item-content" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-weight:700; color:var(--text, #0f1f3a);">${name}</span>
+            ${displayId && displayId !== name ? `<span style="font-size:0.78rem; color:var(--muted, #64748b);">(@${displayId})</span>` : ''}
+            ${isCustomId ? `<span class="badge-custom-id">외부ID</span>` : ''}
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            ${timeStr ? `<span class="recent-time-pill" style="font-size:0.7rem; color:var(--accent, #1663e8); background:var(--surface-soft, #f2f6fd); padding:2px 6px; border-radius:6px; border:1px solid var(--border, #c9d6ea);">${timeStr}</span>` : ''}
+            <button type="button" class="btn-remove-recent-item" title="최근 기록 삭제" style="background:none; border:none; font-size:0.8rem; cursor:pointer; padding:2px 4px;">✕</button>
+          </div>
+        </div>
+      `;
+
+      li.dataset.index = String(index);
+
+      // Select student
+      li.addEventListener("mousedown", (e) => {
+        if (e.target.closest(".btn-remove-recent-item")) return;
+        e.preventDefault();
+        searchInput.value = searchValue;
+        searchClearBtn?.classList.toggle("hidden", !searchInput.value.trim());
+        pushRecentViewed(item);
+        closeAutocomplete();
+        searchForm.requestSubmit();
+      });
+
+      // Individual item delete
+      const btnRemoveItem = li.querySelector(".btn-remove-recent-item");
+      if (btnRemoveItem) {
+        btnRemoveItem.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          removeRecentViewed(displayId);
+          updateSuggestions();
+        });
+      }
+
+      autocompleteList.appendChild(li);
+    });
+  };
+
   const renderAutocomplete = (items) => {
     autocompleteList.innerHTML = "";
     filteredSuggestions = items;
     activeIndex = -1;
 
+    if (!items || items.length === 0) {
+      closeAutocomplete();
+      return;
+    }
+
     items.forEach((item, index) => {
       const li = document.createElement("li");
-      const displayText =
-        typeof item === "string"
-          ? item
-          : item.name && item.display_id && item.name !== item.display_id
-          ? `${item.name} (${item.display_id})`
-          : item.display_id || item.name;
-      const searchValue =
-        typeof item === "string" ? item : item.display_id || item.name;
+      li.className = "autocomplete-item-row";
+      const name = typeof item === "string" ? item : (item.name || item.display_id);
+      const displayId = typeof item === "string" ? item : (item.display_id || item.name);
+      const username = typeof item === "object" ? (item.username || '') : '';
+      const searchValue = displayId || name;
+      const isCustomId = !isStandardAcademyId(displayId) && !isStandardAcademyId(name);
 
-      li.textContent = displayText;
+      const displayText = (name && displayId && name !== displayId)
+        ? `${name} (@${displayId})`
+        : (displayId || name);
+
+      li.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-weight:600; color:var(--text, #0f1f3a);">${displayText}</span>
+            ${isCustomId ? `<span class="badge-custom-id">외부ID</span>` : ''}
+          </div>
+          ${username && username !== displayId ? `<span style="font-size:0.75rem; color:var(--muted, #64748b);">${username}</span>` : ''}
+        </div>
+      `;
       li.dataset.index = String(index);
       li.addEventListener("mousedown", (e) => {
         e.preventDefault();
         searchInput.value = searchValue;
         searchClearBtn?.classList.toggle("hidden", !searchInput.value.trim());
-        pushRecentSearch(searchValue);
+        pushRecentViewed(item);
         closeAutocomplete();
         searchForm.requestSubmit();
       });
@@ -776,48 +957,108 @@ document.addEventListener("DOMContentLoaded", () => {
     searchClearBtn?.classList.toggle("hidden", raw.length === 0);
 
     if (!raw) {
-      renderAutocomplete(getRecentSearches());
+      renderRecentViewed(getRecentViewed());
       return;
     }
 
     const query = raw.toLowerCase();
+    const queryChoseong = getChoseong(raw);
+
     const matches = studentList
       .filter((st) => {
-        if (typeof st === "string") return st.toLowerCase().includes(query);
-        const nameMatch = (st.name || "").toLowerCase().includes(query);
-        const displayMatch = (st.display_id || "").toLowerCase().includes(query);
-        return nameMatch || displayMatch;
+        if (typeof st === "string") {
+          const sLower = st.toLowerCase();
+          const sChoseong = getChoseong(st);
+          return sLower.includes(query) || sChoseong.includes(query) || sChoseong.includes(queryChoseong);
+        }
+        const name = (st.name || "").toLowerCase();
+        const displayId = (st.display_id || "").toLowerCase();
+        const username = (st.username || "").toLowerCase();
+        const nameChoseong = getChoseong(st.name || "");
+        const displayChoseong = getChoseong(st.display_id || "");
+
+        const textMatch = name.includes(query) || displayId.includes(query) || username.includes(query);
+        const choseongMatch = nameChoseong.includes(query) || nameChoseong.includes(queryChoseong) ||
+                              displayChoseong.includes(query) || displayChoseong.includes(queryChoseong);
+
+        let subAccountMatch = false;
+        if (Array.isArray(st.accounts)) {
+          subAccountMatch = st.accounts.some(acc => {
+            const accLower = String(acc).toLowerCase();
+            return accLower.includes(query) || getChoseong(acc).includes(queryChoseong);
+          });
+        }
+
+        return textMatch || choseongMatch || subAccountMatch;
       })
       .slice(0, MAX_SUGGESTIONS);
 
     renderAutocomplete(matches);
   };
 
-  fetch("/api/students/search_suggestions")
-    .then((res) => (res.ok ? res.json() : null))
-    .then((data) => {
-      if (data && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
-        studentList = data.suggestions;
-        updateSuggestions();
-      } else {
-        return fetch("/proxy/user_rank")
-          .then((res) => (res.ok ? res.json() : null))
-          .then((rankData) => {
-            if (rankData && Array.isArray(rankData.usernames)) {
-              studentList = rankData.usernames;
-              updateSuggestions();
-            }
-          });
-      }
-    })
-    .catch((err) => console.error("Error fetching search suggestions:", err));
+  const fetchStudentSuggestions = () => {
+    fetch("/api/students/search_suggestions")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+          studentList = data.suggestions;
+          if (document.activeElement === searchInput) {
+            updateSuggestions();
+          }
+        } else {
+          return fetch("/proxy/user_rank")
+            .then((res) => (res.ok ? res.json() : null))
+            .then((rankData) => {
+              if (rankData && Array.isArray(rankData.usernames)) {
+                studentList = rankData.usernames;
+                if (document.activeElement === searchInput) {
+                  updateSuggestions();
+                }
+              }
+            });
+        }
+      })
+      .catch((err) => console.error("Error fetching search suggestions:", err));
+  };
+
+  window.refreshStudentSuggestions = fetchStudentSuggestions;
+  fetchStudentSuggestions();
 
   searchInput.addEventListener("input", () => {
+    hideSearchWarning();
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(updateSuggestions, 120);
   });
 
   searchInput.addEventListener("focus", updateSuggestions);
+
+  // Search form submit guard against 500 errors
+  searchForm.addEventListener("submit", (e) => {
+    const rawVal = searchInput.value.trim();
+    if (!rawVal) {
+      e.preventDefault();
+      return;
+    }
+
+    if (studentList && studentList.length > 0) {
+      const qLower = rawVal.toLowerCase();
+      const matched = studentList.find(st => {
+        if (typeof st === "string") return st.toLowerCase() === qLower;
+        const name = (st.name || "").toLowerCase();
+        const displayId = (st.display_id || "").toLowerCase();
+        const username = (st.username || "").toLowerCase();
+        const hasSubAcc = Array.isArray(st.accounts) && st.accounts.some(acc => String(acc).toLowerCase() === qLower);
+        return name === qLower || displayId === qLower || username === qLower || hasSubAcc;
+      });
+
+      if (!matched) {
+        e.preventDefault();
+        showSearchWarning("등록되지 않은 학생입니다. 추천 목록에서 선택해 주세요.");
+        return;
+      }
+      pushRecentViewed(matched);
+    }
+  });
 
   searchInput.addEventListener("keydown", (e) => {
     if (!filteredSuggestions.length) return;
@@ -825,65 +1066,68 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
       activeIndex = (activeIndex + 1) % filteredSuggestions.length;
+      highlightActiveSuggestion();
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       activeIndex =
         (activeIndex - 1 + filteredSuggestions.length) % filteredSuggestions.length;
+      highlightActiveSuggestion();
     } else if (e.key === "Enter" && activeIndex >= 0) {
       e.preventDefault();
       const selected = filteredSuggestions[activeIndex];
       if (selected) {
         const searchValue =
-          typeof selected === "string" ? selected : selected.display_id || selected.name;
+          typeof selected === "string" ? selected : (selected.display_id || selected.name);
         searchInput.value = searchValue;
-        pushRecentSearch(searchValue);
+        pushRecentViewed(selected);
         closeAutocomplete();
         searchForm.requestSubmit();
       }
       return;
     } else if (e.key === "Escape") {
       closeAutocomplete();
-      return;
-    } else {
-      return;
     }
-
-    const items = autocompleteList.querySelectorAll("li");
-    items.forEach((item, idx) => {
-      item.classList.toggle("active", idx === activeIndex);
-      if (idx === activeIndex) item.scrollIntoView({ block: "nearest" });
-    });
   });
 
-  searchForm.addEventListener("submit", (e) => {
-    const value = searchInput.value.trim();
-    if (!value) {
-      e.preventDefault();
-      return;
+  const highlightActiveSuggestion = () => {
+    const items = autocompleteList.querySelectorAll(".autocomplete-item-row");
+    items.forEach((item, idx) => {
+      if (idx === activeIndex) {
+        item.classList.add("is-active");
+      } else {
+        item.classList.remove("is-active");
+      }
+    });
+  };
+
+  document.addEventListener("click", (e) => {
+    if (!searchForm.contains(e.target)) {
+      closeAutocomplete();
     }
-    searchInput.value = value;
-    pushRecentSearch(value);
-    closeAutocomplete();
   });
 
   searchClearBtn?.addEventListener("click", () => {
     searchInput.value = "";
+    searchClearBtn.classList.add("hidden");
     searchInput.focus();
-    updateSuggestions();
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!searchForm.contains(e.target)) closeAutocomplete();
   });
 
   const urlParams = new URLSearchParams(window.location.search);
   const usernameParam = urlParams.get("username");
+  const errorNoticeParam = urlParams.get("error_notice");
 
   if (usernameParam) {
     searchInput.value = decodeURIComponent(usernameParam);
     searchClearBtn?.classList.toggle("hidden", false);
   }
+
+  if (errorNoticeParam) {
+    // Instantly cleanse the address bar URL so messy query strings are not visible to the user
+    const cleanUrl = window.location.pathname + (usernameParam ? `?username=${encodeURIComponent(usernameParam)}` : '');
+    window.history.replaceState(null, '', cleanUrl);
+  }
 });
+
 
 async function highlightTodaySolvedProblems() {
   const groupInfo = document.getElementById("groupInfo");

@@ -2798,6 +2798,7 @@
 
           <div class="header-actions">
             <a href="/" class="btn-secondary">← 내 대시보드</a>
+            <a href="/seating" class="btn-secondary">🪑 좌석/체류 시각화</a>
             <button id="refresh-hw-btn" type="button" class="btn-primary">
               숙제 상태 새로고침
             </button>
@@ -4861,6 +4862,8 @@ function renderWeeklyAttendanceBadges() {
       })();
 
     </script>
+    <script src="{{ url_for('static', filename='js/ai_prompt.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/feedback_modal.js') }}" defer></script>
     {% include '_feedback_modal.html' %}
   </body>
 </html>

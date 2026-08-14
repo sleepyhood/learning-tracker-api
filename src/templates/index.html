@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/quick_basket.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/homework_history.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/feedback_modal.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/student_accounts_modal.css') }}" />
   </head>
 
   <body>
@@ -28,6 +29,15 @@
     <div id="submission-popover" class="details" role="dialog" style="display: none"></div>
 
     {% include 'components/_header.html' %}
+
+    {% set flashed = get_flashed_messages() %}
+    {% set banner_msg = error_notice or (flashed[0] if flashed else request.args.get('error_notice')) %}
+    {% if banner_msg %}
+    <div style="max-width:var(--page-max-width, 1320px); margin:12px auto; padding:12px 18px; background:#fef2f2; border:1px solid #fca5a5; border-radius:12px; color:#dc2626; font-weight:600; font-size:0.9rem; display:flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(220,38,38,0.08);">
+      <span>⚠️</span>
+      <span>{{ banner_msg }}</span>
+    </div>
+    {% endif %}
 
     <div class="viz-2col">
       {% include 'components/_profile_card.html' %}
@@ -46,7 +56,11 @@
 
     {% include '_feedback_modal.html' %}
 
+    {% include '_offline_feedback_modal.html' %}
+
     {% include '_homework_history_modal.html' %}
+
+    {% include 'components/_student_accounts_modal.html' %}
 
     {% include 'components/_footer.html' %}
 
@@ -67,7 +81,9 @@
     <script src="{{ url_for('static', filename='js/modules/crawler_modal.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/modules/quick_basket.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/modules/drilldown_filter.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='js/ai_prompt.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/ai_prompt.js') }}"></script>
     <script src="{{ url_for('static', filename='js/modules/feedback_modal.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/modules/offline_feedback_modal.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/modules/student_accounts_modal.js') }}" defer></script>
   </body>
 </html>

@@ -1,0 +1,58 @@
+<div id="studentAccountsModal" class="student-accounts-modal-backdrop" style="display: none;" aria-hidden="true" role="dialog">
+  <div class="student-accounts-modal-dialog">
+    <!-- Modal Header -->
+    <div class="sam-header">
+      <div class="sam-title-wrap">
+        <h3 class="sam-title">👥 수강생 실명 & 다중 계정(부계정) 관리</h3>
+        <p class="sam-subtitle">학생 실명과 본계정/부계정을 1:N으로 연결하여 메인 검색창과 대시보드를 통합 관리합니다.</p>
+      </div>
+      <button type="button" class="sam-btn-close" onclick="closeStudentAccountsModal()" aria-label="닫기">✕</button>
+    </div>
+
+    <!-- Modal Controls: Search & Unlinked Accounts Discovery -->
+    <div class="sam-top-controls">
+      <div class="sam-search-row">
+        <div class="sam-search-input-wrap">
+          <span class="sam-search-icon">🔍</span>
+          <input type="text" id="samSearchInput" class="sam-search-input" placeholder="학생 실명, 본계정, 부계정 검색..." />
+        </div>
+        <button type="button" id="samBtnNewStudent" class="sam-btn-primary" onclick="samPromptNewStudent()">
+          <span>➕</span> 새 수강생 등록
+        </button>
+      </div>
+
+      <!-- Unlinked Accounts Discovery Bar -->
+      <div id="samUnlinkedSection" class="sam-unlinked-bar" style="display: none;">
+        <div class="sam-unlinked-header">
+          <div class="sam-unlinked-title">
+            <span class="sam-unlinked-badge">💡 미연결 계정</span>
+            <span class="sam-unlinked-desc">포털에 존재하지만 아직 수강생에게 연결되지 않은 계정입니다:</span>
+          </div>
+        </div>
+        <div id="samUnlinkedChips" class="sam-unlinked-chips"></div>
+      </div>
+    </div>
+
+    <!-- Modal Student Cards List (Scrollable) -->
+    <div class="sam-cards-scroll">
+      <div id="samCardsContainer" class="sam-cards-container">
+        <!-- Rendered dynamically by JS -->
+      </div>
+      <div id="samEmptyState" class="sam-empty-state" style="display: none;">
+        <span>🔍 일치하는 수강생이 없습니다.</span>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="sam-footer">
+      <div class="sam-footer-stats">
+        <span>등록 수강생: <strong id="samStatStudentCount">0</strong>명</span>
+        <span class="sam-stat-divider">|</span>
+        <span>연결된 계정: <strong id="samStatAccountCount">0</strong>개</span>
+      </div>
+      <div class="sam-footer-actions">
+        <button type="button" class="sam-btn-secondary" onclick="closeStudentAccountsModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>

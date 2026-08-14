@@ -710,6 +710,10 @@ def api_schedule_delete_slot(slot_id):
 
 @students_bp.route("/api/students/search_suggestions", methods=["GET"])
 def api_student_search_suggestions():
+    try:
+        _sync_workspace_students()
+    except Exception:
+        pass
     ws_students = _load_workspace_students()
     suggestions = []
     seen = set()
@@ -717,20 +721,178 @@ def api_student_search_suggestions():
     for st_uuid, st_info in ws_students.items():
         display_id = (st_info.get("display_id") or "").strip()
         name = (st_info.get("name") or "").strip()
-        if not display_id and not name:
+        username = (st_info.get("username") or "").strip()
+        accounts = st_info.get("accounts", [])
+        if not isinstance(accounts, list):
+            accounts = [display_id] if display_id else []
+
+        if not display_id and not name and not username and not accounts:
             continue
         
-        key = (display_id.lower(), name.lower())
+        key = (display_id.lower(), name.lower(), username.lower())
         if key in seen:
             continue
         seen.add(key)
         
         suggestions.append({
-            "display_id": display_id or name,
-            "name": name or display_id
+            "user_uuid": st_uuid,
+            "display_id": display_id or username or name,
+            "name": name or display_id or username,
+            "username": username,
+            "accounts": accounts,
+            "birth_md": st_info.get("birth_md", "")
         })
 
     return jsonify({"ok": True, "suggestions": suggestions})
+
+
+@students_bp.route("/api/students/mapping", methods=["GET"])
+def api_get_students_mapping():
+    try:
+        _sync_workspace_students()
+    except Exception:
+        pass
+    ws_students = _load_workspace_students()
+    
+    # Calculate unlinked accounts from uuids.json
+    from core.storage import UUIDS_PATH, _save_workspace_students
+    all_assigned_accounts = set()
+    students_list = []
+    
+    for u, data in ws_students.items():
+        disp = data.get("display_id") or ""
+        name = data.get("name") or ""
+        accs = data.get("accounts") or []
+        if isinstance(accs, list):
+            for a in accs:
+                if a: all_assigned_accounts.add(str(a).strip().lower())
+        if disp:
+            all_assigned_accounts.add(disp.strip().lower())
+
+        students_list.append({
+            "user_uuid": u,
+            "name": name,
+            "display_id": disp,
+            "birth_md": data.get("birth_md", ""),
+            "accounts": accs if isinstance(accs, list) else ([disp] if disp else []),
+            "status": data.get("status", "active")
+        })
+
+    # Sort students alphabetically by name
+    students_list.sort(key=lambda s: s.get("name") or s.get("display_id") or "")
+
+    unlinked_accounts = []
+    try:
+        if UUIDS_PATH.exists():
+            uuids_map = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+            for raw_acc in uuids_map.keys():
+                if raw_acc.strip().lower() not in all_assigned_accounts:
+                    unlinked_accounts.append(raw_acc.strip())
+    except Exception as e:
+        print("[api_get_students_mapping] unlinked accounts error:", e)
+
+    return jsonify({
+        "ok": True,
+        "students": students_list,
+        "unlinked_accounts": sorted(unlinked_accounts)
+    })
+
+
+@students_bp.route("/api/students/mapping", methods=["POST"])
+def api_update_student_mapping():
+    payload = request.get_json(force=True, silent=True) or {}
+    user_uuid = (payload.get("user_uuid") or "").strip()
+    if not user_uuid:
+        return jsonify({"ok": False, "error": "user_uuid is required"}), 400
+
+    ws_students = _load_workspace_students()
+    if user_uuid not in ws_students:
+        return jsonify({"ok": False, "error": "student not found"}), 404
+
+    target = ws_students[user_uuid]
+    
+    if "name" in payload:
+        target["name"] = str(payload["name"]).strip()
+    if "display_id" in payload and payload["display_id"]:
+        target["display_id"] = str(payload["display_id"]).strip()
+    if "birth_md" in payload:
+        target["birth_md"] = str(payload["birth_md"]).strip()
+    if "status" in payload:
+        target["status"] = str(payload["status"]).strip()
+    if "accounts" in payload and isinstance(payload["accounts"], list):
+        # Normalize and remove duplicates while preserving order
+        clean_accs = []
+        for acc in payload["accounts"]:
+            s_acc = str(acc).strip()
+            if s_acc and s_acc not in clean_accs:
+                clean_accs.append(s_acc)
+        target["accounts"] = clean_accs
+        if clean_accs and not target.get("display_id"):
+            target["display_id"] = clean_accs[0]
+
+    from core.storage import _save_workspace_students
+    _save_workspace_students(ws_students)
+    return jsonify({"ok": True, "student": target})
+
+
+@students_bp.route("/api/students/mapping/new", methods=["POST"])
+def api_create_student_mapping():
+    payload = request.get_json(force=True, silent=True) or {}
+    name = (payload.get("name") or "").strip()
+    initial_account = (payload.get("display_id") or payload.get("account") or "").strip()
+    
+    from core.storage import _parse_account_name_birth, _save_workspace_students, UUIDS_PATH
+    from uuid import uuid4
+
+    p_name, p_birth, _ = _parse_account_name_birth(initial_account)
+    final_name = name or p_name or initial_account or "신규 수강생"
+    new_uuid = str(uuid4())
+
+    ws_students = _load_workspace_students()
+    accounts_list = [initial_account] if initial_account else []
+
+    ws_students[new_uuid] = {
+        "user_uuid": new_uuid,
+        "name": final_name,
+        "display_id": initial_account or final_name,
+        "birth_md": payload.get("birth_md") or p_birth,
+        "weekdays": [],
+        "subjects": [],
+        "accounts": accounts_list,
+        "note": "",
+        "status": "active"
+    }
+
+    _save_workspace_students(ws_students)
+
+    # Sync uuids.json if initial_account provided
+    if initial_account:
+        try:
+            if UUIDS_PATH.exists():
+                uuids_map = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+                if initial_account not in uuids_map:
+                    uuids_map[initial_account] = new_uuid
+                    UUIDS_PATH.write_text(json.dumps(uuids_map, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+    return jsonify({"ok": True, "student": ws_students[new_uuid]})
+
+
+@students_bp.route("/api/students/mapping/delete", methods=["POST"])
+def api_delete_student_mapping():
+    payload = request.get_json(force=True, silent=True) or {}
+    user_uuid = (payload.get("user_uuid") or "").strip()
+    if not user_uuid:
+        return jsonify({"ok": False, "error": "user_uuid is required"}), 400
+
+    ws_students = _load_workspace_students()
+    if user_uuid in ws_students:
+        del ws_students[user_uuid]
+        from core.storage import _save_workspace_students
+        _save_workspace_students(ws_students)
+        return jsonify({"ok": True})
+    return jsonify({"ok": False, "error": "student not found"}), 404
 
 
 @students_bp.get("/api/students/<user_uuid>/recommendations")

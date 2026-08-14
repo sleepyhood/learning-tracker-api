@@ -41,6 +41,25 @@
   </div>
 
   <div class="header-tools">
+    <button
+      type="button"
+      id="btnOpenStudentAccountsModal"
+      class="btn-secondary header-tool"
+      style="display: inline-flex; align-items: center; gap: 4px; font-weight: 600;"
+      title="수강생 실명 및 본계정/부계정 1:N 매핑 관리"
+      onclick="openStudentAccountsModal()"
+    >
+      👥 수강생 계정 관리
+    </button>
+    <button
+      type="button"
+      class="btn-primary header-tool"
+      style="background: linear-gradient(135deg, #2563eb, #1d4ed8); border: none;"
+      title="계정 없는 오프라인/교재 1클릭 알림장"
+      onclick="openOfflineFeedbackModal()"
+    >
+      ✨ 오프라인 피드백
+    </button>
     <a href="/schedule" class="btn-secondary header-tool">수업 스케줄</a>
     <button
       type="button"
