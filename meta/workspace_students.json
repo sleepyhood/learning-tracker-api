@@ -248,10 +248,12 @@
   },
   "35f42f74-81b4-4021-877e-09f8f9191110": {
     "display_id": "강한빛0626",
-    "name": "강한빛0626",
+    "name": "강한빛",
     "birth_md": "",
     "accounts": [
-      "강한빛0626"
+      "강한빛0626",
+      "강한빛",
+      "강한빛 부계"
     ],
     "user_uuid": "35f42f74-81b4-4021-877e-09f8f9191110",
     "weekdays": [],
@@ -1117,19 +1119,6 @@
     "note": "",
     "status": "active"
   },
-  "5add43a5-2199-45cf-8631-f58d09182571": {
-    "display_id": "강한빛 부계",
-    "name": "강한빛 부계",
-    "birth_md": "",
-    "accounts": [
-      "강한빛 부계"
-    ],
-    "user_uuid": "5add43a5-2199-45cf-8631-f58d09182571",
-    "weekdays": [],
-    "subjects": [],
-    "note": "",
-    "status": "active"
-  },
   "a85d0186-6c28-4e27-b5ef-9d6794428b9f": {
     "display_id": "정진우",
     "name": "정진우",
@@ -1600,7 +1589,7 @@
   },
   "71eff3a4-8e68-4ed4-9154-c342094b2ee8": {
     "display_id": "1103강동현",
-    "name": "1103강동현",
+    "name": "강동현",
     "birth_md": "",
     "accounts": [
       "1103강동현"
@@ -2131,19 +2120,6 @@
     "note": "",
     "status": "active"
   },
-  "408e1c36-2f33-477d-abff-da8215160030": {
-    "user_uuid": "408e1c36-2f33-477d-abff-da8215160030",
-    "display_id": "강한빛",
-    "name": "강한빛",
-    "birth_md": "",
-    "weekdays": [],
-    "subjects": [],
-    "accounts": [
-      "강한빛"
-    ],
-    "note": "",
-    "status": "active"
-  },
   "bf869678-398f-46d4-a04f-26ac9df00bf3": {
     "user_uuid": "bf869678-398f-46d4-a04f-26ac9df00bf3",
     "display_id": "임건우1125",
@@ -2218,6 +2194,19 @@
     "subjects": [],
     "accounts": [
       "지원0401"
+    ],
+    "note": "",
+    "status": "active"
+  },
+  "0d9dd4fd-7b70-4d3f-a136-cea7225adad6": {
+    "user_uuid": "0d9dd4fd-7b70-4d3f-a136-cea7225adad6",
+    "name": "이승현",
+    "display_id": "이승현0324",
+    "birth_md": "0324",
+    "weekdays": [],
+    "subjects": [],
+    "accounts": [
+      "이승현0324"
     ],
     "note": "",
     "status": "active"
