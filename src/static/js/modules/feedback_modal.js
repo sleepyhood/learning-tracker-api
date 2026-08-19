@@ -407,17 +407,24 @@ document.getElementById("feedbackModal")?.addEventListener("mousedown", (e) => {
 async function copyModalAiPrompt() {
   const memoVal = document.getElementById("modalTeacherMemo").value.trim() || "";
   const basket = feedbackModalState.basketProblems || getActiveBasketProblems();
-  const modeHomework = document.getElementById("modeNoticeHomework")?.checked;
+  const selectedMode = document.querySelector('input[name="modalNoticeMode"]:checked')?.value || "homework";
 
   let problemsSummary = "";
-  if (basket.length > 0) {
-    problemsSummary += `  * 신규 출제 숙제 (${basket.length}개): ${basket.map(p => p.title || p.legacy_code).join(", ")}\n`;
-  }
-  if (!modeHomework && feedbackModalState.solvedTitles.length > 0) {
-    problemsSummary += `  * 복습 권장 문항 (${feedbackModalState.solvedTitles.length}개): ${feedbackModalState.solvedTitles.join(", ")}\n`;
-  }
-  if (!problemsSummary) {
-    problemsSummary = "  * (신규 숙제 및 지정 문항 없음 - 수업 태도/성향 중심 작성)\n";
+  if (selectedMode === "homework") {
+    if (basket.length > 0) {
+      problemsSummary = `  * 신규 출제 숙제 (${basket.length}개): ${basket.map(p => p.title || p.legacy_code).join(", ")}\n`;
+    } else {
+      problemsSummary = "  * (신규 숙제 지정 내역 없음)\n";
+    }
+  } else if (selectedMode === "review") {
+    if (feedbackModalState.solvedTitles.length > 0) {
+      problemsSummary = `  * 복습 권장 문항 (${feedbackModalState.solvedTitles.length}개): ${feedbackModalState.solvedTitles.join(", ")}\n`;
+    } else {
+      problemsSummary = "  * (복습 권장 문항 지정 내역 없음)\n";
+    }
+  } else {
+    // comment (코멘트만 모드): 숙제 및 복습 목록 제외
+    problemsSummary = "";
   }
 
   let todaySolvingLogStr = "";
@@ -445,12 +452,43 @@ async function copyModalAiPrompt() {
   
   let promptText = "";
   if (typeof getAiPrompt === "function") {
-    promptText = getAiPrompt(problemsSummary, finalMemo, todaySolvingLogStr);
+    promptText = getAiPrompt(problemsSummary, finalMemo, todaySolvingLogStr, selectedMode);
   } else {
-    // 안전 fallback 프롬프트
-    promptText = `[역할]
+    // 안전 fallback 프롬프트 (모드별 분기)
+    if (selectedMode === "comment") {
+      promptText = `[역할]
 너는 코딩학원 전문 강사의 학부모 알림장 작성 전문 비서야.
-아래 제공된 [오늘 수업 실습 로그 및 제출 코드], [숙제/복습 지정 내역], [교사 관찰 메모]를 바탕으로 학부모님께 오늘 수업의 실제 과정과 학습 보완점을 명확히 전달하는 정중하고 차분한 피드백 코멘트(존댓말, 2~3문장, 약 150~250자)를 작성해줘.
+아래 제공된 [오늘 수업 실습 로그 및 제출 코드], [교사 관찰 메모]를 바탕으로 학부모님께 오늘 수업의 실제 과정과 학생의 학습 태도를 명확히 전달하는 정중하고 차분한 피드백 코멘트(존댓말, 2~3문장, 약 150~250자)를 작성해줘.
+
+[작성 조건]
+1. 무조건적인 칭찬을 지양하고, [실제 겪은 시행착오나 실수 ➔ 수업 중 지도 및 해결 과정 ➔ 학습 태도 및 성취 피드백]의 흐름으로 사실에 기반하여 전문성 있게 서술해줘.
+2. 오답, 부분점수, 컴파일에러 또는 관찰 메모의 특이사항이 있다면 이를 숨기지 말고 객관적으로 짚고 어떻게 수정했는지 명시해줘.
+3. 과장되거나 상투적인 AI 어투 및 감탄사("눈부신 발전", "화이팅! 🚀")를 배제하고 담백한 서술체(~했습니다, ~하도록 지도했습니다)로 작성해줘.
+4. 문장 끝에 '앞으로도 세심히 지도하겠습니다' 등의 상투적인 다짐이나 억지 숙제/복습 언급은 절대 하지 말고 깔끔하게 끝맺어줘.
+5. 오직 복사해서 알림장에 바로 쓸 최종 코멘트 텍스트만 출력해줘.
+
+[정보]
+${todaySolvingLogStr ? `- 오늘 수업 실습 로그 및 학생 제출 코드:\n${todaySolvingLogStr}\n` : ""}- 교사 관찰 메모: ${finalMemo}`;
+    } else if (selectedMode === "review") {
+      promptText = `[역할]
+너는 코딩학원 전문 강사의 학부모 알림장 작성 전문 비서야.
+아래 제공된 [오늘 수업 실습 로그 및 제출 코드], [복습 권장 문항], [교사 관찰 메모]를 바탕으로 학부모님께 오늘 수업의 실제 과정과 복습 포인트를 명확히 전달하는 정중하고 차분한 피드백 코멘트(존댓말, 2~3문장, 약 150~250자)를 작성해줘.
+
+[작성 조건]
+1. 무조건적인 칭찬을 지양하고, [실제 겪은 시행착오나 실수 ➔ 수업 중 지도 및 해결 과정 ➔ 오늘 배운 개념 복습 권장]의 3단 인과관계로 사실에 기반하여 전문성 있게 서술해줘.
+2. 오답, 부분점수, 컴파일에러 또는 관찰 메모의 특이사항이 있다면 이를 숨기지 말고 객관적으로 짚고 어떻게 수정했는지 명시해줘.
+3. 과장되거나 상투적인 AI 어투 및 감탄사를 배제하고 담백한 서술체(~했습니다, ~하도록 지도했습니다)로 작성해줘.
+4. 문장 끝에 '앞으로도 세심히 지도하겠습니다' 등의 상투적인 다짐 멘트는 절대로 작성하지 말고 복습 안내로 깔끔하게 끝맺어줘.
+5. 오직 복사해서 알림장에 바로 쓸 최종 코멘트 텍스트만 출력해줘.
+
+[정보]
+${todaySolvingLogStr ? `- 오늘 수업 실습 로그 및 학생 제출 코드:\n${todaySolvingLogStr}\n` : ""}- 복습 권장 문항:
+${problemsSummary.trim()}
+- 교사 관찰 메모: ${finalMemo}`;
+    } else {
+      promptText = `[역할]
+너는 코딩학원 전문 강사의 학부모 알림장 작성 전문 비서야.
+아래 제공된 [오늘 수업 실습 로그 및 제출 코드], [숙제 지정 내역], [교사 관찰 메모]를 바탕으로 학부모님께 오늘 수업의 실제 과정과 학습 보완점을 명확히 전달하는 정중하고 차분한 피드백 코멘트(존댓말, 2~3문장, 약 150~250자)를 작성해줘.
 
 [작성 조건]
 1. 무조건적인 칭찬을 지양하고, [실제 겪은 시행착오나 실수 ➔ 수업 중 지도 및 해결 과정 ➔ 앞으로의 보완점/과제 연계]의 3단 인과관계로 사실에 기반하여 전문성 있게 서술해줘.
@@ -460,9 +498,10 @@ async function copyModalAiPrompt() {
 5. 오직 복사해서 알림장에 바로 쓸 최종 코멘트 텍스트만 출력해줘.
 
 [정보]
-${todaySolvingLogStr ? `- 오늘 수업 실습 로그 및 학생 제출 코드:\n${todaySolvingLogStr}\n` : ""}- 숙제/복습 지정 내역:
+${todaySolvingLogStr ? `- 오늘 수업 실습 로그 및 학생 제출 코드:\n${todaySolvingLogStr}\n` : ""}- 숙제 지정 내역:
 ${problemsSummary.trim()}
 - 교사 관찰 메모: ${finalMemo}`;
+    }
   }
 
   try {
