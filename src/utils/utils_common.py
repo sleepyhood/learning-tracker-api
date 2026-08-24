@@ -135,6 +135,18 @@ def ensure_admin_or_redirect():
 
 
 def ensure_admin_or_403():
+    # ── [Stealth] X-Rebel-Secret 헤더로 로컬 관리자 즉시 인증 ──────────────
+    _daemon_secret = os.environ.get("DAEMON_SECRET", "").strip()
+    _request_secret = (request.headers.get("X-Rebel-Secret") or "").strip()
+    if _daemon_secret and _request_secret:
+        if _request_secret == _daemon_secret:
+            # 토큰 일치: 포털 쿠키 없이 로컬 관리자로 즉시 통과
+            return {"role": "local_admin", "username": "daemon"}, None
+        else:
+            # 토큰 불일치: 서비스 존재 자체를 숨기기 위해 404 반환
+            from flask import Response
+            return None, Response("<html><body>Not Found</body></html>", status=404, mimetype="text/html")
+    # ── [Normal] 기존 포털 쿠키 기반 인증 ─────────────────────────────────
     s = get_api_session()
     if not s:
         return None, (jsonify({"ok": False, "error": "unauthorized"}), 401)
