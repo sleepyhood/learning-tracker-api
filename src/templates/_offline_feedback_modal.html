@@ -107,15 +107,26 @@
           <div class="feedback-section-title">🪄 AI 코멘트 작성 파이프라인</div>
 
           <div style="margin-top: 6px;">
-            <div style="font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 3px;">1단계: AI 프롬프트 복사</div>
-            <button id="offlineCopyPromptBtn" class="feedback-btn feedback-ai-btn" style="padding: 6px 10px; font-size: 0.8rem; width: 100%;" onclick="copyOfflineAiPrompt()">
-              📋 AI 프롬프트 복사 (상투적 맺음말 제거 적용)
+            <div style="font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 3px;">1단계: AI 피드백 자동 생성</div>
+            <!-- 🪄 메인: Gemini API 원클릭 생성 -->
+            <button id="offlineGenerateAiBtn" class="feedback-btn feedback-complete-btn"
+                    style="background: linear-gradient(135deg, #7c3aed, #5b21b6); width: 100%; padding: 7px 10px; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;"
+                    onclick="generateOfflineAiFeedback()">
+              🪄 AI 피드백 생성 (1초 완성)
+            </button>
+            <!-- 서브: 기존 프롬프트 복사 (Fallback) -->
+            <button id="offlineCopyPromptBtn" class="feedback-btn feedback-ai-btn"
+                    style="padding: 5px 10px; font-size: 0.75rem; width: 100%; opacity: 0.75;"
+                    onclick="copyOfflineAiPrompt()">
+              📋 직접 복사 후 외부 AI 사용 (Fallback)
             </button>
           </div>
 
           <div style="margin-top: 8px;">
-            <div style="font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 3px;">2단계: AI 답변 붙여넣기</div>
-            <textarea id="offlineAiResponseComment" placeholder="외부 AI 답변이 이곳에 입력되면 실시간 알림장에 즉시 반영됩니다." class="feedback-input feedback-textarea" rows="2" style="font-size: 0.82rem;"></textarea>
+            <div style="font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 3px;">2단계: AI 생성 결과 확인 &amp; 수정</div>
+            <textarea id="offlineAiResponseComment"
+                      placeholder="▶ [AI 피드백 생성] 버튼을 누르면 여기에 완성된 알림장이 자동으로 채워집니다.&#10;직접 외부 AI 답변을 붙여넣기 하셔도 됩니다."
+                      class="feedback-input feedback-textarea" rows="3" style="font-size: 0.82rem;"></textarea>
           </div>
 
           <div style="display: flex; gap: 8px; margin-top: 10px;">
@@ -127,6 +138,7 @@
             </button>
           </div>
         </div>
+
 
         <!-- 📜 최근 피드백 히스토리 -->
         <div class="feedback-modal-section">

@@ -917,32 +917,83 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const currentQuery = (searchInput.value || "").trim().toLowerCase();
+    const queryChoseong = getChoseong(currentQuery);
+
     items.forEach((item, index) => {
       const li = document.createElement("li");
       li.className = "autocomplete-item-row";
       const name = typeof item === "string" ? item : (item.name || item.display_id);
       const displayId = typeof item === "string" ? item : (item.display_id || item.name);
-      const username = typeof item === "object" ? (item.username || '') : '';
-      const searchValue = displayId || name;
-      const isCustomId = !isStandardAcademyId(displayId) && !isStandardAcademyId(name);
+      const birthMd = typeof item === "object" ? (item.birth_md || "") : "";
+      const rawAccounts = typeof item === "object" && Array.isArray(item.accounts) ? item.accounts : [displayId];
+      
+      const cleanAccounts = [];
+      rawAccounts.forEach(a => {
+        const str = typeof a === "object" ? (a.username || "") : String(a);
+        if (str && !cleanAccounts.includes(str)) cleanAccounts.push(str);
+      });
 
-      const displayText = (name && displayId && name !== displayId)
-        ? `${name} (@${displayId})`
-        : (displayId || name);
+      const primaryAcc = displayId || cleanAccounts[0] || name;
+      const subAccounts = cleanAccounts.filter(a => a.toLowerCase() !== primaryAcc.toLowerCase());
+      const isCustomId = !isStandardAcademyId(primaryAcc) && !isStandardAcademyId(name);
+
+      const isMatchedAcc = (accStr) => {
+        if (!currentQuery) return false;
+        const lower = accStr.toLowerCase();
+        const chos = getChoseong(accStr);
+        return lower.includes(currentQuery) || chos.includes(currentQuery) || chos.includes(queryChoseong);
+      };
 
       li.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-weight:600; color:var(--text, #0f1f3a);">${displayText}</span>
-            ${isCustomId ? `<span class="badge-custom-id">외부ID</span>` : ''}
+        <div style="display:flex; flex-direction:column; gap:4px; width:100%;">
+          <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <span style="font-weight:700; color:var(--text, #0f1f3a); font-size:0.92rem;">${name}</span>
+              <span class="badge-primary-acc" data-acc="${primaryAcc}" title="본계정 (@${primaryAcc})으로 조회">⭐ @${primaryAcc}</span>
+              ${birthMd ? `<span class="badge-birth-mini">🎂 ${birthMd}</span>` : ''}
+              ${isCustomId ? `<span class="badge-custom-id">외부ID</span>` : ''}
+            </div>
+            <span style="font-size:0.72rem; color:var(--muted, #64748b);">선택 ➔</span>
           </div>
-          ${username && username !== displayId ? `<span style="font-size:0.75rem; color:var(--muted, #64748b);">${username}</span>` : ''}
+          ${subAccounts.length > 0 ? `
+            <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap; font-size:0.75rem; color:var(--muted, #64748b);">
+              <span style="font-weight:600; color:#4f46e5;">🔗 부계정:</span>
+              ${subAccounts.map(subAcc => `
+                <span class="badge-sub-acc ${isMatchedAcc(subAcc) ? 'is-matched' : ''}" data-acc="${subAcc}" title="부계정 (@${subAcc})으로 조회">@${subAcc}</span>
+              `).join('')}
+            </div>
+          ` : ''}
         </div>
       `;
+
       li.dataset.index = String(index);
+
+      // Sub-account chip direct click
+      li.querySelectorAll(".badge-sub-acc").forEach(subChip => {
+        subChip.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const targetSubAcc = subChip.dataset.acc || subChip.textContent.replace("@", "").trim();
+          searchInput.value = targetSubAcc;
+          searchClearBtn?.classList.toggle("hidden", !searchInput.value.trim());
+          pushRecentViewed({
+            name: name,
+            display_id: targetSubAcc,
+            username: targetSubAcc,
+            user_uuid: item.user_uuid
+          });
+          closeAutocomplete();
+          searchForm.requestSubmit();
+        });
+      });
+
+      // Primary badge or entire row click
       li.addEventListener("mousedown", (e) => {
+        if (e.target.closest(".badge-sub-acc")) return;
         e.preventDefault();
-        searchInput.value = searchValue;
+        const clickedPrimary = e.target.closest(".badge-primary-acc")?.dataset.acc || primaryAcc;
+        searchInput.value = clickedPrimary;
         searchClearBtn?.classList.toggle("hidden", !searchInput.value.trim());
         pushRecentViewed(item);
         closeAutocomplete();
@@ -951,6 +1002,8 @@ document.addEventListener("DOMContentLoaded", () => {
       autocompleteList.appendChild(li);
     });
   };
+
+  let remoteSearchTimer = null;
 
   const updateSuggestions = () => {
     const raw = searchInput.value.trim();
@@ -994,6 +1047,36 @@ document.addEventListener("DOMContentLoaded", () => {
       .slice(0, MAX_SUGGESTIONS);
 
     renderAutocomplete(matches);
+
+    // On-demand remote search if local matches are scarce
+    if (matches.length < 3 && raw.length >= 2) {
+      if (remoteSearchTimer) clearTimeout(remoteSearchTimer);
+      remoteSearchTimer = setTimeout(() => {
+        const currentQuery = searchInput.value.trim();
+        if (currentQuery !== raw) return;
+
+        fetch(`/api/students/search_suggestions?q=${encodeURIComponent(raw)}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+              // Merge into studentList if not present
+              const existingUuids = new Set(studentList.map(s => typeof s === 'object' ? s.user_uuid : s));
+              data.suggestions.forEach(newItem => {
+                if (!existingUuids.has(newItem.user_uuid)) {
+                  studentList.push(newItem);
+                  existingUuids.add(newItem.user_uuid);
+                }
+              });
+
+              if (document.activeElement === searchInput && searchInput.value.trim() === raw) {
+                const updatedMatches = data.suggestions.slice(0, MAX_SUGGESTIONS);
+                renderAutocomplete(updatedMatches);
+              }
+            }
+          })
+          .catch((err) => console.error("[remoteSearch] error:", err));
+      }, 250);
+    }
   };
 
   const fetchStudentSuggestions = () => {
@@ -1005,17 +1088,6 @@ document.addEventListener("DOMContentLoaded", () => {
           if (document.activeElement === searchInput) {
             updateSuggestions();
           }
-        } else {
-          return fetch("/proxy/user_rank")
-            .then((res) => (res.ok ? res.json() : null))
-            .then((rankData) => {
-              if (rankData && Array.isArray(rankData.usernames)) {
-                studentList = rankData.usernames;
-                if (document.activeElement === searchInput) {
-                  updateSuggestions();
-                }
-              }
-            });
         }
       })
       .catch((err) => console.error("Error fetching search suggestions:", err));

@@ -159,14 +159,18 @@ def _load_workspace_students():
             name_val = v.get("name")
             p_name, p_birth, is_std = _parse_account_name_birth(disp)
             
-            if not name_val:
+            if not name_val or (is_std and name_val == disp):
                 name_val = p_name or disp
                 v["name"] = name_val
                 need_save = True
 
+            if is_std and p_birth and not v.get("birth_md"):
+                v["birth_md"] = p_birth
+                need_save = True
+
             v.setdefault("display_id", disp)
             v.setdefault("name", name_val)
-            v.setdefault("birth_md", p_birth)
+            v.setdefault("birth_md", p_birth if is_std else "")
             v.setdefault("weekdays", [])
             v.setdefault("subjects", [])
             
@@ -208,7 +212,11 @@ def _sync_workspace_students():
     try:
         uuids = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
         changed = False
+        uuid_pattern = re.compile(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+        
         for sid, u in uuids.items():
+            if uuid_pattern.match(sid):
+                continue
             if u not in data:
                 p_name, p_birth, is_std = _parse_account_name_birth(sid)
                 data[u] = {

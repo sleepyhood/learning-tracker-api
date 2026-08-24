@@ -708,8 +708,29 @@ def api_schedule_delete_slot(slot_id):
     return jsonify({"ok": True})
 
 
+CHOSEONG_LIST = [
+    'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ',
+    'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
+]
+
+
+def _get_choseong(text: str) -> str:
+    if not text:
+        return ""
+    res = []
+    for char in text:
+        code = ord(char)
+        if 0xAC00 <= code <= 0xD7A3:
+            idx = (code - 0xAC00) // 588
+            res.append(CHOSEONG_LIST[idx])
+        else:
+            res.append(char.lower())
+    return "".join(res)
+
+
 @students_bp.route("/api/students/search_suggestions", methods=["GET"])
 def api_student_search_suggestions():
+    q = (request.args.get("q") or "").strip()
     try:
         _sync_workspace_students()
     except Exception:
@@ -717,6 +738,9 @@ def api_student_search_suggestions():
     ws_students = _load_workspace_students()
     suggestions = []
     seen = set()
+
+    q_lower = q.lower()
+    q_choseong = _get_choseong(q)
 
     for st_uuid, st_info in ws_students.items():
         display_id = (st_info.get("display_id") or "").strip()
@@ -729,6 +753,29 @@ def api_student_search_suggestions():
         if not display_id and not name and not username and not accounts:
             continue
         
+        # If query is provided, perform text & choseong filter
+        if q:
+            name_lower = name.lower()
+            disp_lower = display_id.lower()
+            uname_lower = username.lower()
+            name_chos = _get_choseong(name)
+            disp_chos = _get_choseong(display_id)
+
+            text_match = q_lower in name_lower or q_lower in disp_lower or q_lower in uname_lower
+            chos_match = (
+                (q_chos in name_chos if (q_chos := q_choseong) else False)
+                or (q_choseong in disp_chos if q_choseong else False)
+                or q_lower in name_chos
+                or q_lower in disp_chos
+            )
+            acc_match = any(
+                q_lower in str(acc).lower() or (q_choseong and q_choseong in _get_choseong(str(acc)))
+                for acc in accounts
+            )
+
+            if not (text_match or chos_match or acc_match):
+                continue
+
         key = (display_id.lower(), name.lower(), username.lower())
         if key in seen:
             continue
@@ -743,7 +790,60 @@ def api_student_search_suggestions():
             "birth_md": st_info.get("birth_md", "")
         })
 
+    # On-demand live lookup if query has few matches
+    if q and len(suggestions) < 3 and len(q) >= 2:
+        try:
+            from utils.utils_common import get_api_session, BASE_URL, resolve_uuid
+            from utils.utils_user_doc import pull_and_store_user
+            from core.storage import _parse_account_name_birth
+            from urllib.parse import quote
+
+            s = get_api_session()
+            if s:
+                encoded_q = quote(q)
+                resp = s.get(f"{BASE_URL}/api/profile?username={encoded_q}", timeout=5)
+                if resp.status_code == 200:
+                    res_json = resp.json()
+                    p_data = res_json.get("data", {}) if isinstance(res_json, dict) else {}
+                    if isinstance(p_data, dict):
+                        user_obj = p_data.get("user", {})
+                        if isinstance(user_obj, dict):
+                            found_uname = (user_obj.get("username") or "").strip()
+                            if found_uname:
+                                pull_and_store_user(found_uname)
+                                found_name = user_obj.get("realname") or user_obj.get("username")
+                                u_resolved = resolve_uuid(found_uname)
+                                p_name, p_birth, _ = _parse_account_name_birth(found_uname)
+                                
+                                key = (found_uname.lower(), (found_name or "").lower(), found_uname.lower())
+                                if key not in seen:
+                                    seen.add(key)
+                                    suggestions.insert(0, {
+                                        "user_uuid": u_resolved,
+                                        "display_id": found_uname,
+                                        "name": found_name or p_name or found_uname,
+                                        "username": found_uname,
+                                        "accounts": [found_uname],
+                                        "birth_md": p_birth
+                                    })
+        except Exception as e:
+            print(f"[search_suggestions] on-demand lookup exception for {q}: {e}")
+
     return jsonify({"ok": True, "suggestions": suggestions})
+
+
+@students_bp.route("/api/students/sync_all", methods=["POST"])
+def api_students_sync_all():
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
+    try:
+        from services.workspace_student_service import sync_all_doingcoding_students
+        res = sync_all_doingcoding_students(api_session=s)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 @students_bp.route("/api/students/mapping", methods=["GET"])
@@ -791,10 +891,73 @@ def api_get_students_mapping():
     except Exception as e:
         print("[api_get_students_mapping] unlinked accounts error:", e)
 
+    # Candidate pool for smart suggestions: unlinked accounts + other single-account cards
+    from services.workspace_student_service import find_suggested_subaccounts
+    candidate_pool = list(unlinked_accounts)
+    for st in students_list:
+        st_accs = st.get("accounts", [])
+        if len(st_accs) <= 1:
+            disp = st.get("display_id")
+            if disp and disp not in candidate_pool:
+                candidate_pool.append(disp)
+
+    # Calculate suggested accounts for each student
+    for st in students_list:
+        st["suggested_accounts"] = find_suggested_subaccounts(st, candidate_pool, max_suggestions=4)
+
     return jsonify({
         "ok": True,
         "students": students_list,
         "unlinked_accounts": sorted(unlinked_accounts)
+    })
+
+
+@students_bp.route("/api/students/mapping/link_subaccount", methods=["POST"])
+def api_link_subaccount():
+    payload = request.get_json(force=True, silent=True) or {}
+    user_uuid = (payload.get("user_uuid") or "").strip()
+    account_to_link = (payload.get("account") or "").strip()
+    
+    if not user_uuid or not account_to_link:
+        return jsonify({"ok": False, "error": "user_uuid and account are required"}), 400
+
+    ws_students = _load_workspace_students()
+    if user_uuid not in ws_students:
+        return jsonify({"ok": False, "error": "student not found"}), 404
+
+    target = ws_students[user_uuid]
+    accs = target.setdefault("accounts", [])
+    if account_to_link not in accs:
+        accs.append(account_to_link)
+
+    # If account_to_link was previously its own standalone card, automatically remove it
+    cards_to_remove = []
+    for other_uuid, other_st in ws_students.items():
+        if other_uuid != user_uuid:
+            other_accs = other_st.get("accounts", [])
+            other_disp = other_st.get("display_id", "")
+            if (other_disp == account_to_link and len(other_accs) <= 1) or (other_accs == [account_to_link]):
+                cards_to_remove.append(other_uuid)
+
+    for r_uuid in cards_to_remove:
+        del ws_students[r_uuid]
+
+    from core.storage import _save_workspace_students, UUIDS_PATH
+    _save_workspace_students(ws_students)
+
+    # Sync uuids.json
+    try:
+        if UUIDS_PATH.exists():
+            uuids_map = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+            uuids_map[account_to_link] = user_uuid
+            UUIDS_PATH.write_text(json.dumps(uuids_map, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as e:
+        print("[api_link_subaccount] UUID sync error:", e)
+
+    return jsonify({
+        "ok": True,
+        "student": target,
+        "removed_card_uuids": cards_to_remove
     })
 
 
@@ -829,6 +992,29 @@ def api_update_student_mapping():
         target["accounts"] = clean_accs
         if clean_accs and not target.get("display_id"):
             target["display_id"] = clean_accs[0]
+
+        # Auto-remove standalone cards that have been merged into this student
+        cards_to_remove = []
+        for other_uuid, other_st in ws_students.items():
+            if other_uuid != user_uuid:
+                other_accs = other_st.get("accounts", [])
+                other_disp = other_st.get("display_id", "")
+                if (other_disp in clean_accs and len(other_accs) <= 1) or (len(other_accs) == 1 and other_accs[0] in clean_accs):
+                    cards_to_remove.append(other_uuid)
+
+        for r_uuid in cards_to_remove:
+            del ws_students[r_uuid]
+
+        # Update uuids.json mapping for all associated accounts
+        try:
+            from core.storage import UUIDS_PATH
+            if UUIDS_PATH.exists():
+                uuids_map = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+                for acc in clean_accs:
+                    uuids_map[acc] = user_uuid
+                UUIDS_PATH.write_text(json.dumps(uuids_map, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception as e:
+            print("[api_update_student_mapping] UUID mapping update error:", e)
 
     from core.storage import _save_workspace_students
     _save_workspace_students(ws_students)
@@ -870,9 +1056,8 @@ def api_create_student_mapping():
         try:
             if UUIDS_PATH.exists():
                 uuids_map = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
-                if initial_account not in uuids_map:
-                    uuids_map[initial_account] = new_uuid
-                    UUIDS_PATH.write_text(json.dumps(uuids_map, ensure_ascii=False, indent=2), encoding="utf-8")
+                uuids_map[initial_account] = new_uuid
+                UUIDS_PATH.write_text(json.dumps(uuids_map, ensure_ascii=False, indent=2), encoding="utf-8")
         except Exception:
             pass
 
@@ -888,9 +1073,24 @@ def api_delete_student_mapping():
 
     ws_students = _load_workspace_students()
     if user_uuid in ws_students:
+        target = ws_students[user_uuid]
         del ws_students[user_uuid]
-        from core.storage import _save_workspace_students
+        from core.storage import _save_workspace_students, UUIDS_PATH
         _save_workspace_students(ws_students)
+
+        # Cleanup uuids.json for deleted student
+        try:
+            if UUIDS_PATH.exists():
+                uuids_map = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+                for acc in target.get("accounts", []):
+                    if acc in uuids_map and uuids_map[acc] == user_uuid:
+                        del uuids_map[acc]
+                if user_uuid in uuids_map:
+                    del uuids_map[user_uuid]
+                UUIDS_PATH.write_text(json.dumps(uuids_map, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception as e:
+            print("[api_delete_student_mapping] uuids cleanup error:", e)
+
         return jsonify({"ok": True})
     return jsonify({"ok": False, "error": "student not found"}), 404
 

@@ -512,3 +512,221 @@ def save_homework_log(display_id: str | None, user_uuid: str | None, log_payload
         raise ValueError("Target user_uuid or display_id is required")
 
     append_homework_log(user_uuid, log_payload)
+
+
+# ─────────────────────────────────────────
+# 두잉코딩 전체 학생 계정 자동 동기화
+# ─────────────────────────────────────────
+
+def sync_all_doingcoding_students(api_session=None, limit: int = 200) -> dict:
+    """
+    두잉코딩 /api/user_rank 를 순회하여 전체 학생 계정을 조회하고,
+    uuids.json 및 workspace_students.json에 자동 등록/동기화합니다.
+    """
+    import re
+    from utils.utils_common import get_api_session, BASE_URL
+    from core.storage import _parse_account_name_birth
+    
+    session = api_session or get_api_session()
+    if not session:
+        print("[sync_all_doingcoding_students] No valid API session")
+        return {"ok": False, "error": "No valid session"}
+
+    workspace_data = _load_workspace_students()
+    
+    try:
+        uuids_map = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        uuids_map = {}
+
+    import time
+    offset = 0
+    total_fetched = 0
+    new_added = 0
+    
+    while True:
+        url = f"{BASE_URL}/api/user_rank?limit={limit}&offset={offset}"
+        resp = None
+        for retry in range(3):
+            try:
+                resp = session.get(url, timeout=15)
+                if resp.status_code == 200:
+                    break
+                time.sleep(1)
+            except Exception as req_err:
+                print(f"[sync_all_doingcoding_students] Retry {retry+1}/3 failed for offset {offset}: {req_err}")
+                time.sleep(1.5)
+
+        if not resp or resp.status_code != 200:
+            print(f"[sync_all_doingcoding_students] Error or failed to fetch at offset {offset}")
+            break
+
+        try:
+            res_json = resp.json()
+            if res_json.get("error"):
+                print(f"[sync_all_doingcoding_students] API error: {res_json.get('error')}")
+                break
+            
+            data_obj = res_json.get("data", {})
+            results = data_obj.get("results", [])
+            total = data_obj.get("total", 0)
+            
+            if not results:
+                break
+                
+            for item in results:
+                user_info = item.get("user", {})
+                username = (user_info.get("username") or "").strip()
+                if not username:
+                    continue
+                
+                real_name = (item.get("real_name") or "").strip()
+                total_fetched += 1
+                
+                # UUID 발급/조회
+                if username in uuids_map:
+                    u = uuids_map[username]
+                else:
+                    u = str(uuid4())
+                    uuids_map[username] = u
+                    new_added += 1
+                
+                p_name, p_birth, is_std = _parse_account_name_birth(username)
+                final_name = real_name or p_name or username
+                
+                if u not in workspace_data:
+                    workspace_data[u] = {
+                        "user_uuid": u,
+                        "display_id": username,
+                        "name": final_name,
+                        "birth_md": p_birth,
+                        "weekdays": [],
+                        "subjects": [],
+                        "accounts": [username],
+                        "note": "",
+                        "status": "active"
+                    }
+                else:
+                    st = workspace_data[u]
+                    st.setdefault("display_id", username)
+                    if real_name:
+                        st["name"] = real_name
+                    elif not st.get("name") or st.get("name") == username:
+                        st["name"] = final_name
+                    if p_birth and not st.get("birth_md"):
+                        st["birth_md"] = p_birth
+                    accs = st.setdefault("accounts", [])
+                    if username not in accs:
+                        accs.append(username)
+
+            offset += len(results)
+            if offset >= total or len(results) < limit:
+                break
+
+            time.sleep(0.15)
+                
+        except Exception as e:
+            print(f"[sync_all_doingcoding_students] Exception at offset {offset}: {e}")
+            break
+
+    # Clean UUIDs map (remove keys that are UUIDs themselves)
+    uuid_pattern = re.compile(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+    cleaned_uuids = {}
+    for k, v in uuids_map.items():
+        if uuid_pattern.match(k):
+            continue
+        cleaned_uuids[k] = v
+
+    try:
+        UUIDS_PATH.write_text(json.dumps(cleaned_uuids, ensure_ascii=False, indent=2), encoding="utf-8")
+        _save_workspace_students(workspace_data)
+    except Exception as e:
+        print(f"[sync_all_doingcoding_students] Save error: {e}")
+
+    print(f"[sync_all_doingcoding_students] Complete! Fetched: {total_fetched}, New: {new_added}, Total registered: {len(workspace_data)}")
+    return {
+        "ok": True,
+        "total_fetched": total_fetched,
+        "new_added": new_added,
+        "total_students": len(workspace_data)
+    }
+
+
+# ─────────────────────────────────────────
+# 스마트 유사 계정(부계정) 추천 알고리즘
+# ─────────────────────────────────────────
+
+def find_suggested_subaccounts(student: dict, candidate_accounts: list[str], max_suggestions: int = 4) -> list[str]:
+    """
+    주어진 학생의 이름, 생년월일, 대표 아이디를 기반으로
+    후보 계정 목록에서 높은 확률로 동일 인물인 유사 계정을 자동 추천합니다.
+    """
+    import re
+    from core.storage import _parse_account_name_birth
+
+    if not isinstance(student, dict):
+        return []
+
+    name = (student.get("name") or "").strip()
+    birth_md = (student.get("birth_md") or "").strip()
+    display_id = (student.get("display_id") or "").strip()
+    
+    current_accs = {str(a).strip().lower() for a in student.get("accounts", []) if a}
+    if display_id:
+        current_accs.add(display_id.lower())
+
+    if not name or name == display_id:
+        p_name, p_birth, _ = _parse_account_name_birth(display_id)
+        name = p_name or name
+        if not birth_md:
+            birth_md = p_birth
+
+    if not name or len(name) < 2:
+        return []
+
+    name_lower = name.lower()
+    reverse_pattern = f"{birth_md}{name_lower}" if birth_md else ""
+
+    suggestions = []
+    seen = set()
+
+    for cand in candidate_accounts:
+        if not cand:
+            continue
+        c_str = str(cand).strip()
+        c_lower = c_str.lower()
+
+        if c_lower in current_accs or c_lower in seen:
+            continue
+
+        c_name, c_birth, is_std = _parse_account_name_birth(c_str)
+        c_name_lower = c_name.lower()
+
+        is_match = False
+        priority = 0
+
+        # 1. 역순 패턴 완전 일치 (예: 강동현1103 ↔ 1103강동현)
+        if reverse_pattern and c_lower == reverse_pattern:
+            is_match = True
+            priority = 100
+        # 2. 동일 실명 + 표준 ID 패턴 (예: 강동현1103 ↔ 강동현1105)
+        elif is_std and c_name_lower == name_lower:
+            is_match = True
+            priority = 90 if (birth_md and c_birth == birth_md) else 75
+        # 3. 동일 실명으로 시작하거나 끝나는 변형 (예: 신승현1222_2, 강동현_sub)
+        elif c_lower.startswith(name_lower) or c_lower.endswith(name_lower):
+            is_match = True
+            priority = 80
+        # 4. 생년월일 접두 + 이름 포함 (예: 1103_강동현)
+        elif birth_md and c_lower.startswith(birth_md) and name_lower in c_lower:
+            is_match = True
+            priority = 85
+
+        if is_match:
+            seen.add(c_lower)
+            suggestions.append((priority, c_str))
+
+    suggestions.sort(key=lambda x: -x[0])
+    return [item[1] for item in suggestions[:max_suggestions]]
+
+

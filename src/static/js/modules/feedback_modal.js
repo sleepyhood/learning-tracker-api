@@ -402,6 +402,91 @@ document.getElementById("feedbackModal")?.addEventListener("mousedown", (e) => {
   }
 });
 
+/* ─── AI 피드백 직접 생성 (Gemini API) ─────────────────────── */
+
+async function generateModalAiFeedback() {
+  const btn = document.getElementById("modalGenerateAiBtn");
+  const commentEl = document.getElementById("modalHomeworkComment");
+  if (!commentEl) return;
+
+  // ── 프롬프트 조립 (copyModalAiPrompt 와 동일한 방식) ──────
+  const memoVal = document.getElementById("modalTeacherMemo").value.trim() || "";
+  const basket = feedbackModalState.basketProblems || getActiveBasketProblems();
+  const selectedMode = document.querySelector('input[name="modalNoticeMode"]:checked')?.value || "homework";
+
+  let problemsSummary = "";
+  if (selectedMode === "homework") {
+    problemsSummary = basket.length > 0
+      ? `  * 신규 출제 숙제 (${basket.length}개): ${basket.map(p => p.title || p.legacy_code).join(", ")}\n`
+      : "  * (신규 숙제 지정 내역 없음)\n";
+  } else if (selectedMode === "review") {
+    problemsSummary = feedbackModalState.solvedTitles.length > 0
+      ? `  * 복습 권장 문항 (${feedbackModalState.solvedTitles.length}개): ${feedbackModalState.solvedTitles.join(", ")}\n`
+      : "  * (복습 권장 문항 지정 내역 없음)\n";
+  }
+
+  let todaySolvingLogStr = "";
+  if (feedbackModalState.todayProblems && feedbackModalState.todayProblems.length > 0) {
+    const items = [...feedbackModalState.todayProblems].sort((a, b) => {
+      const ca = a.server_sub_id && feedbackModalState.submissionCodes[a.server_sub_id] ? 1 : 0;
+      const cb = b.server_sub_id && feedbackModalState.submissionCodes[b.server_sub_id] ? 1 : 0;
+      return cb - ca;
+    }).slice(0, 8);
+    todaySolvingLogStr = items.map((p, idx) => {
+      const cls = classifySubmission(p);
+      const datePrefix = p.isToday ? `[오늘 ${p.time || ""}]` : `[${p.dateStr || ""} ${p.time || ""}]`;
+      const titleText = p.title || p.problem || "문제";
+      const code = p.server_sub_id ? feedbackModalState.submissionCodes[p.server_sub_id] : null;
+      let line = `${idx + 1}. ${datePrefix.trim()} ${titleText} | 결과: ${cls.tag}`;
+      if (code) line += `\n   - 제출 코드:\n\`\`\`\n${code.trim()}\n\`\`\``;
+      return line;
+    }).join("\n\n");
+  }
+
+  const finalMemo = memoVal || "오늘 수업에 차분하고 성실하게 임함 (특이사항 없음)";
+  let prompt = "";
+  if (typeof getAiPrompt === "function") {
+    prompt = getAiPrompt(problemsSummary, finalMemo, todaySolvingLogStr, selectedMode);
+  }
+  if (!prompt) {
+    // Fallback: 기존 복사 방식으로 전환
+    showModalToast("⚠️ 프롬프트 생성 실패 – 수동 복사 방식으로 전환합니다.");
+    await copyModalAiPrompt();
+    return;
+  }
+
+  // ── 버튼 로딩 상태 ────────────────────────────────────────
+  const originalText = btn ? btn.innerHTML : "";
+  if (btn) { btn.disabled = true; btn.innerHTML = "⏳ AI 작성 중..."; }
+
+  try {
+    const res = await fetch("/api/workspace/generate_ai_feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    });
+    const data = await res.json();
+
+    if (data.ok && data.feedback) {
+      commentEl.value = data.feedback;
+      commentEl.dispatchEvent(new Event("input"));  // 실시간 미리보기 갱신 트리거
+      try { await navigator.clipboard.writeText(data.feedback); } catch (_) {}
+      showModalToast("🪄 AI 피드백 생성 완료! (텍스트 영역에 자동 입력 & 클립보드 복사)");
+    } else if (data.code === "NO_KEY") {
+      showModalToast("⚠️ GEMINI_API_KEY 미설정 – 프롬프트 복사 방식으로 전환합니다.");
+      await copyModalAiPrompt();
+    } else {
+      showModalToast(`⚠️ AI 생성 오류: ${data.error || "알 수 없는 오류"} – 프롬프트 복사 방식으로 전환합니다.`);
+      await copyModalAiPrompt();
+    }
+  } catch (err) {
+    showModalToast("⚠️ 네트워크 오류 – 프롬프트 복사 방식으로 전환합니다.");
+    await copyModalAiPrompt();
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+  }
+}
+
 /* ─── AI 프롬프트 복사 ──────────────────────────────────── */
 
 async function copyModalAiPrompt() {
@@ -461,8 +546,8 @@ async function copyModalAiPrompt() {
 아래 제공된 [오늘 수업 실습 로그 및 제출 코드], [교사 관찰 메모]를 바탕으로 학부모님께 오늘 수업의 실제 과정과 학생의 학습 태도를 명확히 전달하는 정중하고 차분한 피드백 코멘트(존댓말, 2~3문장, 약 150~250자)를 작성해줘.
 
 [작성 조건]
-1. 무조건적인 칭찬을 지양하고, [실제 겪은 시행착오나 실수 ➔ 수업 중 지도 및 해결 과정 ➔ 학습 태도 및 성취 피드백]의 흐름으로 사실에 기반하여 전문성 있게 서술해줘.
-2. 오답, 부분점수, 컴파일에러 또는 관찰 메모의 특이사항이 있다면 이를 숨기지 말고 객관적으로 짚고 어떻게 수정했는지 명시해줘.
+1. 무조건적인 칭찬을 지양하고, [실제 겪은 시행착오/오류 탐색 ➔ 스스로 해결한 디버깅 과정 및 지도 ➔ 학습 태도 및 성취 피드백]의 흐름으로 사실에 기반하여 전문성 있게 서술해줘.
+2. 오답, 부분점수, 컴파일에러 또는 관찰 메모의 특이사항이 있다면 이를 숨기지 말되, '오답 발생' 같은 부정적 단정 대신 '조건/예외 처리 오류를 마주했으나 디버깅을 통해 교정'과 같이 문제 해결 및 디버깅 경험으로 프레이밍해줘.
 3. 과장되거나 상투적인 AI 어투 및 감탄사("눈부신 발전", "화이팅! 🚀")를 배제하고 담백한 서술체(~했습니다, ~하도록 지도했습니다)로 작성해줘.
 4. 문장 끝에 '앞으로도 세심히 지도하겠습니다' 등의 상투적인 다짐이나 억지 숙제/복습 언급은 절대 하지 말고 깔끔하게 끝맺어줘.
 5. 오직 복사해서 알림장에 바로 쓸 최종 코멘트 텍스트만 출력해줘.
@@ -475,8 +560,8 @@ ${todaySolvingLogStr ? `- 오늘 수업 실습 로그 및 학생 제출 코드:\
 아래 제공된 [오늘 수업 실습 로그 및 제출 코드], [복습 권장 문항], [교사 관찰 메모]를 바탕으로 학부모님께 오늘 수업의 실제 과정과 복습 포인트를 명확히 전달하는 정중하고 차분한 피드백 코멘트(존댓말, 2~3문장, 약 150~250자)를 작성해줘.
 
 [작성 조건]
-1. 무조건적인 칭찬을 지양하고, [실제 겪은 시행착오나 실수 ➔ 수업 중 지도 및 해결 과정 ➔ 오늘 배운 개념 복습 권장]의 3단 인과관계로 사실에 기반하여 전문성 있게 서술해줘.
-2. 오답, 부분점수, 컴파일에러 또는 관찰 메모의 특이사항이 있다면 이를 숨기지 말고 객관적으로 짚고 어떻게 수정했는지 명시해줘.
+1. 무조건적인 칭찬을 지양하고, [실제 겪은 시행착오/오류 탐색 ➔ 스스로 해결한 디버깅 과정 및 지도 ➔ 오늘 배운 개념 복습 권장]의 3단 인과관계로 사실에 기반하여 전문성 있게 서술해줘.
+2. 오답, 부분점수, 컴파일에러 또는 관찰 메모의 특이사항이 있다면 이를 숨기지 말되, '오답 발생' 대신 '조건/예외 처리 오류 디버깅 및 교정 과정'으로 전문성 있게 프레이밍해줘.
 3. 과장되거나 상투적인 AI 어투 및 감탄사를 배제하고 담백한 서술체(~했습니다, ~하도록 지도했습니다)로 작성해줘.
 4. 문장 끝에 '앞으로도 세심히 지도하겠습니다' 등의 상투적인 다짐 멘트는 절대로 작성하지 말고 복습 안내로 깔끔하게 끝맺어줘.
 5. 오직 복사해서 알림장에 바로 쓸 최종 코멘트 텍스트만 출력해줘.
@@ -491,8 +576,8 @@ ${problemsSummary.trim()}
 아래 제공된 [오늘 수업 실습 로그 및 제출 코드], [숙제 지정 내역], [교사 관찰 메모]를 바탕으로 학부모님께 오늘 수업의 실제 과정과 학습 보완점을 명확히 전달하는 정중하고 차분한 피드백 코멘트(존댓말, 2~3문장, 약 150~250자)를 작성해줘.
 
 [작성 조건]
-1. 무조건적인 칭찬을 지양하고, [실제 겪은 시행착오나 실수 ➔ 수업 중 지도 및 해결 과정 ➔ 앞으로의 보완점/과제 연계]의 3단 인과관계로 사실에 기반하여 전문성 있게 서술해줘.
-2. 오답, 부분점수, 컴파일에러 또는 관찰 메모의 특이사항이 있다면 이를 숨기지 말고 객관적으로 짚고 어떻게 수정했는지 명시해줘.
+1. 무조건적인 칭찬을 지양하고, [실제 겪은 시행착오/오류 탐색 ➔ 스스로 해결한 디버깅 과정 및 지도 ➔ 앞으로의 보완점/과제 연계]의 3단 인과관계로 사실에 기반하여 전문성 있게 서술해줘.
+2. 오답, 부분점수, 컴파일에러 또는 관찰 메모의 특이사항이 있다면 이를 숨기지 말되, '오답 발생' 대신 '조건/예외 처리 오류 디버깅 및 교정 과정'으로 전문성 있게 프레이밍해줘.
 3. 과장되거나 상투적인 AI 어투 및 감탄사("눈부신 발전", "화이팅! 🚀")를 배제하고 담백한 서술체(~했습니다, ~하도록 지도했습니다)로 작성해줘.
 4. 문장 끝에 '앞으로도 세심히 지도하겠습니다' 등의 상투적인 마무리 다짐 멘트는 절대로 작성하지 말고 2~3문장으로 깔끔하게 끝맺어줘.
 5. 오직 복사해서 알림장에 바로 쓸 최종 코멘트 텍스트만 출력해줘.

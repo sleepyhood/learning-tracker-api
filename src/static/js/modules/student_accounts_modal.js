@@ -116,6 +116,7 @@
 
     const isCustom = !isStandardAcademyId(st.display_id) && !isStandardAcademyId(st.name);
     const accounts = Array.isArray(st.accounts) ? st.accounts : [st.display_id];
+    const suggestedAccounts = Array.isArray(st.suggested_accounts) ? st.suggested_accounts : [];
 
     card.innerHTML = `
       <div class="sam-card-header">
@@ -130,8 +131,8 @@
       </div>
       <div class="sam-accounts-row">
         ${accounts.map(acc => `
-          <span class="sam-acc-chip ${acc === st.display_id ? 'is-primary' : ''}">
-            ${acc === st.display_id ? '<span class="sam-primary-star" title="대표 계정">⭐</span>' : ''}
+          <span class="sam-acc-chip ${acc === st.display_id ? 'is-primary' : ''}" title="${acc === st.display_id ? '현재 대표 계정' : '클릭하여 대표 계정으로 전환'}">
+            <span class="sam-primary-star" title="${acc === st.display_id ? '대표 계정' : '클릭 시 대표 계정 지정'}">${acc === st.display_id ? '⭐' : '☆'}</span>
             <span>@${acc}</span>
             <button type="button" class="sam-chip-del" data-acc="${acc}" title="계정 연결 해제">✕</button>
           </span>
@@ -141,6 +142,16 @@
           <button type="button" class="sam-btn-add-acc">추가</button>
         </div>
       </div>
+      ${suggestedAccounts.length > 0 ? `
+        <div class="sam-suggested-row">
+          <span class="sam-suggested-label">💡 유사 계정 추천:</span>
+          ${suggestedAccounts.map(sAcc => `
+            <button type="button" class="sam-btn-suggested-chip" data-acc="${sAcc}" title="'${sAcc}' 계정을 ${st.name} 학생의 부계정으로 1클릭 연결합니다.">
+              <span>@${sAcc}</span> <span>➕</span>
+            </button>
+          `).join('')}
+        </div>
+      ` : ''}
     `;
 
     // 1. Inline Name Edit
@@ -205,7 +216,7 @@
         });
         st.accounts = nextAccounts;
         unlinkedAccounts = unlinkedAccounts.filter(a => a !== newAcc);
-        render();
+        loadMappingData();
         window.refreshStudentSuggestions?.();
       } catch (err) {
         console.error(err);
@@ -217,7 +228,69 @@
       if (e.key === "Enter") handleAddAccount();
     });
 
-    // 3. Remove Account
+    // 3. 1-Click Smart Sub-Account Link
+    card.querySelectorAll(".sam-btn-suggested-chip").forEach(sBtn => {
+      sBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const accToLink = sBtn.dataset.acc;
+        sBtn.disabled = true;
+        sBtn.innerHTML = `<span>@${accToLink}</span> <span>⏳</span>`;
+        try {
+          const res = await fetch("/api/students/mapping/link_subaccount", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_uuid: st.user_uuid,
+              account: accToLink
+            })
+          });
+          const data = await res.json();
+          if (data && data.ok) {
+            await loadMappingData();
+            window.refreshStudentSuggestions?.();
+          } else {
+            alert(data.error || "부계정 연결에 실패했습니다.");
+            sBtn.disabled = false;
+            sBtn.innerHTML = `<span>@${accToLink}</span> <span>➕</span>`;
+          }
+        } catch (err) {
+          console.error(err);
+          alert("네트워크 오류가 발생했습니다.");
+          sBtn.disabled = false;
+          sBtn.innerHTML = `<span>@${accToLink}</span> <span>➕</span>`;
+        }
+      });
+    });
+
+    // 4. Toggle Primary Account (⭐)
+    card.querySelectorAll(".sam-acc-chip").forEach(chip => {
+      chip.addEventListener("click", async (e) => {
+        if (e.target.closest(".sam-chip-del")) return;
+        const starEl = chip.querySelector(".sam-primary-star");
+        const chipAcc = chip.querySelector("span:nth-child(2)")?.textContent?.replace("@", "").trim();
+        if (chipAcc && chipAcc !== st.display_id) {
+          if (confirm(`'@${chipAcc}' 계정을 '${st.name}' 학생의 대표(본계정)으로 지정하시겠습니까?`)) {
+            try {
+              await fetch("/api/students/mapping", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  user_uuid: st.user_uuid,
+                  display_id: chipAcc
+                })
+              });
+              st.display_id = chipAcc;
+              render();
+              window.refreshStudentSuggestions?.();
+            } catch (err) {
+              console.error(err);
+            }
+          }
+        }
+      });
+    });
+
+    // 5. Remove Account
     card.querySelectorAll(".sam-chip-del").forEach(delBtn => {
       delBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
@@ -240,7 +313,7 @@
           st.accounts = nextAccounts;
           st.display_id = nextDisplayId;
           unlinkedAccounts.push(accToRemove);
-          render();
+          loadMappingData();
           window.refreshStudentSuggestions?.();
         } catch (err) {
           console.error(err);
@@ -248,7 +321,7 @@
       });
     });
 
-    // 4. Delete Student
+    // 6. Delete Student
     const btnDelStudent = card.querySelector(".sam-btn-delete-student");
     btnDelStudent.addEventListener("click", async () => {
       if (!confirm(`'${st.name}' 수강생 매핑 정보를 정말 삭제하시겠습니까?`)) return;
@@ -259,7 +332,7 @@
           body: JSON.stringify({ user_uuid: st.user_uuid })
         });
         allStudents = allStudents.filter(s => s.user_uuid !== st.user_uuid);
-        render();
+        loadMappingData();
         window.refreshStudentSuggestions?.();
       } catch (err) {
         console.error(err);

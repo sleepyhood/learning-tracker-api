@@ -26,7 +26,14 @@ def enqueue_user_sync(user_identifier: str):
 def _worker_loop():
     print('BackgroundSyncWorker: Background sync thread started')
     last_periodic_run = 0
+    last_student_sync = 0
     PERIODIC_INTERVAL_SEC = 300
+    STUDENT_SYNC_INTERVAL_SEC = 3600  # 1시간마다 전체 학생 최신화
+
+    # 서버 시작 후 3초 뒤 초기 1회 웜업 동기화
+    time.sleep(3)
+    _sync_doingcoding_students_job()
+    last_student_sync = time.time()
 
     while True:
         try:
@@ -43,9 +50,23 @@ def _worker_loop():
                 last_periodic_run = now
                 _perform_periodic_sync_all()
 
+            if now - last_student_sync >= STUDENT_SYNC_INTERVAL_SEC:
+                last_student_sync = now
+                _sync_doingcoding_students_job()
+
         except Exception as e:
             print('BackgroundSyncWorker: Loop error:', e)
             time.sleep(5)
+
+
+def _sync_doingcoding_students_job():
+    try:
+        from services.workspace_student_service import sync_all_doingcoding_students
+        print('BackgroundSyncWorker: Syncing all DoingCoding students...')
+        res = sync_all_doingcoding_students()
+        print('BackgroundSyncWorker: Student sync result:', res)
+    except Exception as e:
+        print('BackgroundSyncWorker: Student sync error:', e)
 
 
 def _perform_single_user_sync(user_identifier: str):

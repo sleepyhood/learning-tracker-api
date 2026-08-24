@@ -193,7 +193,73 @@
         });
     }
 
-    /* 1단계: AI 프롬프트 클립보드 복사 */
+    /* AI 피드백 직접 생성 (Gemini API) */
+    window.generateOfflineAiFeedback = async function() {
+        const btn = document.getElementById("offlineGenerateAiBtn");
+        const commentEl = document.getElementById("offlineAiResponseComment");
+        if (!commentEl) return;
+
+        // ── 프롬프트 조립 (copyOfflineAiPrompt 와 동일한 방식) ──
+        const customName = (document.getElementById("offlineStudentCustomName")?.value || "").trim();
+        const targetName = customName || "학생";
+        const domain = getSubjectDomain(offlineState.selectedSubject);
+        const conceptSelect = document.getElementById("offlineConceptSelect");
+        const conceptKey = conceptSelect ? conceptSelect.value : "";
+        const concepts = domain.concepts || [];
+        const conceptObj = concepts.find(c => c.key === conceptKey) || concepts[0];
+        const conceptTitle = conceptObj ? conceptObj.title : "";
+        const memo = (document.getElementById("offlineTeacherMemo")?.value || "").trim();
+        const statusVal = document.querySelector('input[name="offlineStatus"]:checked')?.value || "GOOD";
+        const memoStr = memo || "수업 태도 우수하고 차분하게 실습 과제를 완수함 (특이사항 없음)";
+
+        let prompt = "";
+        if (typeof getOfflineAiPrompt === "function") {
+            prompt = getOfflineAiPrompt(offlineState.selectedSubject, conceptTitle, targetName, memoStr, statusVal);
+        }
+        if (!prompt) {
+            if (typeof showToast === "function") showToast("⚠️ 프롬프트 생성 실패 – 수동 복사 방식으로 전환합니다.");
+            await window.copyOfflineAiPrompt();
+            return;
+        }
+
+        // ── 버튼 로딩 상태 ──────────────────────────────────────
+        const originalText = btn ? btn.innerHTML : "";
+        if (btn) { btn.disabled = true; btn.innerHTML = "⏳ AI 작성 중..."; }
+
+        try {
+            const res = await fetch("/api/workspace/generate_ai_feedback", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt }),
+            });
+            const data = await res.json();
+
+            if (data.ok && data.feedback) {
+                commentEl.value = data.feedback;
+                commentEl.dispatchEvent(new Event("input"));  // 실시간 미리보기 갱신
+                if (typeof updateOfflineLivePreview === "function") updateOfflineLivePreview();
+                try { await navigator.clipboard.writeText(data.feedback); } catch (_) {}
+                const msg = "🪄 AI 피드백 생성 완료! (텍스트 영역에 자동 입력 & 클립보드 복사)";
+                if (typeof showToast === "function") showToast(msg); else alert(msg);
+            } else if (data.code === "NO_KEY") {
+                const msg = "⚠️ GEMINI_API_KEY 미설정 – 프롬프트 복사 방식으로 전환합니다.";
+                if (typeof showToast === "function") showToast(msg); else alert(msg);
+                await window.copyOfflineAiPrompt();
+            } else {
+                const msg = `⚠️ AI 생성 오류: ${data.error || "알 수 없는 오류"} – 프롬프트 복사 방식으로 전환합니다.`;
+                if (typeof showToast === "function") showToast(msg); else alert(msg);
+                await window.copyOfflineAiPrompt();
+            }
+        } catch (err) {
+            const msg = "⚠️ 네트워크 오류 – 프롬프트 복사 방식으로 전환합니다.";
+            if (typeof showToast === "function") showToast(msg); else alert(msg);
+            await window.copyOfflineAiPrompt();
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+        }
+    };
+
+    /* AI 프롬프트 클립보드 복사 */
     window.copyOfflineAiPrompt = async function() {
         const customName = (document.getElementById("offlineStudentCustomName")?.value || "").trim();
         const targetName = customName || "학생";
@@ -222,8 +288,8 @@
 아래 제공된 [수강생 이름], [수업 과목], [세부 학습 개념/유형], [오늘 성취도], [교사 관찰 메모]를 바탕으로 학부모님께 오늘 수업의 실습 내용과 보완점을 명확히 전달하는 신뢰감 있고 차분한 피드백 코멘트(존댓말, 2~3문장, 약 150~250자)를 작성해줘.
 
 [작성 조건]
-1. 무조건적인 칭찬을 지양하고, [실습 중 겪은 구체적 어려움/시행착오 ➔ 교사의 집중 코칭 및 교정 과정 ➔ 향후 보완 과제]의 인과 흐름으로 객관적이고 신뢰감 있게 서술해줘.
-2. 성취도(${statusVal}) 및 관찰 메모의 특이사항을 사실에 기반해 서술하고, 과장·상투적 표현("빛나는 성과", "화이팅! 🚀")을 배제해줘.
+1. 무조건적인 칭찬을 지양하고, [실습 중 겪은 구체적 어려움/오류 ➔ 교사의 집중 코칭 및 스스로 해결한 디버깅 과정 ➔ 향후 보완 과제]의 인과 흐름으로 객관적이고 신뢰감 있게 서술해줘.
+2. 성취도(${statusVal}) 및 관찰 메모의 특이사항을 바탕으로, 단순 실수가 아닌 오류를 바로잡고 이해한 디버깅 경험으로 서술하며, 과장·상투적 표현("빛나는 성과", "화이팅! 🚀")을 배제해줘.
 3. 문장 끝에 '앞으로도 세심히 지도하겠습니다' 등의 상투적인 마무리 다짐 멘트는 절대로 작성하지 마세요.
 4. 오직 카카오톡 알림장에 복사해 넣을 2~3문장의 최종 코멘트 텍스트만 출력해줘.
 
