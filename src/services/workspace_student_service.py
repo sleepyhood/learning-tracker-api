@@ -730,3 +730,131 @@ def find_suggested_subaccounts(student: dict, candidate_accounts: list[str], max
     return [item[1] for item in suggestions[:max_suggestions]]
 
 
+# ─────────────────────────────────────────
+# 포털 student_id 검색 및 1:N 매핑
+# ─────────────────────────────────────────
+
+def find_student_by_any(query: str | int) -> tuple[str | None, dict | None]:
+    """
+    portal_student_id, user_uuid, display_id, name, 또는 accounts 내의 계정명으로
+    학생을 검색하여 (user_uuid, student_dict) 튜플을 반환합니다.
+    """
+    if query is None:
+        return None, None
+
+    q_str = str(query).strip()
+    if not q_str:
+        return None, None
+
+    q_lower = q_str.lower()
+    workspace_data = _load_workspace_students()
+
+    # 1. user_uuid 완전 일치
+    if q_str in workspace_data:
+        return q_str, workspace_data[q_str]
+
+    # 2. portal_student_id 일치 (정수 또는 문자열)
+    for u, st in workspace_data.items():
+        p_id = st.get("portal_student_id")
+        if p_id is not None and str(p_id).strip() == q_str:
+            return u, st
+
+    # 3. display_id 일치
+    for u, st in workspace_data.items():
+        if (st.get("display_id") or "").strip().lower() == q_lower:
+            return u, st
+
+    # 4. accounts 배열 내 계정명 일치
+    for u, st in workspace_data.items():
+        accs = st.get("accounts", [])
+        if isinstance(accs, list):
+            for acc in accs:
+                acc_name = acc.get("username") if isinstance(acc, dict) else str(acc)
+                if acc_name and acc_name.strip().lower() == q_lower:
+                    return u, st
+
+    # 5. 실명(name) 일치
+    for u, st in workspace_data.items():
+        if (st.get("name") or "").strip().lower() == q_lower:
+            return u, st
+
+    return None, None
+
+
+def link_portal_student(portal_student_id: int | str,
+                        target_id_or_name: str = "",
+                        name: str = "",
+                        legacy_url: str = "") -> dict:
+    """
+    학원 포탈의 portal_student_id 를 특정 학생(doingcoding 계정 또는 기존 학생 카드)에 매핑합니다.
+    """
+    if portal_student_id is None or str(portal_student_id).strip() == "":
+        raise ValueError("portal_student_id 가 필요합니다.")
+
+    p_id_str = str(portal_student_id).strip()
+    p_id_val = int(p_id_str) if p_id_str.isdigit() else p_id_str
+    workspace_data = _load_workspace_students()
+
+    # 1. target_id_or_name 또는 portal_student_id 또는 name으로 기존 학생 찾기
+    u, student = None, None
+    if target_id_or_name:
+        u, student = find_student_by_any(target_id_or_name)
+    if not student:
+        u, student = find_student_by_any(p_id_str)
+    if not student and name:
+        u, student = find_student_by_any(name)
+
+    if not student:
+        # 기존 학생이 없으면 신규 학생 생성
+        u = str(uuid4())
+        display_id = str(target_id_or_name).strip() if target_id_or_name else (name.strip() or f"student_{p_id_val}")
+        st_name = name.strip() or display_id
+        student = {
+            "user_uuid": u,
+            "display_id": display_id,
+            "name": st_name,
+            "portal_student_id": p_id_val,
+            "legacy_url": legacy_url,
+            "accounts": [display_id] if display_id else [],
+            "weekdays": [],
+            "subjects": [],
+            "note": "",
+            "status": "active"
+        }
+        workspace_data[u] = student
+    else:
+        # 기존 학생에 portal_student_id 및 legacy_url 매핑
+        student["portal_student_id"] = p_id_val
+        if name and not student.get("name"):
+            student["name"] = name.strip()
+        if legacy_url:
+            student["legacy_url"] = legacy_url.strip()
+
+        # target_id_or_name 이 계정명이면 accounts 에 추가
+        if target_id_or_name:
+            t_str = str(target_id_or_name).strip()
+            accs = student.setdefault("accounts", [])
+            acc_names = [a.get("username") if isinstance(a, dict) else str(a) for a in accs]
+            if t_str not in acc_names:
+                accs.append(t_str)
+
+    _save_workspace_students(workspace_data)
+
+    # uuids.json 동기화
+    try:
+        m = json.loads(UUIDS_PATH.read_text(encoding="utf-8")) if UUIDS_PATH.exists() else {}
+        m[str(p_id_val)] = u
+        if student.get("display_id"):
+            m[student["display_id"]] = u
+        for acc in student.get("accounts", []):
+            acc_name = acc.get("username") if isinstance(acc, dict) else str(acc)
+            if acc_name:
+                m[acc_name] = u
+        UUIDS_PATH.write_text(json.dumps(m, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as e:
+        print(f"[link_portal_student] UUID sync error: {e}")
+
+    return student
+
+
+

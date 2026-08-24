@@ -961,6 +961,34 @@ def api_link_subaccount():
     })
 
 
+@students_bp.route("/api/students/mapping/portal_link", methods=["POST"])
+def api_link_portal_student():
+    s, err = ensure_admin_or_403()
+    if err:
+        return err
+
+    payload = request.get_json(force=True, silent=True) or {}
+    portal_student_id = payload.get("portal_student_id")
+    target = (payload.get("target") or payload.get("doingcoding_id") or "").strip()
+    name = (payload.get("name") or "").strip()
+    legacy_url = (payload.get("legacy_url") or "").strip()
+
+    if portal_student_id is None:
+        return jsonify({"ok": False, "error": "portal_student_id is required"}), 400
+
+    from services.workspace_student_service import link_portal_student
+    try:
+        student = link_portal_student(
+            portal_student_id=portal_student_id,
+            target_id_or_name=target,
+            name=name,
+            legacy_url=legacy_url
+        )
+        return jsonify({"ok": True, "student": student})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @students_bp.route("/api/students/mapping", methods=["POST"])
 def api_update_student_mapping():
     payload = request.get_json(force=True, silent=True) or {}

@@ -32,10 +32,22 @@ def _user_doc_path_by_uuid(u: str) -> str:
 
 
 def _ensure_uuid(id_or_uuid: str) -> str:
-    # uuid 포맷이면 그대로, 아니면 sid->uuid 변환
-    if "-" in id_or_uuid:
-        return id_or_uuid
-    return resolve_uuid(id_or_uuid)  # 반드시 uuid 반환
+    if not id_or_uuid:
+        return ""
+    val = str(id_or_uuid).strip()
+    # 1. 36자리 uuid 포맷이면 그대로 반환
+    if "-" in val and len(val) == 36:
+        return val
+    # 2. workspace_students 매핑 검색 (portal_student_id, name, display_id, accounts)
+    try:
+        from services.workspace_student_service import find_student_by_any
+        u, _ = find_student_by_any(val)
+        if u:
+            return u
+    except Exception:
+        pass
+    # 3. uuids.json fallback
+    return resolve_uuid(val)
 
 
 def load_doc_by_any(id_or_uuid: str) -> dict:
