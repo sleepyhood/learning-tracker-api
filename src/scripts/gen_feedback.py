@@ -38,17 +38,37 @@ KST = timezone(timedelta(hours=9))
 
 
 def _find_uuid_by_name(name: str):
-    from core.storage import META_DIR
+    from core.storage import META_DIR, UUIDS_PATH
+    # 1. workspace_students.json 에서 검색 (실명, display_id, 연동 계정명)
     ws_path = META_DIR / "workspace_students.json"
-    if not ws_path.exists():
-        return None
-    data = json.loads(ws_path.read_text(encoding="utf-8"))
-    for uuid, st in data.items():
-        if st.get("name") == name or st.get("display_id") == name:
-            return uuid
-        for acc in st.get("accounts", []):
-            if acc == name:
-                return uuid
+    if ws_path.exists():
+        try:
+            data = json.loads(ws_path.read_text(encoding="utf-8"))
+            for uuid, st in data.items():
+                if st.get("name") == name or st.get("display_id") == name:
+                    return uuid
+                for acc in st.get("accounts", []):
+                    if acc == name:
+                        return uuid
+            # 부분 일치 검색 (예: '김도헌' 입력 시 '김도헌1111' 매칭)
+            for uuid, st in data.items():
+                if name in str(st.get("name", "")) or name in str(st.get("display_id", "")):
+                    return uuid
+        except Exception:
+            pass
+
+    # 2. uuids.json 에서 계정명 매칭 (직접 DoingCoding ID 입력 시)
+    if UUIDS_PATH.exists():
+        try:
+            uuids_data = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+            if name in uuids_data:
+                return uuids_data[name]
+            for acc, u in uuids_data.items():
+                if name in acc:
+                    return u
+        except Exception:
+            pass
+
     return None
 
 
