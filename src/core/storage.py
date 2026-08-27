@@ -294,6 +294,25 @@ def append_homework_log(user_uuid: str, payload: dict) -> dict:
     now_iso = datetime.now(tz=KST).isoformat()
     log.setdefault("ts", now_iso)
     log.setdefault("created_at", now_iso)  # homework_logs 정렬 기준으로 활용
+
+    # ── 피드백 생성 도구를 위한 보조 필드 자동 적재 ──────────────────────────
+    # mode: "homework" | "review" | "comment"  (프론트에서 전달, 없으면 자동 추론)
+    if not log.get("mode"):
+        log["mode"] = "homework" if log["problems"] else "comment"
+
+    # teacher_memo: 교사가 입력한 관찰 메모 (없어도 무방)
+    log.setdefault("teacher_memo", payload.get("teacher_memo", ""))
+
+    # recent_submissions: 오늘 학생이 제출한 코드 스냅샷 (프론트가 함께 보내줄 경우 저장)
+    # 구조: [{"title": "...", "result_tag": "정답(AC 100점)", "code": "...", "is_today": true}, ...]
+    recent_subs = payload.get("recent_submissions") or []
+    if isinstance(recent_subs, list) and recent_subs:
+        log["recent_submissions"] = recent_subs
+        # 문서 최상위에도 최신 스냅샷으로 덮어씀 (gen_feedback.py가 바로 읽을 수 있도록)
+        doc["recent_submissions"] = recent_subs
+        doc["recent_submissions_ts"] = now_iso
+    # ─────────────────────────────────────────────────────────────────────────
+
     doc.setdefault("homework_logs", []).append(log)
 
     path = save_doc_by_any(user_uuid, doc)
