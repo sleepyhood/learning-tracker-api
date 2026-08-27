@@ -100,49 +100,74 @@ def _fetch_portal_attendance(today: str) -> tuple:
     portal_url = os.environ.get("PORTAL_API_URL", "http://59.17.114.51:1325/api/admin/academy/dashboard").strip()
     session_id = os.environ.get("PORTAL_SESSION_ID", "").strip()
 
+    if "portal/" in portal_url or "?tab=" in portal_url:
+        portal_url = "http://59.17.114.51:1325/api/admin/academy/dashboard"
+
     if not session_id:
         return None, "PORTAL_SESSION_ID 미설정 (로컬 시간표 Fallback)"
 
     try:
-        # session= 접두어 처리
-        s_val = session_id.split("session=")[-1].split(";")[0].strip() if "session=" in session_id else session_id
-        cookies = {"session": s_val}
+        # sessionid= 또는 session= 접두어 제거
+        s_val = session_id.split("sessionid=")[-1].split("session=")[-1].split(";")[0].strip()
+        
+        headers = {
+            "Cookie": f"sessionid={s_val}; session={s_val}",
+            "Accept": "application/json",
+            "Referer": "http://59.17.114.51:1325",
+            "User-Agent": "Mozilla/5.0"
+        }
         params = {"date": today, "late_min": 5}
-        resp = requests.get(portal_url, params=params, cookies=cookies, timeout=4)
+        resp = requests.get(portal_url, params=params, headers=headers, timeout=5)
 
         if resp.status_code == 200:
-            data = resp.json()
-            raw_list = []
-            if isinstance(data, list):
-                raw_list = data
-            elif isinstance(data, dict):
-                for key in ["lessons", "students", "items", "data", "list", "dashboard", "slots"]:
-                    if key in data and isinstance(data[key], list):
-                        raw_list = data[key]
-                        break
+            try:
+                data = resp.json()
+            except Exception:
+                return None, "포털 응답 형식 오류 (JSON 파싱 실패)"
+
+            if isinstance(data, dict):
+                if data.get("error") == "login-required" or "login in first" in str(data.get("data", "")).lower():
+                    return None, "포털 세션 만료 (Please login first)"
+
+            # data.lessons 리스트 파싱 (docs-sidebar와 100% 동일 구조)
+            raw_lessons = []
+            if isinstance(data, dict) and isinstance(data.get("data"), dict):
+                raw_lessons = data["data"].get("lessons", [])
+            elif isinstance(data, dict) and isinstance(data.get("lessons"), list):
+                raw_lessons = data["lessons"]
+            elif isinstance(data, list):
+                raw_lessons = data
 
             parsed = []
-            for item in raw_list:
+            for item in raw_lessons:
                 if not isinstance(item, dict):
                     continue
-                st_name = item.get("student_name") or item.get("name") or item.get("student") or item.get("user_name") or ""
-                st_acc = item.get("account") or item.get("username") or item.get("user_id") or ""
-                course = item.get("course") or item.get("subject") or item.get("lesson_name") or item.get("label") or ""
-                time_slot = item.get("time") or item.get("lesson_time") or item.get("slot") or ""
-                status = item.get("status") or item.get("attendance") or item.get("state") or ""
+                st_name = item.get("student_name") or item.get("name") or ""
+                course = item.get("subject") or item.get("program") or item.get("course") or "코딩"
+                start_time = item.get("start_time") or item.get("time") or ""
+                status = item.get("status") or ""
+                school = f"{item.get('school_name', '')}{item.get('grade', '')}".strip()
+                instructor = item.get("instructor") or ""
 
-                if st_name or st_acc:
+                note_parts = []
+                if start_time: note_parts.append(start_time)
+                if school: note_parts.append(school)
+                if instructor: note_parts.append(f"{instructor}T")
+
+                if st_name:
                     parsed.append({
                         "name": str(st_name).strip(),
-                        "account": str(st_acc).strip(),
+                        "account": str(item.get("student_id") or ""),
                         "course": str(course).strip(),
-                        "time": str(time_slot).strip(),
+                        "time": str(start_time).strip(),
                         "status": str(status).strip(),
+                        "student_note": " · ".join(note_parts),
+                        "instructor": str(instructor).strip(),
                     })
 
             if parsed:
-                return parsed, "📡 학원 포털 실시간 출석부"
-            return None, "포털 응답 목록 비어있음"
+                return parsed, f"📡 학원 포털 실시간 출석부 ({len(parsed)}명)"
+            return None, "포털 오늘 출석 학생 목록 비어있음"
         elif resp.status_code in (401, 403):
             return None, "포털 세션 만료 (재로그인 필요)"
         else:
