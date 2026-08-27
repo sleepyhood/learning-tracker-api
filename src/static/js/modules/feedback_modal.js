@@ -282,9 +282,10 @@ async function openFeedbackModal(name, studentId, userUuid) {
 
   document.getElementById("feedbackTodayLogSummary").innerHTML = "⏳ 풀이로그 및 제출 코드 페치 중...";
   document.getElementById("modalTeacherMemo").value = "";
-  document.getElementById("modalHomeworkComment").value = "";
+  const _commentEl = document.getElementById("modalHomeworkComment");
+  if (_commentEl) { _commentEl.value = ""; }
   autoExpandModalTextarea(document.getElementById("modalTeacherMemo"));
-  autoExpandModalTextarea(document.getElementById("modalHomeworkComment"));
+  if (_commentEl) { autoExpandModalTextarea(_commentEl); }
   updateQuickTagActiveStates();
   updateLiveKakaoPreview();
 
@@ -707,11 +708,12 @@ function buildKakaoMessage(comment) {
 /* ─── 피드백 최종 제출 (복사 + 서버 저장) ──────────────────── */
 
 async function submitModalFeedback() {
-  const comment = document.getElementById("modalHomeworkComment").value.trim();
+  const _hwCommentEl = document.getElementById("modalHomeworkComment");
+  const comment = _hwCommentEl ? _hwCommentEl.value.trim() : "";
   const selectedMode = document.querySelector('input[name="modalNoticeMode"]:checked')?.value || "homework";
 
   if (!comment && selectedMode === "comment") {
-    showModalToast("⚠️ 3단계에 AI 답변이나 코멘트를 먼저 작성/붙여넣어 주세요!");
+    showModalToast("⚠️ 코멘트 내용이 없습니다. 선생님 메모를 입력하거나 모드를 변경해주세요.");
     return;
   }
 
