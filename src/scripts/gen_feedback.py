@@ -1,10 +1,11 @@
 """
 scripts/gen_feedback.py
-학원 수업 피드백 생성기 (독립 실행)
+학원 수업 피드백 생성기 (스마트 대화형 검색 지원)
 
 사용법:
-  python src/scripts/gen_feedback.py <학생이름>
-  python src/scripts/gen_feedback.py --all-today
+  python src/scripts/gen_feedback.py            # 오늘 학생 메뉴 또는 이름 검색 대화형 실행
+  python src/scripts/gen_feedback.py 김도헌      # 특정 학생 (동명이인 시 번호 선택)
+  python src/scripts/gen_feedback.py --all-today # 오늘 숙제 저장된 전체 학생 일괄 처리
 """
 
 import sys
@@ -37,48 +38,161 @@ _load_env()
 KST = timezone(timedelta(hours=9))
 
 
-def _find_uuid_by_name(name: str):
-    from core.storage import META_DIR, UUIDS_PATH
-    # 1. workspace_students.json 에서 검색 (실명, display_id, 연동 계정명)
+def _today_kst() -> str:
+    return datetime.now(tz=KST).strftime("%Y-%m-%d")
+
+
+def _get_all_students_info():
+    """모든 학생의 메타정보 및 최근 활동 시각을 취합"""
+    from core.storage import META_DIR
+    from config import USER_DATA_DIR
+    user_data_dir = Path(USER_DATA_DIR)
+    
+    students = {}
     ws_path = META_DIR / "workspace_students.json"
     if ws_path.exists():
         try:
-            data = json.loads(ws_path.read_text(encoding="utf-8"))
-            for uuid, st in data.items():
-                if st.get("name") == name or st.get("display_id") == name:
-                    return uuid
-                for acc in st.get("accounts", []):
-                    if acc == name:
-                        return uuid
-            # 부분 일치 검색 (예: '김도헌' 입력 시 '김도헌1111' 매칭)
-            for uuid, st in data.items():
-                if name in str(st.get("name", "")) or name in str(st.get("display_id", "")):
-                    return uuid
+            ws_data = json.loads(ws_path.read_text(encoding="utf-8"))
+            for uuid, st in ws_data.items():
+                if st.get("status") == "inactive":
+                    continue
+                students[uuid] = {
+                    "uuid": uuid,
+                    "name": st.get("name") or st.get("display_id") or "수강생",
+                    "display_id": st.get("display_id") or "",
+                    "accounts": st.get("accounts") or [],
+                    "latest_hw_ts": "",
+                    "is_today": False,
+                }
         except Exception:
             pass
 
-    # 2. uuids.json 에서 계정명 매칭 (직접 DoingCoding ID 입력 시)
-    if UUIDS_PATH.exists():
-        try:
-            uuids_data = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
-            if name in uuids_data:
-                return uuids_data[name]
-            for acc, u in uuids_data.items():
-                if name in acc:
-                    return u
-        except Exception:
-            pass
+    today = _today_kst()
+    for uuid, info in students.items():
+        jpath = user_data_dir / f"{uuid}.json"
+        if not jpath.exists():
+            alt = user_data_dir / "by_internal" / f"u_{uuid.replace('-','')}.json"
+            if alt.exists():
+                jpath = alt
+        if jpath.exists():
+            try:
+                doc = json.loads(jpath.read_text(encoding="utf-8"))
+                logs = doc.get("homework_logs") or []
+                if logs:
+                    latest = max(logs, key=lambda x: str(x.get("created_at") or x.get("ts") or ""))
+                    ts = str(latest.get("created_at") or latest.get("ts") or "")
+                    info["latest_hw_ts"] = ts
+                    if ts.startswith(today):
+                        info["is_today"] = True
+            except Exception:
+                pass
 
-    return None
+    return students
+
+
+def _search_students(query: str, students: dict) -> list[dict]:
+    """검색어(실명, display_id, 계정명, 부분일치)로 학생 검색 및 우선순위 정렬"""
+    q = query.strip().lower()
+    exact_matches = []
+    starts_matches = []
+    partial_matches = []
+
+    for uuid, st in students.items():
+        name = str(st["name"]).lower()
+        disp = str(st["display_id"]).lower()
+        accs = [str(a).lower() for a in st["accounts"]]
+
+        if q == name or q == disp or q in accs or q == uuid.lower():
+            exact_matches.append(st)
+        elif name.startswith(q) or disp.startswith(q) or any(a.startswith(q) for a in accs):
+            starts_matches.append(st)
+        elif q in name or q in disp or any(q in a for a in accs):
+            partial_matches.append(st)
+
+    seen = set()
+    result = []
+    for group in [exact_matches, starts_matches, partial_matches]:
+        sorted_group = sorted(group, key=lambda x: (not x["is_today"], x["name"]))
+        for item in sorted_group:
+            if item["uuid"] not in seen:
+                seen.add(item["uuid"])
+                result.append(item)
+
+    return result
+
+
+def _resolve_student_interactive(query: str | None = None) -> str | None:
+    students = _get_all_students_info()
+    today = _today_kst()
+
+    current_q = query
+    while True:
+        if not current_q:
+            today_students = [s for s in students.values() if s["is_today"]]
+            print(f"\n{'═' * 55}")
+            print(f"📅 [{today}] 오늘 수업/숙제 등록 학생 ({len(today_students)}명)")
+            print(f"{'═' * 55}")
+            
+            display_list = today_students if today_students else list(students.values())[:15]
+            for idx, s in enumerate(display_list, 1):
+                acc_str = f" | 계정: {','.join(s['accounts'][:2])}" if s['accounts'] else ""
+                today_badge = " [✨오늘]" if s["is_today"] else ""
+                print(f"  [{idx:2d}] {s['name']} (@{s['display_id']}){acc_str}{today_badge}")
+
+            print(f"{'─' * 55}")
+            user_input = input("👉 학생 번호 선택 또는 이름/아이디 검색 (종료: q): ").strip()
+            if not user_input or user_input.lower() == 'q':
+                return None
+
+            if user_input.isdigit():
+                choice = int(user_input)
+                if 1 <= choice <= len(display_list):
+                    return display_list[choice - 1]["uuid"]
+                print("[!] 잘못된 번호입니다.")
+                continue
+            else:
+                current_q = user_input
+
+        matches = _search_students(current_q, students)
+
+        if len(matches) == 1:
+            chosen = matches[0]
+            print(f"✅ 학생 선택: {chosen['name']} (@{chosen['display_id']})")
+            return chosen["uuid"]
+
+        elif len(matches) > 1:
+            print(f"\n[?] '{current_q}' 검색 결과 {len(matches)}명이 발견되었습니다:")
+            print(f"{'─' * 55}")
+            for idx, s in enumerate(matches, 1):
+                acc_str = f" | 계정: {','.join(s['accounts'][:2])}" if s['accounts'] else ""
+                hw_time = f" | 최근숙제: {s['latest_hw_ts'][:16]}" if s['latest_hw_ts'] else ""
+                today_badge = " [✨오늘]" if s["is_today"] else ""
+                print(f"  [{idx:2d}] {s['name']} (@{s['display_id']}){acc_str}{hw_time}{today_badge}")
+            print(f"{'─' * 55}")
+
+            user_choice = input(f"👉 선택할 번호를 입력하세요 (1~{len(matches)}, 취소: q, 다시검색: r): ").strip()
+            if user_choice.lower() == 'q':
+                return None
+            if user_choice.lower() == 'r':
+                current_q = input("👉 다시 검색할 이름 입력: ").strip()
+                continue
+            if user_choice.isdigit():
+                c_idx = int(user_choice)
+                if 1 <= c_idx <= len(matches):
+                    return matches[c_idx - 1]["uuid"]
+            print("[!] 번호가 올바르지 않습니다.")
+            continue
+
+        else:
+            print(f"\n[!] '{current_q}' 학생을 찾을 수 없습니다.")
+            current_q = input("👉 학생 이름을 다시 입력하세요 (엔터 시 전체 목록, 종료: q): ").strip()
+            if current_q.lower() == 'q':
+                return None
 
 
 def _load_doc(user_uuid: str) -> dict:
     from utils.utils_user_doc import load_doc_by_any
     return load_doc_by_any(user_uuid)
-
-
-def _today_kst() -> str:
-    return datetime.now(tz=KST).strftime("%Y-%m-%d")
 
 
 def _extract_feedback_data(doc: dict) -> dict:
@@ -166,24 +280,25 @@ def _copy_to_clipboard(text: str) -> bool:
         return False
 
 
-def process_student(name_or_uuid: str, verbose: bool = True) -> str:
-    if "-" in name_or_uuid and len(name_or_uuid) > 30:
+def process_student(name_or_uuid: str | None = None, verbose: bool = True) -> str:
+    user_uuid = None
+    if name_or_uuid and "-" in name_or_uuid and len(name_or_uuid) > 30:
         user_uuid = name_or_uuid
     else:
-        user_uuid = _find_uuid_by_name(name_or_uuid)
+        user_uuid = _resolve_student_interactive(name_or_uuid)
         if not user_uuid:
-            print(f"[!] '{name_or_uuid}' 학생을 찾을 수 없습니다.")
             return ""
 
     doc = _load_doc(user_uuid)
     data = _extract_feedback_data(doc)
 
     if verbose:
-        print(f"\n▶ 학생: {data['name']} ({data['mode']} 모드)")
+        print(f"\n▶ 대상 학생: {data['name']} ({data['mode']} 모드)")
         print(f"  숙제: {len(data['hw_problems'])}개  |  제출기록: {len(data['recent_submissions'])}건")
         print(f"  메모: {data['teacher_memo'] or '(없음)'}")
-        print(f"  최신 저장: {data['ts']}")
-        print("\n⏳ Gemini API 호출 중...")
+        if data['ts']:
+            print(f"  최신 저장 시각: {data['ts']}")
+        print("\n⏳ Gemini API로 학부모 피드백 생성 중...")
 
     prompt = _build_prompt(data)
     try:
@@ -195,11 +310,11 @@ def process_student(name_or_uuid: str, verbose: bool = True) -> str:
         return prompt
 
     if verbose:
-        print("\n" + "=" * 55)
+        print("\n" + "═" * 55)
         print(feedback)
-        print("=" * 55)
+        print("═" * 55)
         ok = _copy_to_clipboard(feedback)
-        print("\n✅ 클립보드 복사 완료! (Ctrl+V)\n" if ok else "\n⚠️  직접 복사해주세요\n")
+        print("\n✅ 클립보드 복사 완료! (카카오톡에 Ctrl+V 하세요)\n" if ok else "\n⚠️  직접 복사해주세요\n")
 
     return feedback
 
@@ -215,49 +330,58 @@ def process_all_today():
         print("[!] workspace_students.json 없음"); return
 
     ws_data = json.loads(ws_path.read_text(encoding="utf-8"))
-    processed = []
 
+    today_students = []
     for user_uuid, st in ws_data.items():
         if st.get("status") == "inactive":
             continue
         json_path = user_data_dir / f"{user_uuid}.json"
         if not json_path.exists():
             alt = user_data_dir / "by_internal" / f"u_{user_uuid.replace('-','')}.json"
-            if not alt.exists():
+            if alt.exists():
+                json_path = alt
+            else:
                 continue
-            json_path = alt
         try:
             doc = json.loads(json_path.read_text(encoding="utf-8"))
+            logs = doc.get("homework_logs") or []
+            if logs:
+                latest = max(logs, key=lambda x: str(x.get("created_at") or x.get("ts") or ""))
+                ts = str(latest.get("created_at") or latest.get("ts") or "")
+                if ts.startswith(today):
+                    name = st.get("name") or st.get("display_id") or user_uuid
+                    today_students.append((user_uuid, name))
         except Exception:
             continue
-        logs = doc.get("homework_logs") or []
-        if not logs:
-            continue
-        latest = max(logs, key=lambda x: str(x.get("created_at") or x.get("ts") or ""))
-        ts = str(latest.get("created_at") or latest.get("ts") or "")
-        if not ts.startswith(today):
-            continue
-        name = st.get("name") or st.get("display_id") or user_uuid
-        print(f"\n{'─' * 55}\n[{len(processed)+1}] 학생: {name}")
-        feedback = process_student(user_uuid, verbose=True)
-        if feedback:
-            processed.append({"name": name, "feedback": feedback})
-        input("   ↩  다음 학생 → Enter...")
 
-    print(f"\n✅ 총 {len(processed)}명 처리 완료")
+    if not today_students:
+        print(f"\n[!] 오늘({today}) 저장된 숙제/피드백 내역이 있는 학생이 없습니다.")
+        return
+
+    print(f"\n📅 오늘 총 {len(today_students)}명의 학생이 등록되어 있습니다.")
+    processed = []
+    for idx, (u, s_name) in enumerate(today_students, 1):
+        print(f"\n{'─' * 55}\n[{idx}/{len(today_students)}] {s_name}")
+        feedback = process_student(u, verbose=True)
+        if feedback:
+            processed.append({"name": s_name, "feedback": feedback})
+        if idx < len(today_students):
+            input("   ↩  다음 학생 피드백을 생성하려면 Enter를 누르세요...")
+
+    print(f"\n🎉 오늘 총 {len(processed)}명 피드백 생성 및 클립보드 복사 완료!")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="학원 수업 피드백 생성기")
-    parser.add_argument("student", nargs="?", help="학생 이름 또는 UUID")
-    parser.add_argument("--all-today", action="store_true", help="오늘 숙제 저장된 전체 학생")
+    parser = argparse.ArgumentParser(description="학원 수업 피드백 생성기 (독립 실행)")
+    parser.add_argument("student", nargs="?", help="학생 이름, 계정명 또는 UUID (생략 시 대화형 메뉴)")
+    parser.add_argument("--all-today", action="store_true", help="오늘 숙제 저장된 전체 학생 일괄 처리")
     args = parser.parse_args()
+
     if args.all_today:
         process_all_today()
-    elif args.student:
-        process_student(args.student)
     else:
-        parser.print_help(); sys.exit(1)
+        process_student(args.student)
+
 
 if __name__ == "__main__":
     main()
