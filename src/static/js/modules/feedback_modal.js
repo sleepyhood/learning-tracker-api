@@ -515,6 +515,8 @@ function buildKakaoMessage(comment) {
 async function submitModalFeedback() {
   const _hwCommentEl = document.getElementById("modalHomeworkComment");
   const comment = _hwCommentEl ? _hwCommentEl.value.trim() : "";
+  const teacherMemoEl = document.getElementById("modalTeacherMemo");
+  const teacherMemo = teacherMemoEl ? teacherMemoEl.value.trim() : "";
   const selectedMode = document.querySelector('input[name="modalNoticeMode"]:checked')?.value || "homework";
 
   if (!comment && selectedMode === "comment") {
@@ -526,14 +528,15 @@ async function submitModalFeedback() {
   const basket = basketProblems && basketProblems.length > 0 ? basketProblems : getActiveBasketProblems();
   const finalMsg = buildKakaoMessage(comment);
 
-  try {
-    await modalCopyToClipboard(finalMsg);
+  const btn = document.getElementById("modalCompleteBtn");
+  const originalText = btn ? btn.textContent : "";
+  const originalBg = btn ? btn.style.background : "";
 
-    const btn = document.getElementById("modalCompleteBtn");
-    const originalText = btn.textContent;
-    const originalBg = btn.style.background;
-    btn.textContent = "⏳ 저장 중...";
-    btn.disabled = true;
+  try {
+    if (btn) {
+      btn.textContent = "⏳ 저장 중...";
+      btn.disabled = true;
+    }
 
     const payload = {
       display_id: studentId,
@@ -541,6 +544,7 @@ async function submitModalFeedback() {
       problems: basket,
       message: finalMsg,
       comment: comment,
+      teacher_memo: teacherMemo,
       mode: selectedMode,
       title: selectedMode === "homework" && basket.length > 0
         ? `${name} 학생 숙제 및 피드백 (${basket.length}개)`
@@ -553,10 +557,17 @@ async function submitModalFeedback() {
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) throw new Error("서버 저장 실패");
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `서버 저장 실패 (${res.status})`);
+    }
 
-    btn.textContent = "✅ 복사 & 저장 완료!";
-    btn.style.background = "#10b981";
+    await modalCopyToClipboard(finalMsg);
+
+    if (btn) {
+      btn.textContent = "✅ 복사 & 저장 완료!";
+      btn.style.background = "#10b981";
+    }
     showModalToast("📋 카카오톡 알림장 메시지가 복사되었습니다!\n(카카오톡에 Ctrl+V로 붙여넣기 하세요)", 4000);
 
     if (typeof window.clearQuickBasket === "function") window.clearQuickBasket();
@@ -565,14 +576,21 @@ async function submitModalFeedback() {
     }
 
     setTimeout(() => {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        btn.style.background = originalBg;
+      }
+      closeFeedbackModal();
+    }, 2000);
+
+  } catch (err) {
+    if (btn) {
       btn.disabled = false;
       btn.textContent = originalText;
       btn.style.background = originalBg;
-      closeFeedbackModal();
-    }, 2500);
-
-  } catch (err) {
-    showModalToast("저장에 실패했으나 클립보드 복사는 완료되었습니다.");
+    }
+    showModalToast(`⚠️ 숙제 저장 실패: ${err.message}`, 4000);
   }
 }
 
@@ -588,16 +606,19 @@ async function submitDirectHomework() {
   }
 
   const btn = document.getElementById("modalDirectSubmitBtn");
-  const originalText = btn.textContent;
-  const originalBg = btn.style.background;
-  btn.textContent = "⏳ 출제 중...";
-  btn.disabled = true;
+  const originalText = btn ? btn.textContent : "";
+  const originalBg = btn ? btn.style.background : "";
+  if (btn) {
+    btn.textContent = "⏳ 출제 중...";
+    btn.disabled = true;
+  }
 
   try {
     const payload = {
       display_id: studentId,
       user_uuid: userUuid,
       problems: basket,
+      mode: "homework",
       title: `${name} 학생 숙제 즉시 출제 (${basket.length}개)`
     };
 
@@ -607,10 +628,15 @@ async function submitDirectHomework() {
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) throw new Error("출제 실패");
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `출제 실패 (${res.status})`);
+    }
 
-    btn.textContent = "✅ 숙제 즉시 출제 완료!";
-    btn.style.background = "#10b981";
+    if (btn) {
+      btn.textContent = "✅ 숙제 즉시 출제 완료!";
+      btn.style.background = "#10b981";
+    }
     showModalToast(`🚀 [${name}] 학생에게 숙제가 즉시 출제되었습니다! (${basket.length}개)`, 4000);
 
     if (typeof window.clearQuickBasket === "function") window.clearQuickBasket();
@@ -619,16 +645,20 @@ async function submitDirectHomework() {
     }
 
     setTimeout(() => {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        btn.style.background = originalBg;
+      }
+      closeFeedbackModal();
+    }, 2000);
+
+  } catch (err) {
+    if (btn) {
       btn.disabled = false;
       btn.textContent = originalText;
       btn.style.background = originalBg;
-      closeFeedbackModal();
-    }, 2500);
-
-  } catch (err) {
-    btn.disabled = false;
-    btn.textContent = originalText;
-    btn.style.background = originalBg;
+    }
     showModalToast("⚠️ 숙제 출제 실패: " + err.message, 4000);
   }
 }

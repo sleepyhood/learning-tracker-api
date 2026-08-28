@@ -18,10 +18,6 @@ feedback_bp = Blueprint("workspace_feedback", __name__)
 
 @feedback_bp.route("/api/workspace/save_homework_log", methods=["POST"])
 def api_workspace_save_homework_log():
-    s, err = ensure_admin_or_403()
-    if err:
-        return err
-
     payload = request.get_json(force=True) or {}
     display_id = payload.get("display_id")
     user_uuid = payload.get("user_uuid")
@@ -31,6 +27,7 @@ def api_workspace_save_homework_log():
         "problems": problems,
         "title": payload.get("title", ""),
         "comment": payload.get("comment", ""),
+        "teacher_memo": payload.get("teacher_memo", ""),
         "message": payload.get("message", ""),
         "mode": payload.get("mode", "homework" if len(problems) > 0 else "comment"),
     }
@@ -39,5 +36,7 @@ def api_workspace_save_homework_log():
         save_homework_log(display_id, user_uuid, log_payload)
     except ValueError as e:
         return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"저장 실패: {e}"}), 500
 
     return jsonify({"ok": True})
