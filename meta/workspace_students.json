@@ -13510,5 +13510,31 @@
     ],
     "note": "",
     "status": "active"
+  },
+  "3b13c1b9-54f3-4cda-a58e-87bec65c58b9": {
+    "user_uuid": "3b13c1b9-54f3-4cda-a58e-87bec65c58b9",
+    "display_id": "새 계정입니다",
+    "name": "새 계정입니다",
+    "birth_md": "",
+    "weekdays": [],
+    "subjects": [],
+    "accounts": [
+      "새 계정입니다"
+    ],
+    "note": "",
+    "status": "active"
+  },
+  "6eae2ddb-f6b0-4c33-aedf-2886c618a51d": {
+    "user_uuid": "6eae2ddb-f6b0-4c33-aedf-2886c618a51d",
+    "display_id": "cccenjoyer12",
+    "name": "cccenjoyer12",
+    "birth_md": "",
+    "weekdays": [],
+    "subjects": [],
+    "accounts": [
+      "cccenjoyer12"
+    ],
+    "note": "",
+    "status": "active"
   }
 }
