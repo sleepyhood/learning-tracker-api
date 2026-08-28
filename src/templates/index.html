@@ -56,8 +56,6 @@
 
     {% include '_feedback_modal.html' %}
 
-    {% include '_offline_feedback_modal.html' %}
-
     {% include '_homework_history_modal.html' %}
 
     {% include 'components/_student_accounts_modal.html' %}
@@ -81,9 +79,8 @@
     <script src="{{ url_for('static', filename='js/modules/crawler_modal.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/modules/quick_basket.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/modules/drilldown_filter.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='js/ai_prompt.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/feedback_helper.js') }}"></script>
     <script src="{{ url_for('static', filename='js/modules/feedback_modal.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='js/modules/offline_feedback_modal.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/modules/student_accounts_modal.js') }}" defer></script>
   </body>
 </html>

@@ -12,9 +12,9 @@ app.py에서 기존에 사용하던:
 
 from flask import Blueprint
 
-from .ai_routes import ai_bp
 from .catalog_routes import catalog_bp
 from .crawler_routes import crawler_bp
+from .feedback_routes import feedback_bp
 from .student_routes import student_bp
 
 # app.py 하위 호환: `from routes.workspace import workspace_bp`
@@ -23,4 +23,4 @@ workspace_bp = Blueprint("workspace", __name__)
 workspace_bp.register_blueprint(student_bp)
 workspace_bp.register_blueprint(catalog_bp)
 workspace_bp.register_blueprint(crawler_bp)
-workspace_bp.register_blueprint(ai_bp)
+workspace_bp.register_blueprint(feedback_bp)

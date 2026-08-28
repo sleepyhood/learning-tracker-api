@@ -30,14 +30,8 @@
         type="button"
         class="btn btn-primary"
         onclick="openFeedbackModal('{{ username }}', '{{ username }}', '{{ user_uuid }}')"
-        style="flex: 1; min-width: 140px; padding: 10px 12px; border-radius: 12px; font-weight: 700; font-size: 0.82rem; cursor: pointer; background: linear-gradient(135deg, #6c5ce7, #5b4bc4); color: white; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 14px rgba(108, 92, 231, 0.3);"
-      >✨ OJ 피드백 작성</button>
-      <button
-        type="button"
-        class="btn btn-primary"
-        onclick="openOfflineFeedbackModal('{{ username }}', '{{ username }}')"
-        style="flex: 1; min-width: 140px; padding: 10px 12px; border-radius: 12px; font-weight: 700; font-size: 0.82rem; cursor: pointer; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);"
-      >✨ 오프라인 피드백</button>
+        style="width: 100%; padding: 10px 12px; border-radius: 12px; font-weight: 700; font-size: 0.88rem; cursor: pointer; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);"
+      >📘 숙제 출제</button>
       {% endif %}
     </div>
     <p class="profile-last-login" style="margin-top: 8px; font-size: 0.78rem; color: #94a3b8;">최근 접속: {{ last_login }}</p>

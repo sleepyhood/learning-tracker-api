@@ -14,7 +14,7 @@ routes/workspace/student_routes.py
   GET  /api/workspace/student_problems/<id>  - 학생 풀었던 문제 목록
 """
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request, redirect
 
 from services.workspace_student_service import (
     delete_student,
@@ -33,7 +33,7 @@ def workspace_page():
     s, err = ensure_admin_or_redirect()
     if err:
         return err
-    return render_template("workspace_2pane.html")
+    return redirect("/")
 
 
 @student_bp.route("/api/workspace/schedule_students")

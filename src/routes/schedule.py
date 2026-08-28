@@ -459,6 +459,10 @@ def index():
             return redirect(f"/user/{query}")
         return redirect("/")
 
+    query_user = request.args.get("username", "").strip()
+    if query_user:
+        return redirect(f"/user/{query_user}")
+
     s, redir = ensure_login_or_redirect()
     if redir:
         return redir

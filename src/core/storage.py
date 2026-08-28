@@ -308,9 +308,68 @@ def append_homework_log(user_uuid: str, payload: dict) -> dict:
     recent_subs = payload.get("recent_submissions") or []
     if isinstance(recent_subs, list) and recent_subs:
         log["recent_submissions"] = recent_subs
-        # 문서 최상위에도 최신 스냅샷으로 덮어씀 (gen_feedback.py가 바로 읽을 수 있도록)
+        # 문서 최상위에도 최신 스냅샷으로 덮어씀 (외부 피드백 도구가 바로 읽을 수 있도록)
         doc["recent_submissions"] = recent_subs
         doc["recent_submissions_ts"] = now_iso
+
+    else:
+        # ── 프론트가 recent_submissions를 보내지 않은 경우:
+        #    서버가 자동으로 OJ에서 오늘 제출 이력을 가져와 스냅샷으로 저장
+        try:
+            from utils.utils_common import get_api_session, fetch_submissions_window, filter_main_account_submissions
+
+            # OJ 계정명: 문서의 profile.student_id 또는 uuids.json 조회
+            _doc_now = load_doc_by_any(user_uuid)
+            username = (_doc_now.get("profile") or {}).get("student_id") or ""
+            if not username:
+                # uuids.json에서 역방향 검색
+                _uuids_path = META_DIR / "uuids.json"
+                if _uuids_path.exists():
+                    _uuids = json.loads(_uuids_path.read_text(encoding="utf-8"))
+                    for _sid, _uid in _uuids.items():
+                        if _uid == user_uuid:
+                            username = _sid
+                            break
+
+            s = get_api_session()
+            if username and s:
+                raw_subs = fetch_submissions_window(s, username, myself=0, days=1, limit=50)
+                filtered = filter_main_account_submissions(raw_subs, username)
+
+                today_kst = datetime.now(tz=KST).strftime("%Y-%m-%d")
+                auto_subs = []
+                for rec in filtered:
+                    ct = str(rec.get("create_time") or "")
+                    ct_kst = ""
+                    try:
+                        dt_utc = datetime.fromisoformat(ct.replace("Z", "+00:00"))
+                        ct_kst = dt_utc.astimezone(KST).strftime("%Y-%m-%d")
+                    except Exception:
+                        pass
+                    if ct_kst != today_kst:
+                        continue
+
+                    prob = rec.get("problem") or {}
+                    title = (prob.get("title") or prob.get("_id") or str(prob))[:80] if isinstance(prob, dict) else str(prob)[:80]
+                    result_tag = rec.get("result_tag") or ("정답" if rec.get("result") == "AC" else rec.get("result") or "제출")
+                    code_snippet = (rec.get("code") or "")[:400]
+                    auto_subs.append({
+                        "title": title,
+                        "result_tag": result_tag,
+                        "code": code_snippet,
+                        "is_today": True,
+                        "date": ct_kst,
+                    })
+
+                if auto_subs:
+                    log["recent_submissions"] = auto_subs
+                    doc["recent_submissions"] = auto_subs
+                    doc["recent_submissions_ts"] = now_iso
+                    print(f"[HW] auto-fetched {len(auto_subs)} submissions for {username}")
+        except Exception as _e:
+            # OJ 자동 수집 실패는 무시 (숙제 저장 자체는 항상 성공)
+            print(f"[HW] auto-fetch submissions skipped: {_e}")
+
     # ─────────────────────────────────────────────────────────────────────────
 
     doc.setdefault("homework_logs", []).append(log)
@@ -319,116 +378,4 @@ def append_homework_log(user_uuid: str, payload: dict) -> dict:
     print(f"[HW] saved -> {path}, logs={len(doc['homework_logs'])}")
     return doc
 
-
-SEATING_LAYOUT_PATH = META_DIR / "seating_layout.json"
-SEATING_SESSIONS_PATH = META_DIR / "seating_sessions.json"
-
-DEFAULT_SEATING_LAYOUT = {
-    "rows": 8,
-    "cols": 7,
-    "cells": [
-        {"r": 0, "c": 0, "type": "monitor", "label": "선생님 모니터 1"},
-        {"r": 0, "c": 1, "type": "aisle", "label": ""},
-        {"r": 0, "c": 2, "type": "aisle", "label": ""},
-        {"r": 0, "c": 3, "type": "aisle", "label": ""},
-        {"r": 0, "c": 4, "type": "aisle", "label": ""},
-        {"r": 0, "c": 5, "type": "aisle", "label": ""},
-        {"r": 0, "c": 6, "type": "door", "label": "출입문 1"},
-        {"r": 1, "c": 0, "type": "seat", "label": "STD31"},
-        {"r": 1, "c": 1, "type": "aisle", "label": "통로/의자"},
-        {"r": 1, "c": 2, "type": "aisle", "label": ""},
-        {"r": 1, "c": 3, "type": "aisle", "label": ""},
-        {"r": 1, "c": 4, "type": "aisle", "label": ""},
-        {"r": 1, "c": 5, "type": "seat", "label": "STD12"},
-        {"r": 1, "c": 6, "type": "aisle", "label": ""},
-        {"r": 2, "c": 0, "type": "seat", "label": "STD30"},
-        {"r": 2, "c": 1, "type": "aisle", "label": "통로/의자"},
-        {"r": 2, "c": 2, "type": "aisle", "label": ""},
-        {"r": 2, "c": 3, "type": "aisle", "label": ""},
-        {"r": 2, "c": 4, "type": "aisle", "label": ""},
-        {"r": 2, "c": 5, "type": "seat", "label": "STD11"},
-        {"r": 2, "c": 6, "type": "aisle", "label": ""},
-        {"r": 3, "c": 0, "type": "seat", "label": "STD29"},
-        {"r": 3, "c": 1, "type": "aisle", "label": "통로/의자"},
-        {"r": 3, "c": 2, "type": "aisle", "label": ""},
-        {"r": 3, "c": 3, "type": "aisle", "label": ""},
-        {"r": 3, "c": 4, "type": "aisle", "label": ""},
-        {"r": 3, "c": 5, "type": "seat", "label": "STD10"},
-        {"r": 3, "c": 6, "type": "door", "label": "출입문 2"},
-        {"r": 4, "c": 0, "type": "seat", "label": "STD28"},
-        {"r": 4, "c": 1, "type": "aisle", "label": ""},
-        {"r": 4, "c": 2, "type": "aisle", "label": ""},
-        {"r": 4, "c": 3, "type": "aisle", "label": ""},
-        {"r": 4, "c": 4, "type": "aisle", "label": ""},
-        {"r": 4, "c": 5, "type": "aisle", "label": ""},
-        {"r": 4, "c": 6, "type": "aisle", "label": ""},
-        {"r": 5, "c": 0, "type": "seat", "label": "STD13"},
-        {"r": 5, "c": 1, "type": "seat", "label": "STD14"},
-        {"r": 5, "c": 2, "type": "seat", "label": "STD15"},
-        {"r": 5, "c": 3, "type": "seat", "label": "STD16"},
-        {"r": 5, "c": 4, "type": "aisle", "label": ""},
-        {"r": 5, "c": 5, "type": "aisle", "label": ""},
-        {"r": 5, "c": 6, "type": "aisle", "label": ""},
-        {"r": 6, "c": 0, "type": "aisle", "label": "통로/의자"},
-        {"r": 6, "c": 1, "type": "aisle", "label": "통로/의자"},
-        {"r": 6, "c": 2, "type": "aisle", "label": "통로/의자"},
-        {"r": 6, "c": 3, "type": "aisle", "label": "통로/의자"},
-        {"r": 6, "c": 4, "type": "aisle", "label": ""},
-        {"r": 6, "c": 5, "type": "aisle", "label": ""},
-        {"r": 6, "c": 6, "type": "monitor", "label": "선생님 모니터 2"},
-        {"r": 7, "c": 0, "type": "seat", "label": "STD20"},
-        {"r": 7, "c": 1, "type": "seat", "label": "STD19"},
-        {"r": 7, "c": 2, "type": "seat", "label": "STD18"},
-        {"r": 7, "c": 3, "type": "seat", "label": "STD17"},
-        {"r": 7, "c": 4, "type": "aisle", "label": ""},
-        {"r": 7, "c": 5, "type": "aisle", "label": ""},
-        {"r": 7, "c": 6, "type": "aisle", "label": ""},
-    ]
-}
-
-
-def load_seating_layout() -> dict:
-    """좌석 레이아웃 배치 데이터 로드"""
-    try:
-        if SEATING_LAYOUT_PATH.exists():
-            data = json.loads(SEATING_LAYOUT_PATH.read_text(encoding="utf-8"))
-            if data and "cells" in data:
-                return data
-    except Exception as e:
-        print("[seating] layout load error:", e)
-    return DEFAULT_SEATING_LAYOUT
-
-
-def save_seating_layout(layout: dict) -> dict:
-    """좌석 레이아웃 배치 데이터 저장"""
-    try:
-        SEATING_LAYOUT_PATH.write_text(
-            json.dumps(layout, ensure_ascii=False, indent=2),
-            encoding="utf-8"
-        )
-    except Exception as e:
-        print("[seating] layout save error:", e)
-    return layout
-
-
-def load_seating_sessions() -> dict:
-    """좌석 수강생 배정 및 체류 세션 로드 {"dates": {"2026-08-14": {"STD31": {...}}}}"""
-    try:
-        if SEATING_SESSIONS_PATH.exists():
-            return json.loads(SEATING_SESSIONS_PATH.read_text(encoding="utf-8"))
-    except Exception as e:
-        print("[seating] sessions load error:", e)
-    return {"dates": {}}
-
-
-def save_seating_sessions(sessions: dict) -> dict:
-    """좌석 수강생 배정 및 체류 세션 저장"""
-    try:
-        SEATING_SESSIONS_PATH.write_text(
-            json.dumps(sessions, ensure_ascii=False, indent=2),
-            encoding="utf-8"
-        )
-    except Exception as e:
-        print("[seating] sessions save error:", e)
-    return sessions
 
