@@ -102,6 +102,7 @@
       const targetUsername = (window.APP_CONFIG && (window.APP_CONFIG.viewUsername || window.APP_CONFIG.userUuid)) || "";
 
       const origText = submitBtn.textContent;
+      const origBg = submitBtn.style.background || "linear-gradient(135deg, #2563eb, #1d4ed8)";
       submitBtn.textContent = "⏳ 저장 중...";
       submitBtn.disabled = true;
 
@@ -138,13 +139,13 @@
           if (typeof window.refreshDrilldownCheckboxes === "function") window.refreshDrilldownCheckboxes();
           submitBtn.disabled = false;
           submitBtn.textContent = origText;
-          submitBtn.style.background = "";
+          submitBtn.style.background = origBg;
         }, 1500);
 
       } catch (err) {
         submitBtn.disabled = false;
         submitBtn.textContent = origText;
-        submitBtn.style.background = "";
+        submitBtn.style.background = origBg;
         if (typeof showToast === "function") showToast(`⚠️ 숙제 저장 실패: ${err.message}`, true, 4000);
       }
     });

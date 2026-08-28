@@ -376,6 +376,19 @@ def append_homework_log(user_uuid: str, payload: dict) -> dict:
 
     path = save_doc_by_any(user_uuid, doc)
     print(f"[HW] saved -> {path}, logs={len(doc['homework_logs'])}")
+
+    # ── RDB Dual-Store 동기화 ────────────────────────────────────────────────
+    try:
+        from db.dual_store import USE_RDB_STORE
+        if USE_RDB_STORE:
+            from db.session import get_db_session
+            from db.repo import create_or_update_assignment_rdb
+            with get_db_session() as session:
+                create_or_update_assignment_rdb(session, user_uuid, log)
+                session.commit()
+    except Exception as _rdb_err:
+        print(f"[HW] RDB dual-store sync warning: {_rdb_err}")
+
     return doc
 
 

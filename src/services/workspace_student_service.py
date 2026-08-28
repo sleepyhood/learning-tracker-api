@@ -656,6 +656,461 @@ def sync_all_doingcoding_students(api_session=None, limit: int = 200) -> dict:
 # 스마트 유사 계정(부계정) 추천 알고리즘
 # ─────────────────────────────────────────
 
+# ─────────────────────────────────────────
+# 당일 학생 요약 (구글 문서 사이드바 OJ 탭 전용)
+# ─────────────────────────────────────────
+
+def get_student_today_summary(
+    display_id: str | None = None,
+    user_uuid: str | None = None,
+    portal_id: str | None = None,
+    name: str | None = None,
+    date_str: str | None = None,
+) -> dict:
+    """
+    구글 문서 사이드바(OJ 피드백 탭)가 단일 GET 요청으로 학생의 당일 요약을
+    가져갈 수 있도록 조회합니다.
+
+    탐색 우선순위:
+        1. user_uuid
+        2. portal_id (meta/portal_mapping.json 및 workspace_students.json 탐색)
+        3. display_id (workspace_students.json 및 uuids.json 탐색)
+        4. name (실명 정확 일치 / 접두사 / 부분 일치 스마트 탐색 및 1회 자동 매핑 저장)
+
+    Returns:
+        {
+            "ok": True,
+            "student_name": str,
+            "display_id": str,
+            "user_uuid": str,
+            "portal_id": str,
+            "date": str,                   # 'YYYY-MM-DD'
+            "solved_problems": [...],      # 오늘 정답 처리된 OJ 제출 기록
+            "wrong_problems": [...],       # 오늘 오답/부분 점수 OJ 제출 기록
+            "homework_problems": [...],    # 오늘 지정된 숙제 문항 목록
+            "teacher_memo": str,
+            "mode": str,                   # 'homework' | 'review' | 'comment'
+        }
+
+    Raises:
+        KeyError: 학생을 찾을 수 없을 때
+    """
+    from datetime import datetime, timezone, timedelta
+    from core.storage import META_DIR
+
+    KST = timezone(timedelta(hours=9))
+    today = date_str or datetime.now(tz=KST).strftime("%Y-%m-%d")
+
+    workspace_data = _load_workspace_students()
+
+    # ─── portal_mapping.json 로드 ──────────────────────────────────────────
+    portal_mapping_file = META_DIR / "portal_mapping.json"
+    portal_mappings = {}
+    if portal_mapping_file.exists():
+        try:
+            m_data = json.loads(portal_mapping_file.read_text(encoding="utf-8"))
+            portal_mappings = m_data.get("mappings", {})
+        except Exception:
+            pass
+
+    # ─── 학생 resolve ───────────────────────────────────────────────────────
+    student_entry: dict | None = None
+    resolved_uuid: str | None = None
+    resolved_display_id: str | None = None
+
+    # 1순위: user_uuid 직접 매핑
+    if user_uuid:
+        for u, st in workspace_data.items():
+            if u == user_uuid or st.get("user_uuid") == user_uuid:
+                student_entry = st
+                resolved_uuid = u
+                resolved_display_id = st.get("display_id") or u
+                break
+
+    # 2순위: portal_id로 portal_mapping.json 조회
+    if not student_entry and portal_id:
+        pid_str = str(portal_id).strip()
+        saved_map = portal_mappings.get(pid_str)
+        if saved_map:
+            target_uuid = saved_map.get("oj_uuid")
+            if target_uuid and target_uuid in workspace_data:
+                student_entry = workspace_data[target_uuid]
+                resolved_uuid = target_uuid
+                resolved_display_id = student_entry.get("display_id") or saved_map.get("oj_display_id") or target_uuid
+
+    # 3순위: workspace_students.json 내 portal_id 필드 매핑
+    if not student_entry and portal_id:
+        pid_str = str(portal_id).strip()
+        for u, st in workspace_data.items():
+            if str(st.get("portal_id", "")).strip() == pid_str:
+                student_entry = st
+                resolved_uuid = u
+                resolved_display_id = st.get("display_id") or u
+                break
+
+    # 4순위: display_id 매핑
+    if not student_entry and display_id:
+        for u, st in workspace_data.items():
+            if st.get("display_id") == display_id or u == display_id:
+                student_entry = st
+                resolved_uuid = u
+                resolved_display_id = st.get("display_id") or u
+                break
+
+    # 5순위: name (실명) 기반 스마트 매칭 (예: '서율', '이서율', '김민준')
+    query_name = (name or display_id or "").strip()
+    if not student_entry and query_name:
+        # 5-1. 정확 일치 (name == query_name)
+        for u, st in workspace_data.items():
+            st_name = (st.get("name") or "").strip()
+            if st_name and st_name == query_name:
+                student_entry = st
+                resolved_uuid = u
+                resolved_display_id = st.get("display_id") or u
+                break
+
+        # 5-2. display_id가 query_name으로 시작 (예: '김윤성' ➔ '김윤성1113')
+        if not student_entry:
+            for u, st in workspace_data.items():
+                st_disp = (st.get("display_id") or "").strip()
+                if st_disp and st_disp.startswith(query_name):
+                    student_entry = st
+                    resolved_uuid = u
+                    resolved_display_id = st_disp
+                    break
+
+        # 5-3. query_name이 st_name에 포함되거나 st_name이 query_name에 포함 (예: '서율' in '이서율')
+        if not student_entry and len(query_name) >= 2:
+            for u, st in workspace_data.items():
+                st_name = (st.get("name") or "").strip()
+                st_disp = (st.get("display_id") or "").strip()
+                if (st_name and (query_name in st_name or st_name in query_name)) or (query_name in st_disp):
+                    student_entry = st
+                    resolved_uuid = u
+                    resolved_display_id = st_disp or st_name
+                    break
+
+        # 매칭 성공 & portal_id가 있으면 portal_mapping.json에 자동 등록
+        if student_entry and portal_id:
+            try:
+                pid_str = str(portal_id).strip()
+                portal_mappings[pid_str] = {
+                    "student_name": student_entry.get("name") or query_name,
+                    "type": "OJ",
+                    "oj_uuid": resolved_uuid,
+                    "oj_display_id": resolved_display_id,
+                    "note": "auto_mapped",
+                    "updated_at": today
+                }
+                portal_mapping_file.write_text(
+                    json.dumps({"mappings": portal_mappings}, ensure_ascii=False, indent=2),
+                    encoding="utf-8"
+                )
+            except Exception as e:
+                print(f"[portal_mapping] 자동 저장 실패: {e}")
+
+    if not student_entry:
+        raise KeyError(f"Student not found (name={name}, display_id={display_id}, uuid={user_uuid}, portal_id={portal_id})")
+
+    student_name = student_entry.get("name") or name or resolved_display_id or "학생"
+    resolved_portal_id = str(portal_id or student_entry.get("portal_id", "")).strip()
+
+    # ─── 유저 doc 로드 ──────────────────────────────────────────────────────
+    doc = load_doc_by_any(resolved_uuid)
+
+    # ─── 당일 homework_log 추출 ─────────────────────────────────────────────
+    logs = doc.get("homework_logs") or []
+    try:
+        logs = sorted(logs, key=lambda x: str(x.get("created_at") or x.get("ts") or ""), reverse=True)
+    except Exception:
+        pass
+
+    today_logs = [lg for lg in logs if str(lg.get("created_at") or lg.get("ts") or "").startswith(today)]
+    latest_log = today_logs[0] if today_logs else {}
+
+    # ─── 문제 & 챕터 메타데이터 매핑 딕셔너리 로드 ──────────────────────────
+    from config import PROBLEM_DIR
+    import os, urllib.parse
+    title_map = {}
+    prob_meta_map = {}
+    prob_file = os.path.join(PROBLEM_DIR, "all_problems.json")
+    if os.path.exists(prob_file):
+        try:
+            with open(prob_file, encoding="utf-8") as f:
+                _p_data = json.load(f)
+                if isinstance(_p_data, dict) and _p_data.get("_schema_version") == 2:
+                    _groups = _p_data.get("groups", {})
+                    for _pid, _pinfo in _p_data.get("problems", {}).items():
+                        _t = _pinfo.get("title", "")
+                        title_map[str(_pid)] = _t
+                        title_map[str(_pid).lower()] = _t
+
+                        _gid = _pinfo.get("group_id")
+                        _g = _groups.get(_gid, {}) if _gid else {}
+                        _g_title = _g.get("title") or _pinfo.get("chapter_id") or "코딩 실습 및 숙제"
+                        _c_code = _g.get("chapter_code") or "p101"
+                        _clean_tag = str(_g_title).strip()
+                        _url = f"http://edu.doingcoding.com/{_c_code}?tag={urllib.parse.quote(_clean_tag)}" if _c_code else "http://edu.doingcoding.com"
+
+                        _meta_entry = {
+                            "title": _t,
+                            "chapter_code": _c_code,
+                            "group_title": _g_title,
+                            "url": _url,
+                        }
+                        prob_meta_map[str(_pid)] = _meta_entry
+                        prob_meta_map[str(_pid).lower()] = _meta_entry
+        except Exception:
+            pass
+
+    homework_problems: list[dict] = []
+    teacher_memo: str = ""
+    mode: str = "comment"
+
+    if latest_log:
+        mode = latest_log.get("mode") or ("homework" if latest_log.get("problems") else "comment")
+        teacher_memo = latest_log.get("teacher_memo") or ""
+        for p in (latest_log.get("problems") or []):
+            l_code = p.get("legacy_code") or ""
+            p_meta = prob_meta_map.get(str(l_code)) or prob_meta_map.get(str(l_code).lower()) or {}
+            p_title = p.get("title") or p_meta.get("title") or title_map.get(str(l_code)) or l_code
+            homework_problems.append({
+                "legacy_code": l_code,
+                "title": p_title,
+                "chapter_code": p_meta.get("chapter_code") or "p101",
+                "group_title": p_meta.get("group_title") or "코딩 실습 및 숙제",
+                "url": p_meta.get("url") or "http://edu.doingcoding.com",
+                "server_problem_id": p.get("server_problem_id") or None,
+            })
+
+    # ─── 당일 OJ 제출 이력 & 디버깅 코드 스니펫 추출 ─────────────────────────
+    solved_problems: list[dict] = []
+    wrong_problems: list[dict] = []
+    debugging_snippets: list[dict] = []
+
+    def _clean_code_snippet(code_text: str, max_chars: int = 150) -> str:
+        if not code_text:
+            return ""
+        lines = [line.rstrip() for line in code_text.splitlines() if line.strip()]
+        cleaned = "\n".join(lines)
+        if len(cleaned) > max_chars:
+            return cleaned[:max_chars].rstrip() + "\n..."
+        return cleaned
+
+    raw_submissions: list[dict] = []
+    api_session = None
+
+    try:
+        from utils.utils_common import get_api_session, fetch_submissions_window
+        oj_user = resolved_display_id or (doc.get("profile") or {}).get("student_id")
+        api_session = get_api_session()
+        if api_session and oj_user:
+            raw_subs = fetch_submissions_window(api_session, oj_user, 0, days=1)
+            for rec in raw_subs:
+                ct = str(rec.get("create_time") or "")
+                ct_kst = ""
+                try:
+                    dt_utc = datetime.fromisoformat(ct.replace("Z", "+00:00"))
+                    ct_kst = dt_utc.astimezone(KST).strftime("%Y-%m-%d")
+                except Exception:
+                    pass
+
+                if ct_kst and ct_kst != today:
+                    continue
+
+                raw_submissions.append(rec)
+    except Exception as e:
+        print(f"[get_student_today_summary] OJ 실시간 제출 조회 예외: {e}")
+
+    # 오늘 제출 목록 정렬 (최신순)
+    for rec in raw_submissions:
+        prob_code = rec.get("problem") or ""
+        p_title = title_map.get(str(prob_code)) or title_map.get(str(prob_code).lower()) or str(prob_code)
+        res_code = rec.get("result")
+        res_tag = "정답(AC 100점)" if res_code == 0 else "오답(WA)"
+        lang = rec.get("language") or ""
+
+        entry = {
+            "id": rec.get("id"),
+            "code": prob_code,
+            "title": p_title,
+            "result_tag": res_tag,
+            "result": res_tag,
+            "language": lang,
+            "date": today,
+        }
+        if res_code == 0:
+            solved_problems.append(entry)
+        else:
+            wrong_problems.append(entry)
+
+    # ─── 디버깅 코드 스니펫(오답 ➔ 정답 페어) 추출 ───────────────────────────
+    if raw_submissions and api_session:
+        from collections import defaultdict
+        by_prob = defaultdict(list)
+        for rec in raw_submissions:
+            by_prob[rec.get("problem")].append(rec)
+
+        # 1. 오답 후 정답을 맞춘 문제 (WA -> AC) 우선 탐색 (최대 1~2개)
+        for prob, items in by_prob.items():
+            if len(debugging_snippets) >= 2:
+                break
+            wrong_item = next((x for x in reversed(items) if x.get("result") != 0), None)
+            correct_item = next((x for x in items if x.get("result") == 0), None)
+            if wrong_item and correct_item and wrong_item.get("id") and correct_item.get("id"):
+                try:
+                    w_res = api_session.get(f"http://edu.doingcoding.com/api/submission?id={wrong_item['id']}", timeout=3).json().get("data", {})
+                    c_res = api_session.get(f"http://edu.doingcoding.com/api/submission?id={correct_item['id']}", timeout=3).json().get("data", {})
+                    w_code = _clean_code_snippet(w_res.get("code") or "")
+                    c_code = _clean_code_snippet(c_res.get("code") or "")
+                    p_title = title_map.get(str(prob)) or title_map.get(str(prob).lower()) or str(prob)
+                    lang = correct_item.get("language") or wrong_item.get("language") or ""
+                    if w_code or c_code:
+                        debugging_snippets.append({
+                            "problem_code": prob,
+                            "problem_title": p_title,
+                            "language": lang,
+                            "type": "debugging_pair",
+                            "wrong_code": w_code,
+                            "correct_code": c_code,
+                        })
+                except Exception as e:
+                    print(f"[debugging_snippets] pair fetch error: {e}")
+
+        # 2. 페어가 없는 경우: 최근 정답 문제 1개 코드 추출
+        if not debugging_snippets:
+            latest_ac = next((x for x in raw_submissions if x.get("result") == 0), None)
+            if latest_ac and latest_ac.get("id"):
+                try:
+                    ac_res = api_session.get(f"http://edu.doingcoding.com/api/submission?id={latest_ac['id']}", timeout=3).json().get("data", {})
+                    ac_code = _clean_code_snippet(ac_res.get("code") or "", max_chars=200)
+                    prob = latest_ac.get("problem") or ""
+                    p_title = title_map.get(str(prob)) or title_map.get(str(prob).lower()) or str(prob)
+                    lang = latest_ac.get("language") or ""
+                    if ac_code:
+                        debugging_snippets.append({
+                            "problem_code": prob,
+                            "problem_title": p_title,
+                            "language": lang,
+                            "type": "single_ac",
+                            "wrong_code": "",
+                            "correct_code": ac_code,
+                        })
+                except Exception as e:
+                    print(f"[debugging_snippets] single fetch error: {e}")
+
+    is_no_submission = len(solved_problems) == 0 and len(wrong_problems) == 0
+
+    candidate_accounts = list(dict.fromkeys(
+        [resolved_display_id] + [str(a) for a in student_entry.get("accounts", []) if a]
+    )) if student_entry else []
+
+    return {
+        "ok": True,
+        "student_name": student_name,
+        "display_id": resolved_display_id,
+        "user_uuid": resolved_uuid,
+        "portal_id": resolved_portal_id,
+        "date": today,
+        "candidate_accounts": candidate_accounts,
+        "solved_problems": solved_problems,
+        "wrong_problems": wrong_problems,
+        "debugging_snippets": debugging_snippets,
+        "is_no_submission": is_no_submission,
+        "homework_problems": homework_problems,
+        "teacher_memo": teacher_memo,
+        "mode": mode,
+    }
+
+
+def search_public_student_accounts(query: str, limit: int = 10) -> list[dict]:
+    """
+    구글 문서 사이드바 계정 검색용:
+    1,040명 전체 학생 데이터에서 display_id, name, accounts를 실시간 검색합니다.
+    """
+    q = (query or "").strip().lower()
+    if not q:
+        return []
+
+    workspace_data = _load_workspace_students()
+    results = []
+
+    for u, st in workspace_data.items():
+        disp = (st.get("display_id") or "").lower()
+        name = (st.get("name") or "").lower()
+        accs = [str(a).lower() for a in st.get("accounts", []) if a]
+
+        if q in disp or q in name or any(q in a for a in accs):
+            results.append({
+                "display_id": st.get("display_id") or u,
+                "name": st.get("name") or "",
+                "user_uuid": u,
+                "accounts": st.get("accounts", []),
+            })
+            if len(results) >= limit:
+                break
+
+    return results
+
+
+def update_portal_student_mapping(portal_id: str, oj_display_id: str, student_name: str | None = None) -> dict:
+    """
+    특정 portal_id의 OJ 계정 매핑을 영구적으로 갱신(meta/portal_mapping.json)합니다.
+    """
+    from core.storage import META_DIR
+    from datetime import datetime, timezone, timedelta
+
+    KST = timezone(timedelta(hours=9))
+    today = datetime.now(tz=KST).strftime("%Y-%m-%d")
+
+    pid_str = str(portal_id).strip()
+    disp_str = str(oj_display_id).strip()
+    if not pid_str or not disp_str:
+        raise ValueError("portal_id와 oj_display_id는 필수입니다.")
+
+    workspace_data = _load_workspace_students()
+    resolved_uuid = None
+    resolved_name = student_name or disp_str
+
+    for u, st in workspace_data.items():
+        if st.get("display_id") == disp_str or u == disp_str or any(a == disp_str for a in st.get("accounts", [])):
+            resolved_uuid = u
+            resolved_name = st.get("name") or student_name or disp_str
+            break
+
+    portal_mapping_file = META_DIR / "portal_mapping.json"
+    portal_mappings = {}
+    if portal_mapping_file.exists():
+        try:
+            m_data = json.loads(portal_mapping_file.read_text(encoding="utf-8"))
+            portal_mappings = m_data.get("mappings", {})
+        except Exception:
+            pass
+
+    portal_mappings[pid_str] = {
+        "student_name": resolved_name,
+        "type": "OJ",
+        "oj_uuid": resolved_uuid or disp_str,
+        "oj_display_id": disp_str,
+        "note": "manual_switched",
+        "updated_at": today,
+    }
+
+    portal_mapping_file.write_text(
+        json.dumps({"mappings": portal_mappings}, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
+
+    return {
+        "ok": True,
+        "portal_id": pid_str,
+        "oj_display_id": disp_str,
+        "student_name": resolved_name,
+        "oj_uuid": resolved_uuid,
+    }
+
+
+
 def find_suggested_subaccounts(student: dict, candidate_accounts: list[str], max_suggestions: int = 4) -> list[str]:
     """
     주어진 학생의 이름, 생년월일, 대표 아이디를 기반으로

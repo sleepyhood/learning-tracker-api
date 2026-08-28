@@ -112,7 +112,7 @@
       badge = `<span style="font-size:0.72rem; color:#dc2626; background:#fef2f2; border:1px solid #fecaca; padding:1px 6px; border-radius:10px; font-weight:700; flex-shrink:0;">🔴 0점</span>`;
     }
     const code = p.legacy_code ? `<code style="font-size:0.72rem; background:#f1f5f9; color:#475569; padding:1px 5px; border-radius:4px; font-family:monospace; border:1px solid #e2e8f0; flex-shrink:0;">${p.legacy_code}</code>` : "";
-    const rawTitle = p.title || p.title_at_issue || "";
+    const rawTitle = p.title || p.title_at_issue || p.legacy_code || "문제";
     const pUrl = p.url || (p.legacy_code ? `http://edu.doingcoding.com/problem/${encodeURIComponent(String(p.legacy_code))}` : "#");
     return `
       <li style="display:flex; align-items:center; gap:8px; padding:5px 8px; font-size:0.82rem; background:#ffffff; border:1px solid #f1f5f9; border-radius:8px; margin-bottom:4px;">
@@ -245,8 +245,10 @@
 
   const safeMsg = (log.message || "").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n");
 
+  const logId = log.log_id || log.id || log.key || "";
+
   host.innerHTML = `
-<article class="card" data-log-id="${log.key || ""}" data-id="${log.id || ""}" style="border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 16px rgba(0,0,0,0.04); padding:20px; display:flex; flex-direction:column; gap:10px; justify-content:flex-start;">
+<article class="card" data-log-id="${logId}" data-id="${logId}" style="border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 16px rgba(0,0,0,0.04); padding:20px; display:flex; flex-direction:column; gap:10px; justify-content:flex-start;">
   <div class="card-head" style="display:flex; justify-content:space-between; align-items:center; padding-bottom:10px; border-bottom:1px solid #f1f5f9;">
     <div class="card-title" style="font-weight:800; font-size:1.05rem; color:#1e293b;">${displayTitle}</div>
     ${badgeHTML}

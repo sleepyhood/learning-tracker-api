@@ -46,6 +46,15 @@ if not cors_origins:
 
 CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=True)
 
+# /api/public/* — 구글 문서 사이드바(GAS sandbox iframe) 전용 CORS
+# GAS iframe 출처: https://n-XXXX-script.googleusercontent.com 등 동적 서브도메인 사용
+# wildcard origin("*")으로 허용하되, credentials 불필요(쿠키 없이 순수 데이터 조회)
+CORS(
+    app,
+    resources={r"/api/public/*": {"origins": "*"}},
+    supports_credentials=False,
+)
+
 # Register Blueprints (Phase 2, 3 & 4)
 from routes.workspace import workspace_bp
 from routes.auth import auth_bp

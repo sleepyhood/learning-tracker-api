@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import select, and_, case, func
+from sqlalchemy import select, and_, case, func, delete
 
 from db.models import User, ExternalAccount, Problem, Submission, Assignment, AssignmentSubmission, Group, Chapter
 
@@ -98,48 +98,157 @@ def get_problem_by_server_id(session: Session, server_problem_id: str) -> Option
     return session.scalar(select(Problem).where(Problem.server_problem_id == server_problem_id))
 
 
-# ─── 숙제 최신 조회 ─────────────────────────────────────────────────────────
+# ─── 숙제 최신 조회 & CUD ───────────────────────────────────────────────────
 
 def get_latest_assignment_for_user(session: Session, user_identifier: str) -> Optional[dict]:
     """
-    유저의 최근 숙제 로그를 DB에서 직접 조회.
-    KST 변환은 여기서 수행 (위험요소 #8 대응).
+    유저의 최근 숙제 로그를 DB에서 직접 조회하고, 실시간 제출 현황(Submission 및 JSON 캐시)을 반영하여
+    문제 메타데이터와 풀이 현황을 반환.
     """
     user = resolve_user_any(session, user_identifier)
     if not user:
         return None
 
-
-    # 최신 AssignmentSubmission 기준으로 Assignment 찾기
-    latest_asub = session.scalar(
-        select(AssignmentSubmission)
+    # 최신 Assignment 찾기 (Assignment.created_at 기준 역순)
+    latest_assignment = session.scalar(
+        select(Assignment)
+        .join(AssignmentSubmission, Assignment.id == AssignmentSubmission.assignment_id)
         .where(AssignmentSubmission.user_id == user.id)
-        .order_by(AssignmentSubmission.created_at.desc())
+        .order_by(Assignment.created_at.desc(), Assignment.id.desc())
     )
-    if not latest_asub:
+    if not latest_assignment:
         return None
 
-    assignment = latest_asub.assignment
     items = session.scalars(
         select(AssignmentSubmission)
         .where(
             and_(
-                AssignmentSubmission.assignment_id == assignment.id,
+                AssignmentSubmission.assignment_id == latest_assignment.id,
                 AssignmentSubmission.user_id == user.id,
             )
         )
+        .order_by(AssignmentSubmission.id.asc())
     ).all()
+
+    # 실시간 풀이 상태 대조를 위한 유저 JSON 캐시 보조 로드 (Dual-Store 동기화 지원)
+    json_solved_map = {}
+    try:
+        from utils.utils_user_doc import load_doc_by_any
+        user_doc = load_doc_by_any(user_identifier) or {}
+        oi_probs = user_doc.get("oi_problems") or {}
+        if isinstance(oi_probs, dict):
+            for k, v in oi_probs.items():
+                if isinstance(v, dict):
+                    c = v.get("_id") or v.get("legacy_code") or k
+                    if c:
+                        json_solved_map[str(c)] = v
+    except Exception:
+        pass
 
     problems_list = []
     counts = {"total": 0, "passed": 0, "partial": 0, "wrong": 0, "pending": 0}
+
     for item in items:
-        st = item.status or "pending"
+        prob = item.problem
+        lc = item.legacy_code or (prob.legacy_code if prob else "") or ""
+        
+        # 1. 문제 메타데이터 조회
+        p_title = ""
+        group_title = ""
+        chapter_code = ""
+        chapter_title = ""
+        server_prob_id = None
+
+        if prob and not prob.is_unknown:
+            p_title = prob.title or ""
+            server_prob_id = prob.server_problem_id
+            if prob.group:
+                group_title = prob.group.title or ""
+                if prob.group.chapter:
+                    chapter_code = prob.group.chapter.curriculum or ""
+                    chapter_title = prob.group.chapter.title or ""
+        
+        # 2. RDB Submission 및 JSON 캐시 기반 실시간 상태/점수 산출
+        subs = []
+        if prob:
+            subs = session.scalars(
+                select(Submission)
+                .where(
+                    and_(
+                        Submission.user_id == user.id,
+                        Submission.problem_id == prob.id,
+                    )
+                )
+                .order_by(Submission.score.desc(), Submission.submitted_at.desc())
+            ).all()
+
+        is_passed = False
+        is_wrong = False
+        max_score = 0
+
+        # RDB submissions 검사
+        for sub in subs:
+            if sub.score == 100 or (sub.verdict and sub.verdict.upper() in ["AC", "PASSED", "SOLVED", "0"]):
+                is_passed = True
+                max_score = 100
+                break
+            elif sub.score > max_score:
+                max_score = sub.score
+            elif (sub.verdict and sub.verdict.upper() in ["WA", "WRONG", "FAILED"]) and max_score == 0:
+                is_wrong = True
+
+        # JSON 캐시 검사 보조
+        if not is_passed:
+            for k in filter(None, [lc, lc.lower() if lc else None, server_prob_id]):
+                if k in json_solved_map:
+                    entry = json_solved_map[k]
+                    e_score = int(entry.get("score") or 0)
+                    e_status = entry.get("status")
+                    if e_score == 100 or e_status in [0, "0", "PASSED", "solved", "passed", "AC", "ACCEPTED"]:
+                        is_passed = True
+                        max_score = 100
+                        break
+                    elif e_score > max_score:
+                        max_score = e_score
+                    elif e_status in [-1, "-1", "WRONG", "wrong", "FAILED"]:
+                        is_wrong = True
+
+        if is_passed or max_score == 100:
+            st = "passed"
+            score_val = 100
+        elif max_score > 0:
+            st = "partial"
+            score_val = max_score
+        elif is_wrong:
+            st = "wrong"
+            score_val = 0
+        else:
+            raw_st = (item.status or "pending").lower()
+            if raw_st in ["passed", "solved"]:
+                st = "passed"
+                score_val = 100
+            elif raw_st == "wrong":
+                st = "wrong"
+                score_val = 0
+            elif raw_st == "partial":
+                st = "partial"
+                score_val = item.score or 50
+            else:
+                st = "pending"
+                score_val = 0
+
         counts["total"] += 1
         counts[st] = counts.get(st, 0) + 1
+
         problems_list.append({
-            "legacy_code": item.legacy_code or "",
+            "legacy_code": lc,
+            "server_problem_id": server_prob_id,
+            "title": p_title or lc or "",
             "status": st,
-            "score": item.score,
+            "score": score_val,
+            "group_title": group_title,
+            "chapter_code": chapter_code,
+            "chapter_title": chapter_title,
         })
 
     # UTC -> KST 변환
@@ -150,23 +259,156 @@ def get_latest_assignment_for_user(session: Session, user_identifier: str) -> Op
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.astimezone(KST).isoformat()
 
+    log_key = latest_assignment.log_id or str(latest_assignment.id)
     return {
         "ok": True,
         "log": {
-            "id": str(assignment.id),
-            "title": assignment.title,
-            "mode": assignment.mode,
-            "channel": assignment.channel,
-            "message": assignment.message,
-            "comment": assignment.comment,
-            "ts": to_kst_iso(assignment.created_at),
-            "created_at": to_kst_iso(assignment.created_at),
-            "due_at": to_kst_iso(assignment.due_at),
+            "id": log_key,
+            "key": log_key,
+            "log_id": log_key,
+            "title": latest_assignment.title,
+            "mode": latest_assignment.mode,
+            "channel": latest_assignment.channel,
+            "message": latest_assignment.message,
+            "comment": latest_assignment.comment,
+            "ts": to_kst_iso(latest_assignment.created_at),
+            "created_at": to_kst_iso(latest_assignment.created_at),
+            "due_at": to_kst_iso(latest_assignment.due_at),
             "problems": problems_list,
             "counts": counts,
         },
         "student_name": user.name,
     }
+
+
+def create_or_update_assignment_rdb(session: Session, user_identifier: str, log: dict) -> Optional[Assignment]:
+    """
+    신규 숙제/알림장을 RDB Assignment 및 AssignmentSubmission 테이블에 생성 또는 갱신.
+    Dual-Store 동기화 지원.
+    """
+    user = resolve_user_any(session, user_identifier)
+    if not user:
+        return None
+
+    log_id = log.get("id") or log.get("log_id") or log.get("key")
+    if log_id:
+        log_id = str(log_id).strip()
+
+    asn = None
+    if log_id:
+        asn = session.scalar(select(Assignment).where(Assignment.log_id == log_id))
+
+    title = log.get("title") or "숙제"
+    mode = log.get("mode") or "homework"
+    channel = log.get("channel") or "kakao"
+    message = log.get("message")
+    comment = log.get("comment")
+    ts_str = log.get("ts") or log.get("created_at")
+
+    created_at = None
+    if ts_str:
+        try:
+            dt = datetime.fromisoformat(str(ts_str).replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=KST)
+            created_at = dt.astimezone(timezone.utc)
+        except Exception:
+            created_at = None
+    if not created_at:
+        created_at = datetime.now(timezone.utc)
+
+    due_at = None
+    due_str = log.get("due_at")
+    if due_str:
+        try:
+            dt = datetime.fromisoformat(str(due_str).replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=KST)
+            due_at = dt.astimezone(timezone.utc)
+        except Exception:
+            due_at = None
+
+    if asn is None:
+        asn = Assignment(
+            log_id=log_id,
+            title=title,
+            mode=mode,
+            channel=channel,
+            message=message,
+            comment=comment,
+            created_at=created_at,
+            due_at=due_at,
+        )
+        session.add(asn)
+        session.flush()
+    else:
+        asn.title = title
+        asn.mode = mode
+        asn.channel = channel
+        asn.message = message
+        asn.comment = comment
+        asn.created_at = created_at
+        asn.due_at = due_at
+        session.execute(
+            delete(AssignmentSubmission).where(AssignmentSubmission.assignment_id == asn.id)
+        )
+        session.flush()
+
+    unknown_prob = get_or_create_unknown_problem(session)
+    seen_prob_ids = set()
+
+    for prob_item in (log.get("problems") or []):
+        if not isinstance(prob_item, dict):
+            prob_item = {"legacy_code": str(prob_item)}
+
+        lc = prob_item.get("legacy_code") or prob_item.get("code") or prob_item.get("pid") or prob_item.get("_id") or prob_item.get("problem_id")
+        p_status = str(prob_item.get("status") or "pending").lower()
+        p_score = int(prob_item.get("score") or 0)
+
+        prob = None
+        if lc:
+            prob = session.scalar(select(Problem).where(Problem.legacy_code == str(lc).strip()))
+        if prob is None and prob_item.get("server_problem_id"):
+            prob = session.scalar(select(Problem).where(Problem.server_problem_id == str(prob_item.get("server_problem_id")).strip()))
+        if prob is None:
+            prob = unknown_prob
+
+        if prob.id in seen_prob_ids:
+            continue
+        seen_prob_ids.add(prob.id)
+
+        asub = AssignmentSubmission(
+            assignment_id=asn.id,
+            user_id=user.id,
+            problem_id=prob.id,
+            status=p_status,
+            score=p_score,
+            legacy_code=str(lc).strip() if lc else None,
+            created_at=created_at,
+        )
+        session.add(asub)
+
+    session.flush()
+    return asn
+
+
+def delete_assignment_rdb(session: Session, log_id_or_key: str) -> bool:
+    """
+    RDB에서 Assignment 레코드를 삭제 (CASCADE로 하위 AssignmentSubmission 자동 삭제)
+    """
+    if not log_id_or_key:
+        return False
+    target = str(log_id_or_key).strip()
+    asn = None
+    if target.isdigit():
+        asn = session.get(Assignment, int(target))
+    if asn is None:
+        asn = session.scalar(select(Assignment).where(Assignment.log_id == target))
+    if asn is not None:
+        session.delete(asn)
+        session.flush()
+        return True
+    return False
 
 
 # ─── 취약 단원 진단 및 문제 추천 ───────────────────────────────────────────

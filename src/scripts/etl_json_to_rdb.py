@@ -331,15 +331,18 @@ def _flush_user_batch(batch: list, problem_cache: dict):
                 created_at = parse_dt_to_utc(ts_str) or datetime.now(timezone.utc)
 
                 log_id = log.get("id") or log.get("log_id") or None
-                log_id = log_id.strip() if log_id else None
-                log_id = log_id if log_id else None  # 빈 문자열도 None 처리
-                # 중복 방지: log_id가 있으면 이미 저장된 Assignment 조회
-                if log_id:
-                    existing_asn = session.scalar(
-                        select(Assignment).where(Assignment.log_id == log_id)
-                    )
-                    if existing_asn is not None:
-                        continue
+                log_id = str(log_id).strip() if log_id else None
+                if not log_id:
+                    log_id = f"hw_{user.internal_user_id}_{created_at.strftime('%Y%m%d%H%M%S')}"
+
+                # 중복 방지: log_id로 이미 저장된 Assignment 조회
+                existing_asn = session.scalar(
+                    select(Assignment).where(Assignment.log_id == log_id)
+                )
+                if existing_asn is not None:
+                    continue
+
+                due_at = parse_dt_to_utc(log.get("due_at")) if log.get("due_at") else None
 
                 asn = Assignment(
                     log_id=log_id,
@@ -349,10 +352,12 @@ def _flush_user_batch(batch: list, problem_cache: dict):
                     message=log.get("message"),
                     comment=log.get("comment"),
                     created_at=created_at,
+                    due_at=due_at,
                 )
                 session.add(asn)
                 session.flush()
 
+                seen_prob_ids = set()
                 for prob_item in (log.get("problems") or []):
                     if not isinstance(prob_item, dict):
                         continue
@@ -365,6 +370,10 @@ def _flush_user_batch(batch: list, problem_cache: dict):
                         prob = session.scalar(select(Problem).where(Problem.legacy_code == lc)) if lc else None
                     if prob is None:
                         prob = unknown_prob
+
+                    if prob.id in seen_prob_ids:
+                        continue
+                    seen_prob_ids.add(prob.id)
 
                     asub = AssignmentSubmission(
                         assignment_id=asn.id,

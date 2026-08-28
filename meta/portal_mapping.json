@@ -1,0 +1,164 @@
+{
+  "mappings": {
+    "58": {
+      "student_name": "김준수",
+      "type": "OJ",
+      "oj_uuid": "614dc750-15d6-4fbe-9ae3-6a2b36c5530d",
+      "oj_display_id": "김준수0730",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "65": {
+      "student_name": "김윤성",
+      "type": "OJ",
+      "oj_uuid": "d50c11ee-c090-4040-b209-fdd53320ee39",
+      "oj_display_id": "김윤성1113",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "54": {
+      "student_name": "조우진",
+      "type": "OJ",
+      "oj_uuid": "5fc9eb29-9ff6-45c9-9cba-976dd57d30eb",
+      "oj_display_id": "조우진0801",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "74": {
+      "student_name": "박서진",
+      "type": "OJ",
+      "oj_uuid": "decdb0ae-7617-4527-b9f3-6bcf30a8aeef",
+      "oj_display_id": "박서진1128",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "282": {
+      "student_name": "이승현",
+      "type": "OJ",
+      "oj_uuid": "0d9dd4fd-7b70-4d3f-a136-cea7225adad6",
+      "oj_display_id": "이승현0324",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "41": {
+      "student_name": "강지원",
+      "type": "OJ",
+      "oj_uuid": "469a5d72-9a39-448f-8ab6-f4aa54bfaefe",
+      "oj_display_id": "강지원0401",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "50": {
+      "student_name": "이용건",
+      "type": "OJ",
+      "oj_uuid": "3faacaaf-a096-43c2-823e-b5c4f3dbb0c7",
+      "oj_display_id": "이용건0907",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "67": {
+      "student_name": "박지한",
+      "type": "OJ",
+      "oj_uuid": "5e82df43-98bd-49bd-a2e2-d291afee485c",
+      "oj_display_id": "박지한0820",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "157": {
+      "student_name": "유채원",
+      "type": "OJ",
+      "oj_uuid": "e1d8aff7-8720-4a74-91c8-6677342ba652",
+      "oj_display_id": "유채원0525",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "34": {
+      "student_name": "강지후",
+      "type": "OJ",
+      "oj_uuid": "e28d1180-0fa8-45f9-82e1-b594cd10beb0",
+      "oj_display_id": "강지후110419",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "43": {
+      "student_name": "백건우",
+      "type": "OJ",
+      "oj_uuid": "48841b4e-be55-43ce-af41-e0d07b89bd93",
+      "oj_display_id": "백건우0509",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "30": {
+      "student_name": "최시훈",
+      "type": "OJ",
+      "oj_uuid": "6070e521-e181-493c-96c3-c069158d6389",
+      "oj_display_id": "최시훈0807",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "28": {
+      "student_name": "박태희",
+      "type": "OJ",
+      "oj_uuid": "7a2b39fd-e081-4220-81e4-1a4d9c070021",
+      "oj_display_id": "박태희130412",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "24": {
+      "student_name": "김도윤",
+      "type": "OJ",
+      "oj_uuid": "418f9786-0210-463b-80af-595daf0b1c8d",
+      "oj_display_id": "김도윤0912",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "23": {
+      "student_name": "이준호",
+      "type": "OJ",
+      "oj_uuid": "67b75344-047c-4aa7-a015-426db03834f0",
+      "oj_display_id": "이준호0502",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "146": {
+      "student_name": "최승현",
+      "type": "OFFLINE",
+      "oj_uuid": "",
+      "oj_display_id": "",
+      "note": "비-OJ (블록코딩)",
+      "updated_at": "2026-08-28"
+    },
+    "151": {
+      "student_name": "서율",
+      "type": "OJ",
+      "oj_uuid": "bdba855a-114b-46fd-bc42-c3f55ab96d15",
+      "oj_display_id": "이서율08123",
+      "note": "",
+      "updated_at": "2026-08-28"
+    },
+    "38": {
+      "student_name": "함서준",
+      "type": "OJ",
+      "oj_uuid": "f4247f3a-8dea-49bd-bb6b-45286a1027e2",
+      "oj_display_id": "함서준0803",
+      "note": "auto_mapped",
+      "updated_at": "2026-08-29"
+    },
+    "40": {
+      "student_name": "박찬이08161",
+      "type": "OJ",
+      "oj_uuid": "4acd5d46-c8fc-4951-bd7f-af3fee657c71",
+      "oj_display_id": "박찬이08161",
+      "note": "auto_mapped",
+      "updated_at": "2026-08-29"
+    },
+    "999": {
+      "student_name": "osw",
+      "type": "OJ",
+      "oj_uuid": "6973f152-3e1e-4e4a-85ff-7f7e80c60706",
+      "oj_display_id": "osw1110",
+      "note": "manual_switched",
+      "updated_at": "2026-08-29"
+    }
+  }
+}

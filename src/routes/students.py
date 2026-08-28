@@ -138,6 +138,19 @@ def api_student_delete_homework_log(id_or_uuid, log_key):
 
     doc["homework_logs"] = filtered
     save_doc_by_any(id_or_uuid, doc)
+
+    # RDB Dual-Store 동기화 (삭제)
+    try:
+        from db.dual_store import USE_RDB_STORE
+        if USE_RDB_STORE:
+            from db.session import get_db_session
+            from db.repo import delete_assignment_rdb
+            with get_db_session() as session:
+                delete_assignment_rdb(session, log_key)
+                session.commit()
+    except Exception as _rdb_err:
+        print(f"[delete_homework_log] RDB delete warning: {_rdb_err}")
+
     return jsonify({"ok": True})
 
 
@@ -508,7 +521,9 @@ def api_students_homework_latest_batch():
                             from utils.utils_user_doc import load_doc_by_any
                             doc = load_doc_by_any(u)
                             logs = doc.get("homework_logs", []) if doc else []
-                            result[u] = logs[-1] if logs else {}
+                            logs = sorted(logs, key=lambda x: str(x.get("created_at") or x.get("ts") or ""), reverse=True)
+                            recent = logs[0] if logs else {}
+                            result[u] = _enrich_log_problem_status(doc, recent) if recent else {}
                         except Exception:
                             result[u] = {}
                 return jsonify({"ok": True, "batch": result})
@@ -519,8 +534,10 @@ def api_students_homework_latest_batch():
     for u in uuids:
         try:
             doc = load_doc_by_any(u)
-            logs = doc.get("homework_logs", [])
-            result[u] = logs[-1] if logs else {}
+            logs = doc.get("homework_logs", []) if doc else []
+            logs = sorted(logs, key=lambda x: str(x.get("created_at") or x.get("ts") or ""), reverse=True)
+            recent = logs[0] if logs else {}
+            result[u] = _enrich_log_problem_status(doc, recent) if recent else {}
         except Exception:
             result[u] = {}
 

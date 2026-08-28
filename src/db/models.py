@@ -152,3 +152,5 @@ class AssignmentSubmission(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
 
     assignment: Mapped["Assignment"] = relationship(back_populates="items")
+    problem: Mapped["Problem"] = relationship()
+    user: Mapped["User"] = relationship()
