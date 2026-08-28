@@ -68,6 +68,8 @@
     });
   }
 
+  const modalBtn   = document.getElementById("basket-modal-btn");
+
   if (clearBtn) {
     clearBtn.addEventListener("click", () => {
       basketItems = [];
@@ -77,14 +79,73 @@
     });
   }
 
-  if (submitBtn) {
-    submitBtn.addEventListener("click", () => {
+  if (modalBtn) {
+    modalBtn.addEventListener("click", () => {
       const targetUuid     = (window.APP_CONFIG && window.APP_CONFIG.userUuid) || "";
       const targetUsername = (window.APP_CONFIG && (window.APP_CONFIG.viewUsername || window.APP_CONFIG.userUuid)) || "";
       if (typeof window.openFeedbackModal === "function") {
         window.openFeedbackModal(targetUsername, targetUsername, targetUuid);
       } else {
         if (typeof showToast === "function") showToast("⚠️ 피드백 모달을 불러올 수 없습니다.", true);
+      }
+    });
+  }
+
+  if (submitBtn) {
+    submitBtn.addEventListener("click", async () => {
+      if (basketItems.length === 0) {
+        if (typeof showToast === "function") showToast("⚠️ 장바구니에 출제할 문제를 먼저 담아주세요!", true);
+        return;
+      }
+
+      const targetUuid     = (window.APP_CONFIG && window.APP_CONFIG.userUuid) || "";
+      const targetUsername = (window.APP_CONFIG && (window.APP_CONFIG.viewUsername || window.APP_CONFIG.userUuid)) || "";
+
+      const origText = submitBtn.textContent;
+      submitBtn.textContent = "⏳ 저장 중...";
+      submitBtn.disabled = true;
+
+      try {
+        const payload = {
+          display_id: targetUsername,
+          user_uuid: targetUuid,
+          problems: basketItems,
+          mode: "homework",
+          title: `${targetUsername} 학생 숙제 출제 (${basketItems.length}개)`
+        };
+
+        const res = await fetch(`/api/workspace/save_homework_log`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `저장 실패 (${res.status})`);
+        }
+
+        submitBtn.textContent = "✅ 저장 완료!";
+        submitBtn.style.background = "#10b981";
+
+        if (typeof showToast === "function") {
+          showToast(`🚀 [${targetUsername}] 학생에게 숙제 ${basketItems.length}문항이 저장되었습니다!\n(CLI로 돌아가 Enter를 누르세요)`, false, 4500);
+        }
+
+        setTimeout(() => {
+          basketItems = [];
+          updateBasketUI();
+          if (typeof window.refreshDrilldownCheckboxes === "function") window.refreshDrilldownCheckboxes();
+          submitBtn.disabled = false;
+          submitBtn.textContent = origText;
+          submitBtn.style.background = "";
+        }, 1500);
+
+      } catch (err) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = origText;
+        submitBtn.style.background = "";
+        if (typeof showToast === "function") showToast(`⚠️ 숙제 저장 실패: ${err.message}`, true, 4000);
       }
     });
   }
