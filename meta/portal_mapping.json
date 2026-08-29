@@ -159,6 +159,14 @@
       "oj_display_id": "osw1110",
       "note": "manual_switched",
       "updated_at": "2026-08-29"
+    },
+    "52": {
+      "student_name": "심규민",
+      "type": "OJ",
+      "oj_uuid": "f478ee25-e92b-4bfc-8c8b-a7828c1326e6",
+      "oj_display_id": "kevin0410",
+      "note": "auto_mapped",
+      "updated_at": "2026-08-29"
     }
   }
 }
