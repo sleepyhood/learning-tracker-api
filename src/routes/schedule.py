@@ -511,6 +511,22 @@ def user_dashboard(username):
         other_name = other_json.get("data", {}).get("user", {}).get("username") if isinstance(other_json, dict) else username
         other_uuid = resolve_uuid(other_name)
 
+        # 포털에서 받아온 실시간 last_login을 workspace_students에 계정별로 캐싱
+        try:
+            portal_last_login = other_json.get("data", {}).get("user", {}).get("last_login") or ""
+            if portal_last_login and other_name:
+                from core.storage import _load_workspace_students, _save_workspace_students
+                ws_students = _load_workspace_students()
+                # Find which student card this account belongs to
+                for st_uuid, st_info in ws_students.items():
+                    if other_name in st_info.get("accounts", []):
+                        acc_ll = st_info.setdefault("accounts_last_login", {})
+                        acc_ll[other_name] = portal_last_login
+                        _save_workspace_students(ws_students)
+                        break
+        except Exception as _cache_err:
+            pass  # 캐싱 실패는 무시 (페이지 로딩에 영향 없음)
+
         role_ctx = role_ctx_from_session()
         return render_template(
             "index.html",

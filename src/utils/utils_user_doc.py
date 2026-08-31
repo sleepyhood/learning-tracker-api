@@ -40,7 +40,6 @@ def _ensure_uuid(id_or_uuid: str) -> str:
 
 def load_doc_by_any(id_or_uuid: str) -> dict:
     u = _ensure_uuid(id_or_uuid)
-    print(f"id_or_uuid: {id_or_uuid}")
     p = _user_doc_path_by_uuid(u)
     if os.path.exists(p):
         with open(p, encoding="utf-8") as f:

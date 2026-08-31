@@ -167,6 +167,22 @@
       "oj_display_id": "kevin0410",
       "note": "auto_mapped",
       "updated_at": "2026-08-29"
+    },
+    "79": {
+      "student_name": "전서준",
+      "type": "OJ",
+      "oj_uuid": "13745114-f32c-4609-a946-e8c15dfc8255",
+      "oj_display_id": "leo0719",
+      "note": "auto_mapped",
+      "updated_at": "2026-08-31"
+    },
+    "46": {
+      "student_name": "이성현",
+      "type": "OJ",
+      "oj_uuid": "fb5b1dcf-f4d9-4775-9876-9357b1a28ecc",
+      "oj_display_id": "이성현0808",
+      "note": "auto_mapped",
+      "updated_at": "2026-08-31"
     }
   }
 }

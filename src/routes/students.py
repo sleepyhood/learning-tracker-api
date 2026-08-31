@@ -745,6 +745,173 @@ def _get_choseong(text: str) -> str:
     return "".join(res)
 
 
+def _is_pure_choseong(text: str) -> bool:
+    if not text:
+        return False
+    clean = text.replace(" ", "")
+    return bool(clean) and all(ch in CHOSEONG_LIST for ch in clean)
+
+
+def _calculate_student_score(name: str, display_id: str, username: str, accounts: list, q: str, is_chos: bool) -> int:
+    name_lower = (name or "").lower()
+    disp_lower = (display_id or "").lower()
+    uname_lower = (username or "").lower()
+    accs_lower = [str(a).lower() for a in accounts if a]
+    q_lower = (q or "").lower()
+
+    if is_chos:
+        name_chos = _get_choseong(name)
+        disp_chos = _get_choseong(display_id)
+        if name_chos == q:
+            return 300
+        if name_chos.startswith(q):
+            return 200
+        if q in name_chos:
+            return 100
+        if disp_chos.startswith(q):
+            return 80
+        if q in disp_chos:
+            return 50
+        for acc in accs_lower:
+            acc_chos = _get_choseong(acc)
+            if acc_chos.startswith(q):
+                return 70
+            if q in acc_chos:
+                return 40
+        return 0
+
+    # Direct Text search
+    if name_lower == q_lower:
+        return 1000
+    if name_lower.startswith(q_lower):
+        return 850
+    if disp_lower.startswith(q_lower) or uname_lower.startswith(q_lower):
+        return 750
+    if any(acc.startswith(q_lower) for acc in accs_lower):
+        return 700
+    if q_lower in name_lower:
+        return 600
+    if q_lower in disp_lower or q_lower in uname_lower:
+        return 400
+    if any(q_lower in acc for acc in accs_lower):
+        return 300
+    return 0
+
+
+def _format_activity_time(dt_obj, now=None) -> tuple[str, bool]:
+    from datetime import datetime, timezone, timedelta
+    if not dt_obj:
+        return ("", False)
+    if now is None:
+        now = datetime.now(timezone.utc)
+    if dt_obj.tzinfo is None:
+        dt_obj = dt_obj.replace(tzinfo=timezone.utc)
+    
+    delta = now - dt_obj
+    is_recent_active = delta < timedelta(days=3)
+
+    if delta < timedelta(hours=1):
+        minutes = max(1, int(delta.total_seconds() // 60))
+        return (f"{minutes}분 전", True)
+    elif delta < timedelta(hours=24):
+        hours = int(delta.total_seconds() // 3600)
+        return (f"{hours}시간 전", True)
+    elif delta < timedelta(days=2):
+        return ("어제", True)
+    elif delta < timedelta(days=7):
+        return (f"{delta.days}일 전", is_recent_active)
+    elif delta < timedelta(days=30):
+        return (f"{delta.days}일 전", False)
+    elif now.year == dt_obj.year:
+        return (f"{dt_obj.month}월 {dt_obj.day}일", False)
+    else:
+        return (f"{dt_obj.year}.{dt_obj.month}.{dt_obj.day}", False)
+
+
+def _resolve_accounts_last_login_from_st(st_info: dict) -> dict:
+    """
+    workspace_students.json의 st_info를 받아 accounts_last_login 캐시를 우선 사용하고,
+    캐시가 없는 계정만 로컬 JSON doc에서 보완하여 반환.
+    """
+    from utils.utils_user_doc import load_doc_by_any
+    from datetime import datetime, timezone
+
+    accounts = st_info.get("accounts", [])
+    cached = st_info.get("accounts_last_login") or {}
+
+    result = {}
+    best_acc = None
+    best_dt = None
+    now = datetime.now(timezone.utc)
+
+    for acc in accounts:
+        acc_str = str(acc).strip()
+        if not acc_str:
+            continue
+
+        candidates = []
+
+        # 1. accounts_last_login 캐시 우선 확인 (학생 페이지 조회 시 포털 데이터에서 저장됨)
+        cached_iso = cached.get(acc_str) or ""
+        if cached_iso and isinstance(cached_iso, str):
+            try:
+                candidates.append(datetime.fromisoformat(cached_iso.replace("Z", "+00:00")))
+            except Exception:
+                pass
+
+        # 2. 로컬 JSON doc 보완 (homework_logs 등)
+        try:
+            doc = load_doc_by_any(acc_str)
+            if isinstance(doc, dict):
+                prof = doc.get("profile", {})
+                if isinstance(prof, dict) and prof.get("last_login"):
+                    try:
+                        candidates.append(datetime.fromisoformat(str(prof["last_login"]).replace("Z", "+00:00")))
+                    except Exception:
+                        pass
+
+                for hw in doc.get("homework_logs", []):
+                    if isinstance(hw, dict):
+                        for k in ("created_at", "ts"):
+                            if hw.get(k):
+                                try:
+                                    candidates.append(datetime.fromisoformat(str(hw[k]).replace("Z", "+00:00")))
+                                except Exception:
+                                    pass
+        except Exception:
+            pass
+
+        acc_best_dt = None
+        for dt in candidates:
+            if dt:
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                if acc_best_dt is None or dt > acc_best_dt:
+                    acc_best_dt = dt
+
+        rel_time, is_recent_time = _format_activity_time(acc_best_dt, now)
+        raw_iso = acc_best_dt.isoformat() if acc_best_dt else ""
+
+        result[acc_str] = {
+            "last_login": raw_iso,
+            "relative_time": rel_time,
+            "is_recent_time": is_recent_time,
+            "is_most_recent": False
+        }
+
+        if acc_best_dt:
+            if best_dt is None or acc_best_dt > best_dt:
+                best_dt = acc_best_dt
+                best_acc = acc_str
+
+    has_multiple_accounts = len([a for a in accounts if a]) > 1
+    if best_acc and best_acc in result and best_dt is not None:
+        if result[best_acc]["is_recent_time"] or has_multiple_accounts:
+            result[best_acc]["is_most_recent"] = True
+
+    return result
+
+
 @students_bp.route("/api/students/search_suggestions", methods=["GET"])
 def api_student_search_suggestions():
     q = (request.args.get("q") or "").strip()
@@ -753,11 +920,10 @@ def api_student_search_suggestions():
     except Exception:
         pass
     ws_students = _load_workspace_students()
-    suggestions = []
+    scored_suggestions = []
     seen = set()
 
-    q_lower = q.lower()
-    q_choseong = _get_choseong(q)
+    is_choseong_query = _is_pure_choseong(q) if q else False
 
     for st_uuid, st_info in ws_students.items():
         display_id = (st_info.get("display_id") or "").strip()
@@ -770,27 +936,10 @@ def api_student_search_suggestions():
         if not display_id and not name and not username and not accounts:
             continue
         
-        # If query is provided, perform text & choseong filter
+        score = 0
         if q:
-            name_lower = name.lower()
-            disp_lower = display_id.lower()
-            uname_lower = username.lower()
-            name_chos = _get_choseong(name)
-            disp_chos = _get_choseong(display_id)
-
-            text_match = q_lower in name_lower or q_lower in disp_lower or q_lower in uname_lower
-            chos_match = (
-                (q_chos in name_chos if (q_chos := q_choseong) else False)
-                or (q_choseong in disp_chos if q_choseong else False)
-                or q_lower in name_chos
-                or q_lower in disp_chos
-            )
-            acc_match = any(
-                q_lower in str(acc).lower() or (q_choseong and q_choseong in _get_choseong(str(acc)))
-                for acc in accounts
-            )
-
-            if not (text_match or chos_match or acc_match):
+            score = _calculate_student_score(name, display_id, username, accounts, q, is_choseong_query)
+            if score <= 0:
                 continue
 
         key = (display_id.lower(), name.lower(), username.lower())
@@ -798,19 +947,33 @@ def api_student_search_suggestions():
             continue
         seen.add(key)
         
-        suggestions.append({
-            "user_uuid": st_uuid,
-            "display_id": display_id or username or name,
-            "name": name or display_id or username,
-            "username": username,
-            "accounts": accounts,
-            "birth_md": st_info.get("birth_md", "")
-        })
+        student_name = name or display_id or username
+        account_logins = _resolve_accounts_last_login_from_st(st_info)
+        scored_suggestions.append((
+            score,
+            len(student_name),
+            student_name,
+            {
+                "user_uuid": st_uuid,
+                "display_id": display_id or username or name,
+                "name": student_name,
+                "username": username,
+                "accounts": accounts,
+                "account_logins": account_logins,
+                "birth_md": st_info.get("birth_md", "")
+            }
+        ))
+
+    # If query is provided, sort by score desc, then name length asc, then alphabetical
+    if q:
+        scored_suggestions.sort(key=lambda item: (-item[0], item[1], item[2]))
+
+    suggestions = [item[3] for item in scored_suggestions]
 
     # On-demand live lookup if query has few matches
     if q and len(suggestions) < 3 and len(q) >= 2:
         try:
-            from utils.utils_common import get_api_session, BASE_URL, resolve_uuid
+            from utils.utils_common import get_api_session, BASE_URL, resolve_uuid, format_last_login
             from utils.utils_user_doc import pull_and_store_user
             from core.storage import _parse_account_name_birth
             from urllib.parse import quote
@@ -835,12 +998,21 @@ def api_student_search_suggestions():
                                 key = (found_uname.lower(), (found_name or "").lower(), found_uname.lower())
                                 if key not in seen:
                                     seen.add(key)
+                                    u_login = user_obj.get("last_login") or ""
+                                    u_rel_time = format_last_login(u_login) if u_login else ""
                                     suggestions.insert(0, {
                                         "user_uuid": u_resolved,
                                         "display_id": found_uname,
                                         "name": found_name or p_name or found_uname,
                                         "username": found_uname,
                                         "accounts": [found_uname],
+                                        "account_logins": {
+                                            found_uname: {
+                                                "last_login": u_login,
+                                                "relative_time": u_rel_time,
+                                                "is_most_recent": True
+                                            }
+                                        },
                                         "birth_md": p_birth
                                     })
         except Exception as e:

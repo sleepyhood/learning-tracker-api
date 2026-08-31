@@ -717,6 +717,16 @@ document.addEventListener("DOMContentLoaded", () => {
     'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
   ];
 
+  const isPureChoseong = (text) => {
+    if (!text || typeof text !== 'string') return false;
+    const clean = text.replace(/\s+/g, '');
+    if (!clean) return false;
+    for (let i = 0; i < clean.length; i++) {
+      if (!CHOSEONG_LIST.includes(clean[i])) return false;
+    }
+    return true;
+  };
+
   const getChoseong = (text) => {
     if (!text || typeof text !== 'string') return '';
     let result = '';
@@ -918,7 +928,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const currentQuery = (searchInput.value || "").trim().toLowerCase();
-    const queryChoseong = getChoseong(currentQuery);
+    const isChoseongQuery = isPureChoseong(currentQuery);
 
     items.forEach((item, index) => {
       const li = document.createElement("li");
@@ -938,11 +948,19 @@ document.addEventListener("DOMContentLoaded", () => {
       const subAccounts = cleanAccounts.filter(a => a.toLowerCase() !== primaryAcc.toLowerCase());
       const isCustomId = !isStandardAcademyId(primaryAcc) && !isStandardAcademyId(name);
 
+      const accountLogins = (typeof item === "object" && item.account_logins) ? item.account_logins : {};
+      const primaryLoginInfo = accountLogins[primaryAcc] || {};
+      const primaryRelTime = primaryLoginInfo.relative_time || "";
+      const isPrimaryRecent = !!primaryLoginInfo.is_most_recent;
+
       const isMatchedAcc = (accStr) => {
         if (!currentQuery) return false;
         const lower = accStr.toLowerCase();
-        const chos = getChoseong(accStr);
-        return lower.includes(currentQuery) || chos.includes(currentQuery) || chos.includes(queryChoseong);
+        if (isChoseongQuery) {
+          const chos = getChoseong(accStr);
+          return chos.includes(currentQuery);
+        }
+        return lower.includes(currentQuery);
       };
 
       li.innerHTML = `
@@ -950,7 +968,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
             <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
               <span style="font-weight:700; color:var(--text, #0f1f3a); font-size:0.92rem;">${name}</span>
-              <span class="badge-primary-acc" data-acc="${primaryAcc}" title="본계정 (@${primaryAcc})으로 조회">⭐ @${primaryAcc}</span>
+              <span class="badge-primary-acc ${isPrimaryRecent ? 'is-recent-active' : ''}" data-acc="${primaryAcc}" title="본계정 (@${primaryAcc})으로 조회${primaryRelTime ? ` (최근 활동: ${primaryRelTime})` : ''}">
+                ⭐ @${primaryAcc}
+                ${primaryRelTime ? `<span class="badge-login-time ${isPrimaryRecent ? 'is-recent' : ''}">${isPrimaryRecent ? '🟢 ' : ''}${primaryRelTime}</span>` : ''}
+              </span>
               ${birthMd ? `<span class="badge-birth-mini">🎂 ${birthMd}</span>` : ''}
               ${isCustomId ? `<span class="badge-custom-id">외부ID</span>` : ''}
             </div>
@@ -959,9 +980,17 @@ document.addEventListener("DOMContentLoaded", () => {
           ${subAccounts.length > 0 ? `
             <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap; font-size:0.75rem; color:var(--muted, #64748b);">
               <span style="font-weight:600; color:#4f46e5;">🔗 부계정:</span>
-              ${subAccounts.map(subAcc => `
-                <span class="badge-sub-acc ${isMatchedAcc(subAcc) ? 'is-matched' : ''}" data-acc="${subAcc}" title="부계정 (@${subAcc})으로 조회">@${subAcc}</span>
-              `).join('')}
+              ${subAccounts.map(subAcc => {
+                const subLoginInfo = accountLogins[subAcc] || {};
+                const subRelTime = subLoginInfo.relative_time || "";
+                const isSubRecent = !!subLoginInfo.is_most_recent;
+                return `
+                  <span class="badge-sub-acc ${isMatchedAcc(subAcc) ? 'is-matched' : ''} ${isSubRecent ? 'is-recent-active' : ''}" data-acc="${subAcc}" title="부계정 (@${subAcc})으로 조회${subRelTime ? ` (최근 활동: ${subRelTime})` : ''}">
+                    @${subAcc}
+                    ${subRelTime ? `<span class="badge-login-time ${isSubRecent ? 'is-recent' : ''}">${isSubRecent ? '🟢 ' : ''}${subRelTime}</span>` : ''}
+                  </span>
+                `;
+              }).join('')}
             </div>
           ` : ''}
         </div>
@@ -1003,6 +1032,43 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  const calculateScore = (st, query, isChoseongQuery) => {
+    const name = (typeof st === "string" ? st : (st.name || st.display_id || "")).toLowerCase();
+    const displayId = (typeof st === "string" ? st : (st.display_id || st.name || "")).toLowerCase();
+    const username = (typeof st === "object" && st.username ? st.username : "").toLowerCase();
+    const rawAccs = (typeof st === "object" && Array.isArray(st.accounts)) ? st.accounts : [];
+    const accounts = rawAccs.map(a => (typeof a === "object" ? (a.username || "") : String(a)).toLowerCase()).filter(Boolean);
+
+    if (isChoseongQuery) {
+      const nameChos = getChoseong(name);
+      const dispChos = getChoseong(displayId);
+
+      if (nameChos === query) return 300;
+      if (nameChos.startsWith(query)) return 200;
+      if (nameChos.includes(query)) return 100;
+      if (dispChos.startsWith(query)) return 80;
+      if (dispChos.includes(query)) return 50;
+
+      for (const acc of accounts) {
+        const accChos = getChoseong(acc);
+        if (accChos.startsWith(query)) return 70;
+        if (accChos.includes(query)) return 40;
+      }
+      return 0;
+    }
+
+    // Direct Text matching
+    if (name === query) return 1000;
+    if (name.startsWith(query)) return 850;
+    if (displayId.startsWith(query) || username.startsWith(query)) return 750;
+    if (accounts.some(acc => acc.startsWith(query))) return 700;
+    if (name.includes(query)) return 600;
+    if (displayId.includes(query) || username.includes(query)) return 400;
+    if (accounts.some(acc => acc.includes(query))) return 300;
+
+    return 0;
+  };
+
   let remoteSearchTimer = null;
 
   const updateSuggestions = () => {
@@ -1015,36 +1081,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const query = raw.toLowerCase();
-    const queryChoseong = getChoseong(raw);
+    const isChoseongQuery = isPureChoseong(raw);
 
-    const matches = studentList
-      .filter((st) => {
-        if (typeof st === "string") {
-          const sLower = st.toLowerCase();
-          const sChoseong = getChoseong(st);
-          return sLower.includes(query) || sChoseong.includes(query) || sChoseong.includes(queryChoseong);
-        }
-        const name = (st.name || "").toLowerCase();
-        const displayId = (st.display_id || "").toLowerCase();
-        const username = (st.username || "").toLowerCase();
-        const nameChoseong = getChoseong(st.name || "");
-        const displayChoseong = getChoseong(st.display_id || "");
+    const scoredItems = [];
+    for (const st of studentList) {
+      const score = calculateScore(st, query, isChoseongQuery);
+      if (score > 0) {
+        const name = typeof st === "string" ? st : (st.name || st.display_id || "");
+        scoredItems.push({ item: st, score, nameLen: name.length, name });
+      }
+    }
 
-        const textMatch = name.includes(query) || displayId.includes(query) || username.includes(query);
-        const choseongMatch = nameChoseong.includes(query) || nameChoseong.includes(queryChoseong) ||
-                              displayChoseong.includes(query) || displayChoseong.includes(queryChoseong);
+    // Sort: highest score first, then shorter name, then alphabetical
+    scoredItems.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (a.nameLen !== b.nameLen) return a.nameLen - b.nameLen;
+      return a.name.localeCompare(b.name, "ko");
+    });
 
-        let subAccountMatch = false;
-        if (Array.isArray(st.accounts)) {
-          subAccountMatch = st.accounts.some(acc => {
-            const accLower = String(acc).toLowerCase();
-            return accLower.includes(query) || getChoseong(acc).includes(queryChoseong);
-          });
-        }
-
-        return textMatch || choseongMatch || subAccountMatch;
-      })
-      .slice(0, MAX_SUGGESTIONS);
+    const matches = scoredItems.map(si => si.item).slice(0, MAX_SUGGESTIONS);
 
     renderAutocomplete(matches);
 

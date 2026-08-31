@@ -567,10 +567,17 @@
     transition: all 0.15s ease;
   }
 
-  .badge-primary-acc:hover {
-    background: #2563eb;
+  .badge-primary-acc.is-recent-active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #047857;
+    border-color: rgba(16, 185, 129, 0.45);
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15);
+  }
+
+  .badge-primary-acc.is-recent-active:hover {
+    background: #10b981;
     color: #ffffff;
-    border-color: #1d4ed8;
+    border-color: #059669;
   }
 
   .badge-sub-acc {
@@ -583,7 +590,7 @@
     border: 1px solid #cbd5e1;
     display: inline-flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
     cursor: pointer;
     transition: all 0.15s ease;
   }
@@ -596,6 +603,20 @@
     box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
   }
 
+  .badge-sub-acc.is-recent-active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+    border-color: rgba(16, 185, 129, 0.45);
+    font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15);
+  }
+
+  .badge-sub-acc.is-recent-active:hover {
+    background: #059669;
+    color: #ffffff;
+    border-color: #047857;
+  }
+
   .badge-sub-acc.is-matched {
     color: #3730a3;
     background: #e0e7ff;
@@ -606,6 +627,25 @@
   .badge-sub-acc.is-matched:hover {
     background: #4338ca;
     color: #ffffff;
+  }
+
+  .badge-login-time {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.67rem;
+    font-weight: 600;
+    margin-left: 2px;
+    padding: 0 4px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.05);
+    color: #64748b;
+    line-height: 1.4;
+  }
+
+  .badge-login-time.is-recent {
+    background: rgba(16, 185, 129, 0.18);
+    color: #047857;
+    font-weight: 700;
   }
 
   .badge-birth-mini {
