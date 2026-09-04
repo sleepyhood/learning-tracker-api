@@ -1,4 +1,28 @@
 {
+  "test-kang-donghyeon-1103-uuid": {
+    "display_id": "강동현1103",
+    "name": "강동현",
+    "birth_md": "1103",
+    "accounts": [
+      "강동현1103",
+      "1103강동현"
+    ],
+    "user_uuid": "test-kang-donghyeon-1103-uuid",
+    "weekdays": [
+      1,
+      4
+    ],
+    "subjects": [
+      "OJ",
+      "Python"
+    ],
+    "note": "테스트 계정 (본계정: 강동현1103, 부계정: 1103강동현)",
+    "status": "active",
+    "accounts_last_login": {
+      "강동현1103": "2026-09-03T17:30:00.000000+09:00",
+      "1103강동현": "2026-06-18T14:00:00.000000+09:00"
+    }
+  },
   "d50c11ee-c090-4040-b209-fdd53320ee39": {
     "display_id": "김윤성1113",
     "name": "김윤성",
@@ -472,22 +496,6 @@
     "note": "",
     "status": "active",
     "accounts_last_login": {}
-  },
-  "9d4c3232-6af8-487b-ba90-6bbfdbb6988c": {
-    "display_id": "김건우0408c",
-    "name": "김건우0408c",
-    "birth_md": "",
-    "accounts": [
-      "김건우0408c"
-    ],
-    "user_uuid": "9d4c3232-6af8-487b-ba90-6bbfdbb6988c",
-    "weekdays": [],
-    "subjects": [],
-    "note": "",
-    "status": "active",
-    "accounts_last_login": {
-      "김건우0408c": "2026-07-18T02:27:06.007155Z"
-    }
   },
   "dd06f504-b9f7-4503-8686-ebf44e55d785": {
     "display_id": "최우녕0110",
@@ -983,10 +991,11 @@
   },
   "05dc1b5e-5a3b-4610-accf-58969bd420dd": {
     "display_id": "이성현20110808",
-    "name": "똥",
+    "name": "이성현",
     "birth_md": "",
     "accounts": [
-      "이성현20110808"
+      "이성현20110808",
+      "이성현0808"
     ],
     "user_uuid": "05dc1b5e-5a3b-4610-accf-58969bd420dd",
     "weekdays": [],
@@ -994,7 +1003,8 @@
     "note": "",
     "status": "active",
     "accounts_last_login": {
-      "이성현20110808": "2026-08-27T17:37:03.509592+09:00"
+      "이성현20110808": "2026-09-03T07:25:39.122673Z",
+      "이성현0808": "2024-08-01T07:38:15.288191Z"
     }
   },
   "31ae9adb-6939-4849-a63e-3144400189c1": {
@@ -1085,8 +1095,8 @@
     "note": "",
     "status": "active",
     "accounts_last_login": {
-      "강동현1103": "2026-08-27T18:22:27.233909+09:00",
-      "1103강동현": "2026-08-27T18:22:27.233909+09:00"
+      "강동현1103": "2026-09-03T07:33:53.337384Z",
+      "1103강동현": "2026-06-18T07:40:29.494074Z"
     }
   },
   "6070e521-e181-493c-96c3-c069158d6389": {
@@ -1316,7 +1326,8 @@
     "name": "김건우",
     "birth_md": "0710",
     "accounts": [
-      "김건우0710"
+      "김건우0710",
+      "김건우0408"
     ],
     "user_uuid": "eab7d995-99d6-44cd-91e7-53ab3bc07231",
     "weekdays": [],
@@ -1483,20 +1494,6 @@
       "최우진0506_2"
     ],
     "user_uuid": "63ce4986-cdad-46ec-9757-6bfdb2a89fc0",
-    "weekdays": [],
-    "subjects": [],
-    "note": "",
-    "status": "active",
-    "accounts_last_login": {}
-  },
-  "fb5b1dcf-f4d9-4775-9876-9357b1a28ecc": {
-    "display_id": "이성현0808",
-    "name": "이성현",
-    "birth_md": "0808",
-    "accounts": [
-      "이성현0808"
-    ],
-    "user_uuid": "fb5b1dcf-f4d9-4775-9876-9357b1a28ecc",
     "weekdays": [],
     "subjects": [],
     "note": "",
@@ -1753,20 +1750,6 @@
       "박준영05072": "2026-08-27T18:20:00.546745+09:00"
     }
   },
-  "9f26b4dc-adb1-4bb6-ad6f-4480608b4c3a": {
-    "display_id": "김건우0408c2",
-    "name": "김건우0408c2",
-    "birth_md": "",
-    "accounts": [
-      "김건우0408c2"
-    ],
-    "user_uuid": "9f26b4dc-adb1-4bb6-ad6f-4480608b4c3a",
-    "weekdays": [],
-    "subjects": [],
-    "note": "",
-    "status": "active",
-    "accounts_last_login": {}
-  },
   "4acd5d46-c8fc-4951-bd7f-af3fee657c71": {
     "display_id": "박찬이08161",
     "name": "박찬이08161",
@@ -1986,7 +1969,10 @@
     "name": "김건우",
     "birth_md": "0408",
     "accounts": [
-      "김건우0408"
+      "김건우0408",
+      "김건우0408c",
+      "김건우0408c2",
+      "김건우0408부"
     ],
     "user_uuid": "eff1ec3a-964b-4457-a586-e320dea90dfd",
     "weekdays": [],
@@ -2089,22 +2075,6 @@
     "status": "active",
     "accounts_last_login": {
       "허이삭0923": "2026-07-25T07:51:14.924896Z"
-    }
-  },
-  "1660e358-bcc9-4935-b7d0-d80f9752c76a": {
-    "display_id": "김건우0408부",
-    "name": "김건우0408부",
-    "birth_md": "",
-    "accounts": [
-      "김건우0408부"
-    ],
-    "user_uuid": "1660e358-bcc9-4935-b7d0-d80f9752c76a",
-    "weekdays": [],
-    "subjects": [],
-    "note": "",
-    "status": "active",
-    "accounts_last_login": {
-      "김건우0408부": "2026-08-22T16:37:18.045569+09:00"
     }
   },
   "390c5db4-0160-439a-aa97-d26a8592af02": {
@@ -14765,5 +14735,44 @@
     "note": "",
     "status": "active",
     "accounts_last_login": {}
+  },
+  "9c210adf-3cbe-4adc-bfa2-a13f182aa45b": {
+    "user_uuid": "9c210adf-3cbe-4adc-bfa2-a13f182aa45b",
+    "display_id": "조은우0504$",
+    "name": "조은우0504$",
+    "birth_md": "",
+    "weekdays": [],
+    "subjects": [],
+    "accounts": [
+      "조은우0504$"
+    ],
+    "note": "",
+    "status": "active"
+  },
+  "45108c35-ca6e-4e82-8079-4a41f6b5b144": {
+    "user_uuid": "45108c35-ca6e-4e82-8079-4a41f6b5b144",
+    "display_id": "이서진0202",
+    "name": "이서진",
+    "birth_md": "0202",
+    "weekdays": [],
+    "subjects": [],
+    "accounts": [
+      "이서진0202"
+    ],
+    "note": "",
+    "status": "active"
+  },
+  "09d6bb28-e7d1-4957-b7b6-52ac34cd269e": {
+    "user_uuid": "09d6bb28-e7d1-4957-b7b6-52ac34cd269e",
+    "display_id": "김윤성11132",
+    "name": "김윤성11132",
+    "birth_md": "",
+    "weekdays": [],
+    "subjects": [],
+    "accounts": [
+      "김윤성11132"
+    ],
+    "note": "",
+    "status": "active"
   }
 }

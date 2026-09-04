@@ -900,29 +900,108 @@ def get_student_today_summary(
     raw_submissions: list[dict] = []
     api_session = None
 
+    # ─── 후보 계정 목록 수집 (본계정 + accounts에 등록된 부계정들) ───────────
+    _base_start = ([resolved_display_id] if resolved_display_id else [])
+    _base_extra = [str(a) for a in (student_entry.get("accounts") or []) if a] if student_entry else []
+    base_accounts: list[str] = list(dict.fromkeys(_base_start + _base_extra))
+
+    # accounts_last_login 캐시 로드
+    acc_last_login: dict[str, str] = {}
+    if student_entry:
+        acc_last_login = student_entry.get("accounts_last_login") or {}
+
+    # ─── OJ 세션 초기화 ──────────────────────────────────────────────────────
     try:
         from utils.utils_common import get_api_session, fetch_submissions_window
-        oj_user = resolved_display_id or (doc.get("profile") or {}).get("student_id")
         api_session = get_api_session()
-        if api_session and oj_user:
-            raw_subs = fetch_submissions_window(api_session, oj_user, 0, days=1)
+    except Exception as e:
+        print(f"[get_student_today_summary] OJ 세션 초기화 예외: {e}")
+
+    # ─── 각 후보 계정별 당일 제출 스캔 ─────────────────────────────────────
+    # acc → list[raw_submission] 매핑
+    acc_subs_map: dict[str, list[dict]] = {}
+
+    for acc in base_accounts:
+        if not acc or not api_session:
+            acc_subs_map[acc] = []
+            continue
+        try:
+            raw_subs = fetch_submissions_window(api_session, acc, 0, days=1)
+            today_subs = []
             for rec in raw_subs:
                 ct = str(rec.get("create_time") or "")
                 ct_kst = ""
                 try:
-                    dt_utc = datetime.fromisoformat(ct.replace("Z", "+00:00"))
+                    from datetime import datetime as _dt
+                    dt_utc = _dt.fromisoformat(ct.replace("Z", "+00:00"))
                     ct_kst = dt_utc.astimezone(KST).strftime("%Y-%m-%d")
                 except Exception:
                     pass
+                if ct_kst == today:
+                    today_subs.append(rec)
+            acc_subs_map[acc] = today_subs
+        except Exception as e:
+            print(f"[get_student_today_summary] 계정({acc}) 제출 조회 예외: {e}")
+            acc_subs_map[acc] = []
 
-                if ct_kst and ct_kst != today:
-                    continue
+    # ─── Auto-Active Resolution: 오늘 제출이 있는 계정으로 자동 전환 ─────────
+    auto_switched = False
+    active_accs = [a for a in base_accounts if acc_subs_map.get(a)]
 
-                raw_submissions.append(rec)
-    except Exception as e:
-        print(f"[get_student_today_summary] OJ 실시간 제출 조회 예외: {e}")
+    if active_accs:
+        best_acc = active_accs[0]
+        if best_acc != resolved_display_id:
+            auto_switched = True
+            resolved_display_id = best_acc
+    elif resolved_display_id not in base_accounts and base_accounts:
+        # 아무도 제출이 없으면 마지막 로그인 시간이 가장 최근인 계정 선택
+        def _parse_login_dt(acc_id: str) -> float:
+            ts = acc_last_login.get(acc_id, "")
+            if not ts:
+                return 0.0
+            try:
+                from datetime import datetime as _dt2
+                return _dt2.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
+            except Exception:
+                return 0.0
+        sorted_by_login = sorted(base_accounts, key=_parse_login_dt, reverse=True)
+        resolved_display_id = sorted_by_login[0]
 
-    # 오늘 제출 목록 정렬 (최신순)
+    # 최종 선택된 계정의 오늘 제출 목록
+    raw_submissions = acc_subs_map.get(resolved_display_id, [])
+
+    # ─── accounts_summary 메타데이터 조립 ─────────────────────────────────────
+    accounts_summary: list[dict] = []
+    for acc in base_accounts:
+        subs = acc_subs_map.get(acc, [])
+        today_count = len(subs)
+
+        # 가장 최근 제출 시각 (KST HH:MM)
+        last_sub_time: str | None = None
+        if subs:
+            try:
+                from datetime import datetime as _dt3
+                latest_ct = max(subs, key=lambda r: str(r.get("create_time") or ""))
+                ct_str = str(latest_ct.get("create_time") or "")
+                dt_utc = _dt3.fromisoformat(ct_str.replace("Z", "+00:00"))
+                last_sub_time = dt_utc.astimezone(KST).strftime("%H:%M")
+            except Exception:
+                pass
+
+        # 최근 로그인 시각 (가독성 포맷)
+        last_login_str = acc_last_login.get(acc, "")
+
+        accounts_summary.append({
+            "display_id": acc,
+            "today_count": today_count,
+            "last_sub_time": last_sub_time,        # 오늘 최근 제출 HH:MM, 없으면 None
+            "is_active": today_count > 0,           # 오늘 제출 여부
+            "is_selected": acc == resolved_display_id,  # 현재 선택된 계정
+            "last_login": last_login_str,           # 마지막 접속 ISO 문자열
+            "is_primary": acc == base_accounts[0],  # 첫 번째 등록 계정이 본계정
+        })
+
+    # 오늘 제출 목록 정렬 (최신순) → 정답/오답 분류
     for rec in raw_submissions:
         prob_code = rec.get("problem") or ""
         p_title = title_map.get(str(prob_code)) or title_map.get(str(prob_code).lower()) or str(prob_code)
@@ -1013,6 +1092,8 @@ def get_student_today_summary(
         "portal_id": resolved_portal_id,
         "date": today,
         "candidate_accounts": candidate_accounts,
+        "accounts_summary": accounts_summary,   # 🆕 계정별 활동 현황
+        "auto_switched": auto_switched,          # 🆕 부계정으로 자동 전환 여부
         "solved_problems": solved_problems,
         "wrong_problems": wrong_problems,
         "debugging_snippets": debugging_snippets,
@@ -1020,6 +1101,89 @@ def get_student_today_summary(
         "homework_problems": homework_problems,
         "teacher_memo": teacher_memo,
         "mode": mode,
+    }
+
+
+def add_student_sub_account(
+    new_display_id: str,
+    portal_id: str | None = None,
+    user_uuid: str | None = None,
+) -> dict:
+    """
+    구글 문서 사이드바에서 강사가 낯선 계정을 연결했을 때,
+    해당 계정을 학생의 부계정 목록(accounts)에 영구적으로 추가합니다.
+
+    탐색 우선순위: user_uuid → portal_id
+    이미 accounts에 있으면 중복 추가하지 않습니다.
+
+    Returns:
+        {"ok": True, "display_id": ..., "student_name": ..., "accounts": [...]}
+    """
+    new_id = (new_display_id or "").strip()
+    if not new_id:
+        raise ValueError("new_display_id는 필수입니다.")
+
+    workspace_data = _load_workspace_students()
+
+    resolved_uuid: str | None = None
+    resolved_entry: dict | None = None
+
+    # 1순위: user_uuid 직접
+    if user_uuid:
+        if user_uuid in workspace_data:
+            resolved_uuid = user_uuid
+            resolved_entry = workspace_data[user_uuid]
+
+    # 2순위: portal_id → portal_mapping.json
+    if not resolved_entry and portal_id:
+        from core.storage import META_DIR
+        portal_mapping_file = META_DIR / "portal_mapping.json"
+        if portal_mapping_file.exists():
+            try:
+                m_data = json.loads(portal_mapping_file.read_text(encoding="utf-8"))
+                pid_str = str(portal_id).strip()
+                saved = m_data.get("mappings", {}).get(pid_str, {})
+                target_uuid = saved.get("oj_uuid")
+                if target_uuid and target_uuid in workspace_data:
+                    resolved_uuid = target_uuid
+                    resolved_entry = workspace_data[target_uuid]
+            except Exception:
+                pass
+
+    # 3순위: portal_id → workspace_students.json 직접 탐색
+    if not resolved_entry and portal_id:
+        pid_str = str(portal_id).strip()
+        for u, st in workspace_data.items():
+            if str(st.get("portal_id", "")).strip() == pid_str:
+                resolved_uuid = u
+                resolved_entry = st
+                break
+
+    if not resolved_entry or not resolved_uuid:
+        raise KeyError(f"학생을 찾을 수 없습니다. (portal_id={portal_id}, user_uuid={user_uuid})")
+
+    # 중복 체크 후 accounts에 추가
+    current_accounts: list[str] = list(resolved_entry.get("accounts") or [])
+    if new_id in current_accounts:
+        return {
+            "ok": True,
+            "already_exists": True,
+            "display_id": resolved_entry.get("display_id"),
+            "student_name": resolved_entry.get("name"),
+            "accounts": current_accounts,
+        }
+
+    current_accounts.append(new_id)
+    resolved_entry["accounts"] = current_accounts
+    workspace_data[resolved_uuid] = resolved_entry
+    _save_workspace_students(workspace_data)
+
+    return {
+        "ok": True,
+        "already_exists": False,
+        "display_id": resolved_entry.get("display_id"),
+        "student_name": resolved_entry.get("name"),
+        "accounts": current_accounts,
     }
 
 

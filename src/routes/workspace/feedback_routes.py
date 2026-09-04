@@ -7,14 +7,22 @@ routes/workspace/feedback_routes.py
 엔드포인트:
   POST /api/workspace/save_homework_log          - 학생 숙제 및 알림장 이력 저장
   GET  /api/public/student-today-summary         - 구글 문서 사이드바(OJ 탭) 전용: 당일 학생 요약 조회
+  GET  /api/public/search-accounts               - 계정 검색 (사이드바 자동완성)
+  POST /api/public/update-student-mapping        - 포탈 매핑 영구 갱신
+  POST /api/public/add-sub-account               - 🆕 부계정 영구 편입
 """
 
 from flask import Blueprint, jsonify, request
 
-from services.workspace_student_service import save_homework_log, get_student_today_summary
+from services.workspace_student_service import (
+    save_homework_log,
+    get_student_today_summary,
+    add_student_sub_account,
+)
 from utils.utils_common import ensure_admin_or_403
 
 feedback_bp = Blueprint("workspace_feedback", __name__)
+
 
 
 @feedback_bp.route("/api/workspace/save_homework_log", methods=["POST"])
@@ -132,3 +140,31 @@ def api_public_update_student_mapping():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@feedback_bp.route("/api/public/add-sub-account", methods=["POST"])
+def api_public_add_sub_account():
+    """
+    구글 문서 사이드바에서 강사가 낯선 계정을 [즉시 연결]했을 때,
+    해당 계정을 학생의 부계정 목록(accounts)에 영구적으로 추가합니다.
+    Body JSON: { new_display_id: "1103강동현", portal_id: "104", user_uuid: "..." }
+    """
+    payload = request.get_json(force=True) or {}
+    new_display_id = str(payload.get("new_display_id", "")).strip()
+    portal_id = str(payload.get("portal_id", "")).strip() or None
+    user_uuid = str(payload.get("user_uuid", "")).strip() or None
+
+    if not new_display_id:
+        return jsonify({"ok": False, "error": "new_display_id는 필수입니다."}), 400
+    if not portal_id and not user_uuid:
+        return jsonify({"ok": False, "error": "portal_id 또는 user_uuid 중 하나 이상 필요합니다."}), 400
+
+    try:
+        res = add_student_sub_account(
+            new_display_id=new_display_id,
+            portal_id=portal_id,
+            user_uuid=user_uuid,
+        )
+        return jsonify(res)
+    except KeyError as e:
+        return jsonify({"ok": False, "error": str(e)}), 404
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500

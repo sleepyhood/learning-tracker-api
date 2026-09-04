@@ -177,12 +177,36 @@
       "updated_at": "2026-08-31"
     },
     "46": {
-      "student_name": "이성현",
+      "student_name": "똥",
       "type": "OJ",
-      "oj_uuid": "fb5b1dcf-f4d9-4775-9876-9357b1a28ecc",
-      "oj_display_id": "이성현0808",
-      "note": "auto_mapped",
-      "updated_at": "2026-08-31"
+      "oj_uuid": "05dc1b5e-5a3b-4610-accf-58969bd420dd",
+      "oj_display_id": "이성현20110808",
+      "note": "manual_switched",
+      "updated_at": "2026-09-04"
+    },
+    "31": {
+      "student_name": "박준영",
+      "type": "OJ",
+      "oj_uuid": "46a97893-cc09-4e1b-8c15-31fed50876ae",
+      "oj_display_id": "박준영05072",
+      "note": "manual_switched",
+      "updated_at": "2026-09-04"
+    },
+    "39": {
+      "student_name": "박준영",
+      "type": "OJ",
+      "oj_uuid": "46a97893-cc09-4e1b-8c15-31fed50876ae",
+      "oj_display_id": "박준영05072",
+      "note": "manual_switched",
+      "updated_at": "2026-09-04"
+    },
+    "37": {
+      "student_name": "김건우",
+      "type": "OJ",
+      "oj_uuid": "eff1ec3a-964b-4457-a586-e320dea90dfd",
+      "oj_display_id": "김건우0408부",
+      "note": "manual_switched",
+      "updated_at": "2026-09-04"
     }
   }
 }
