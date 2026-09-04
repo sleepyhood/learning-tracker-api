@@ -724,7 +724,7 @@ def get_student_today_summary(
             if u == user_uuid or st.get("user_uuid") == user_uuid:
                 student_entry = st
                 resolved_uuid = u
-                resolved_display_id = st.get("display_id") or u
+                resolved_display_id = display_id or st.get("display_id") or u
                 break
 
     # 2순위: portal_id로 portal_mapping.json 조회
@@ -736,7 +736,8 @@ def get_student_today_summary(
             if target_uuid and target_uuid in workspace_data:
                 student_entry = workspace_data[target_uuid]
                 resolved_uuid = target_uuid
-                resolved_display_id = student_entry.get("display_id") or saved_map.get("oj_display_id") or target_uuid
+                resolved_display_id = display_id or saved_map.get("oj_display_id") or student_entry.get("display_id") or target_uuid
+
 
     # 3순위: workspace_students.json 내 portal_id 필드 매핑
     if not student_entry and portal_id:
@@ -745,50 +746,101 @@ def get_student_today_summary(
             if str(st.get("portal_id", "")).strip() == pid_str:
                 student_entry = st
                 resolved_uuid = u
-                resolved_display_id = st.get("display_id") or u
+                resolved_display_id = display_id or st.get("display_id") or u
                 break
 
-    # 4순위: display_id 매핑
+    # 4순위: display_id 매핑 — uuids.json 역조회 → accounts 배열 역조회 → 대표 display_id 직접 매핑
     if not student_entry and display_id:
-        for u, st in workspace_data.items():
-            if st.get("display_id") == display_id or u == display_id:
-                student_entry = st
-                resolved_uuid = u
-                resolved_display_id = st.get("display_id") or u
-                break
+        disp_str = str(display_id).strip()
+
+        # 4-1. uuids.json 역조회 (부계정 포함 모든 계정 → uuid 매핑 딕셔너리)
+        try:
+            from core.storage import UUIDS_PATH
+            if UUIDS_PATH.exists():
+                uuids_map = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+                target_uuid = uuids_map.get(disp_str)
+                if target_uuid and target_uuid in workspace_data:
+                    student_entry = workspace_data[target_uuid]
+                    resolved_uuid = target_uuid
+                    # 강사가 선택한 계정(부계정)을 그대로 유지 (본계정으로 덮어쓰지 않음)
+                    resolved_display_id = disp_str
+        except Exception:
+            pass
+
+        # 4-2. workspace_students.json 전체 순회 — accounts 배열 역조회
+        if not student_entry:
+            for u, st in workspace_data.items():
+                st_accs = [str(a) for a in (st.get("accounts") or []) if a]
+                if st.get("display_id") == disp_str or u == disp_str or disp_str in st_accs:
+                    student_entry = st
+                    resolved_uuid = u
+                    # 부계정으로 조회한 경우에도 강사가 선택한 계정 그대로 유지
+                    resolved_display_id = disp_str
+                    break
 
     # 5순위: name (실명) 기반 스마트 매칭 (예: '서율', '이서율', '김민준')
+    # 동명이인이 존재할 경우: 보유 계정들의 최근 접속일자(accounts_last_login)가 가장 최신인 학생을 1순위로 선택
+    def _get_student_latest_activity(st_dict: dict) -> float:
+        acc_logins = st_dict.get("accounts_last_login") or {}
+        max_ts = 0.0
+        for _acc, ts_str in acc_logins.items():
+            if ts_str:
+                try:
+                    from datetime import datetime as _dt_inner
+                    ts = _dt_inner.fromisoformat(str(ts_str).replace("Z", "+00:00")).timestamp()
+                    if ts > max_ts:
+                        max_ts = ts
+                except Exception:
+                    pass
+        return max_ts
+
     query_name = (name or display_id or "").strip()
     if not student_entry and query_name:
-        # 5-1. 정확 일치 (name == query_name)
+        # 5-1. 정확 일치 (name == query_name) 후보군 수집
+        exact_candidates: list[tuple[str, dict]] = []
         for u, st in workspace_data.items():
             st_name = (st.get("name") or "").strip()
             if st_name and st_name == query_name:
-                student_entry = st
-                resolved_uuid = u
-                resolved_display_id = st.get("display_id") or u
-                break
+                exact_candidates.append((u, st))
+
+        if exact_candidates:
+            # 최근 접속/활동 시간이 가장 최신인 학생 우선 정렬
+            exact_candidates.sort(key=lambda item: _get_student_latest_activity(item[1]), reverse=True)
+            best_u, best_st = exact_candidates[0]
+            student_entry = best_st
+            resolved_uuid = best_u
+            resolved_display_id = display_id or best_st.get("display_id") or best_u
 
         # 5-2. display_id가 query_name으로 시작 (예: '김윤성' ➔ '김윤성1113')
         if not student_entry:
+            prefix_candidates: list[tuple[str, dict]] = []
             for u, st in workspace_data.items():
                 st_disp = (st.get("display_id") or "").strip()
                 if st_disp and st_disp.startswith(query_name):
-                    student_entry = st
-                    resolved_uuid = u
-                    resolved_display_id = st_disp
-                    break
+                    prefix_candidates.append((u, st))
+
+            if prefix_candidates:
+                prefix_candidates.sort(key=lambda item: _get_student_latest_activity(item[1]), reverse=True)
+                best_u, best_st = prefix_candidates[0]
+                student_entry = best_st
+                resolved_uuid = best_u
+                resolved_display_id = display_id or best_st.get("display_id") or best_u
 
         # 5-3. query_name이 st_name에 포함되거나 st_name이 query_name에 포함 (예: '서율' in '이서율')
         if not student_entry and len(query_name) >= 2:
+            substr_candidates: list[tuple[str, dict]] = []
             for u, st in workspace_data.items():
                 st_name = (st.get("name") or "").strip()
                 st_disp = (st.get("display_id") or "").strip()
                 if (st_name and (query_name in st_name or st_name in query_name)) or (query_name in st_disp):
-                    student_entry = st
-                    resolved_uuid = u
-                    resolved_display_id = st_disp or st_name
-                    break
+                    substr_candidates.append((u, st))
+
+            if substr_candidates:
+                substr_candidates.sort(key=lambda item: _get_student_latest_activity(item[1]), reverse=True)
+                best_u, best_st = substr_candidates[0]
+                student_entry = best_st
+                resolved_uuid = best_u
+                resolved_display_id = display_id or best_st.get("display_id") or best_u
 
         # 매칭 성공 & portal_id가 있으면 portal_mapping.json에 자동 등록
         if student_entry and portal_id:
@@ -808,6 +860,7 @@ def get_student_today_summary(
                 )
             except Exception as e:
                 print(f"[portal_mapping] 자동 저장 실패: {e}")
+
 
     if not student_entry:
         raise KeyError(f"Student not found (name={name}, display_id={display_id}, uuid={user_uuid}, portal_id={portal_id})")
@@ -901,9 +954,11 @@ def get_student_today_summary(
     api_session = None
 
     # ─── 후보 계정 목록 수집 (본계정 + accounts에 등록된 부계정들) ───────────
-    _base_start = ([resolved_display_id] if resolved_display_id else [])
-    _base_extra = [str(a) for a in (student_entry.get("accounts") or []) if a] if student_entry else []
-    base_accounts: list[str] = list(dict.fromkeys(_base_start + _base_extra))
+    primary_acc = (student_entry.get("display_id") or "").strip() if student_entry else ""
+    raw_accs = [str(a).strip() for a in (student_entry.get("accounts") or []) if a] if student_entry else []
+    all_accs = ([primary_acc] if primary_acc else []) + raw_accs + ([resolved_display_id] if resolved_display_id else [])
+    base_accounts: list[str] = list(dict.fromkeys([a for a in all_accs if a]))
+
 
     # accounts_last_login 캐시 로드
     acc_last_login: dict[str, str] = {}
@@ -949,23 +1004,32 @@ def get_student_today_summary(
     active_accs = [a for a in base_accounts if acc_subs_map.get(a)]
 
     if active_accs:
-        best_acc = active_accs[0]
-        if best_acc != resolved_display_id:
-            auto_switched = True
-            resolved_display_id = best_acc
-    elif resolved_display_id not in base_accounts and base_accounts:
-        # 아무도 제출이 없으면 마지막 로그인 시간이 가장 최근인 계정 선택
-        def _parse_login_dt(acc_id: str) -> float:
-            ts = acc_last_login.get(acc_id, "")
-            if not ts:
-                return 0.0
-            try:
-                from datetime import datetime as _dt2
-                return _dt2.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
-            except Exception:
-                return 0.0
-        sorted_by_login = sorted(base_accounts, key=_parse_login_dt, reverse=True)
-        resolved_display_id = sorted_by_login[0]
+        # 사용자가 명시한 display_id에 오늘 제출이 있다면 강사의 선택을 최우선 유지!
+        if display_id and display_id in active_accs:
+            resolved_display_id = display_id
+        else:
+            best_acc = active_accs[0]
+            if best_acc != resolved_display_id:
+                auto_switched = True
+                resolved_display_id = best_acc
+    else:
+        # 오늘 제출이 아무 계정에도 없는 경우:
+        # 1) 사용자가 명시한 display_id가 base_accounts에 속해 있다면 강사의 선택을 최우선 유지!
+        if display_id and display_id in base_accounts:
+            resolved_display_id = display_id
+        elif resolved_display_id not in base_accounts and base_accounts:
+            # 아무도 제출이 없고 resolved_display_id도 유효하지 않으면 마지막 로그인 시간이 가장 최근인 계정 선택
+            def _parse_login_dt(acc_id: str) -> float:
+                ts = acc_last_login.get(acc_id, "")
+                if not ts:
+                    return 0.0
+                try:
+                    from datetime import datetime as _dt2
+                    return _dt2.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
+                except Exception:
+                    return 0.0
+            sorted_by_login = sorted(base_accounts, key=_parse_login_dt, reverse=True)
+            resolved_display_id = sorted_by_login[0]
 
     # 최종 선택된 계정의 오늘 제출 목록
     raw_submissions = acc_subs_map.get(resolved_display_id, [])
@@ -995,11 +1059,12 @@ def get_student_today_summary(
             "display_id": acc,
             "today_count": today_count,
             "last_sub_time": last_sub_time,        # 오늘 최근 제출 HH:MM, 없으면 None
-            "is_active": today_count > 0,           # 오늘 제출 여부
             "is_selected": acc == resolved_display_id,  # 현재 선택된 계정
             "last_login": last_login_str,           # 마지막 접속 ISO 문자열
-            "is_primary": acc == base_accounts[0],  # 첫 번째 등록 계정이 본계정
+            "is_primary": (acc == primary_acc) if primary_acc else (acc == base_accounts[0] if base_accounts else False),  # 본계정 여부
         })
+
+
 
     # 오늘 제출 목록 정렬 (최신순) → 정답/오답 분류
     for rec in raw_submissions:
@@ -1081,8 +1146,9 @@ def get_student_today_summary(
     is_no_submission = len(solved_problems) == 0 and len(wrong_problems) == 0
 
     candidate_accounts = list(dict.fromkeys(
-        [resolved_display_id] + [str(a) for a in student_entry.get("accounts", []) if a]
+        ([primary_acc] if primary_acc else []) + [str(a) for a in (student_entry.get("accounts") or []) if a] + ([resolved_display_id] if resolved_display_id else [])
     )) if student_entry else []
+
 
     return {
         "ok": True,
@@ -1162,6 +1228,20 @@ def add_student_sub_account(
     if not resolved_entry or not resolved_uuid:
         raise KeyError(f"학생을 찾을 수 없습니다. (portal_id={portal_id}, user_uuid={user_uuid})")
 
+    # 🛑 안전장치: 추가하려는 new_id가 이미 다른 독립 학생의 대표 display_id인 경우
+    # 동명이인이나 다른 학생을 부계정으로 잘못 흡수하는 치명적 오염을 방지합니다.
+    for other_uuid, other_st in workspace_data.items():
+        if other_uuid != resolved_uuid:
+            if other_st.get("display_id") == new_id:
+                return {
+                    "ok": False,
+                    "is_independent_student": True,
+                    "error": f"'{new_id}' 계정은 이미 등록된 독립 학생({other_st.get('name')})의 본계정입니다. 부계정으로 편입할 수 없습니다.",
+                    "display_id": resolved_entry.get("display_id"),
+                    "student_name": resolved_entry.get("name"),
+                    "accounts": list(resolved_entry.get("accounts") or []),
+                }
+
     # 중복 체크 후 accounts에 추가
     current_accounts: list[str] = list(resolved_entry.get("accounts") or [])
     if new_id in current_accounts:
@@ -1178,6 +1258,16 @@ def add_student_sub_account(
     workspace_data[resolved_uuid] = resolved_entry
     _save_workspace_students(workspace_data)
 
+    # uuids.json 역조회 맵에도 부계정 -> uuid 매핑 동기화
+    try:
+        from core.storage import UUIDS_PATH
+        if UUIDS_PATH.exists():
+            uuids_map = json.loads(UUIDS_PATH.read_text(encoding="utf-8"))
+            uuids_map[new_id] = resolved_uuid
+            UUIDS_PATH.write_text(json.dumps(uuids_map, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as e:
+        print("[add_student_sub_account] uuids.json 갱신 실패:", e)
+
     return {
         "ok": True,
         "already_exists": False,
@@ -1185,6 +1275,7 @@ def add_student_sub_account(
         "student_name": resolved_entry.get("name"),
         "accounts": current_accounts,
     }
+
 
 
 def search_public_student_accounts(query: str, limit: int = 10) -> list[dict]:

@@ -55,6 +55,14 @@ CORS(
     supports_credentials=False,
 )
 
+# 크롬 104+ Private Network Access(PNA) 프리플라이트 지원:
+# 구글 문서(HTTPS)에서 사설 IP(예: http://192.168.x.x:5000)로 API 호출 시 브라우저 차단 방지
+@app.after_request
+def add_cors_pna_headers(response):
+    response.headers["Access-Control-Allow-Private-Network"] = "true"
+    return response
+
+
 # Register Blueprints (Phase 2, 3 & 4)
 from routes.workspace import workspace_bp
 from routes.auth import auth_bp
