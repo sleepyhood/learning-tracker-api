@@ -941,7 +941,7 @@ def get_student_today_summary(
     wrong_problems: list[dict] = []
     debugging_snippets: list[dict] = []
 
-    def _clean_code_snippet(code_text: str, max_chars: int = 150) -> str:
+    def _clean_code_snippet(code_text: str, max_chars: int = 2500) -> str:
         if not code_text:
             return ""
         lines = [line.rstrip() for line in code_text.splitlines() if line.strip()]
@@ -976,12 +976,24 @@ def get_student_today_summary(
     # acc → list[raw_submission] 매핑
     acc_subs_map: dict[str, list[dict]] = {}
 
+    fetch_days = 2
+    if date_str:
+        try:
+            from datetime import datetime as _dt_diff
+            cur_dt = datetime.now(tz=KST).date()
+            tgt_dt = _dt_diff.strptime(date_str, "%Y-%m-%d").date()
+            diff = (cur_dt - tgt_dt).days
+            if diff >= 0:
+                fetch_days = max(diff + 2, 2)
+        except Exception:
+            pass
+
     for acc in base_accounts:
         if not acc or not api_session:
             acc_subs_map[acc] = []
             continue
         try:
-            raw_subs = fetch_submissions_window(api_session, acc, 0, days=1)
+            raw_subs = fetch_submissions_window(api_session, acc, 0, days=fetch_days)
             today_subs = []
             for rec in raw_subs:
                 ct = str(rec.get("create_time") or "")
@@ -1088,33 +1100,60 @@ def get_student_today_summary(
         else:
             wrong_problems.append(entry)
 
-    # ─── 디버깅 코드 스니펫(오답 ➔ 정답 페어) 추출 ───────────────────────────
+    # ─── 디버깅 코드 스니펫(오답 ➔ 정답 페어) 추출 (스마트 우선순위 선별) ─────
     if raw_submissions and api_session:
         from collections import defaultdict
         by_prob = defaultdict(list)
         for rec in raw_submissions:
             by_prob[rec.get("problem")].append(rec)
 
-        # 1. 오답 후 정답을 맞춘 문제 (WA -> AC) 우선 탐색 (최대 1~2개)
+        # 1. 오답 후 정답을 맞춘 문제 (WA -> AC) 후보군 수집
+        pair_candidates = []
         for prob, items in by_prob.items():
-            if len(debugging_snippets) >= 2:
-                break
-            wrong_item = next((x for x in reversed(items) if x.get("result") != 0), None)
-            correct_item = next((x for x in items if x.get("result") == 0), None)
-            if wrong_item and correct_item and wrong_item.get("id") and correct_item.get("id"):
+            wrong_items = [x for x in items if x.get("result") != 0]
+            correct_items = [x for x in items if x.get("result") == 0]
+            if wrong_items and correct_items:
+                # 마지막 오답 제출(가장 정답에 근접했던 오답 시도)
+                wrong_item = max(wrong_items, key=lambda x: str(x.get("create_time") or ""))
+                # 최초 또는 최종 정답 제출
+                correct_item = min(correct_items, key=lambda x: str(x.get("create_time") or ""))
+                latest_time = max(str(x.get("create_time") or "") for x in items)
+                pair_candidates.append({
+                    "prob": prob,
+                    "wrong_item": wrong_item,
+                    "correct_item": correct_item,
+                    "wrong_count": len(wrong_items),
+                    "latest_time": latest_time,
+                })
+
+        # 스마트 우선순위 정렬:
+        # 1순위: 오답(WA) 시도 횟수가 많은 순 (치열하게 디버깅한 고난도 문제)
+        # 2순위: 최신 제출 시각 순 (수업 후반부 핵심 알고리즘 문제)
+        pair_candidates.sort(key=lambda x: (x["wrong_count"], x["latest_time"]), reverse=True)
+
+        # 상위 최대 2~3개 선별 (기본 최대 2개, 2회 이상 오답 고난도 문제가 3개 이상이면 최대 3개까지 수용)
+        max_snippet_limit = 3 if len(pair_candidates) >= 3 and pair_candidates[2]["wrong_count"] >= 2 else 2
+
+        for cand in pair_candidates[:max_snippet_limit]:
+            prob = cand["prob"]
+            w_item = cand["wrong_item"]
+            c_item = cand["correct_item"]
+            w_count = cand["wrong_count"]
+            if w_item.get("id") and c_item.get("id"):
                 try:
-                    w_res = api_session.get(f"http://edu.doingcoding.com/api/submission?id={wrong_item['id']}", timeout=3).json().get("data", {})
-                    c_res = api_session.get(f"http://edu.doingcoding.com/api/submission?id={correct_item['id']}", timeout=3).json().get("data", {})
-                    w_code = _clean_code_snippet(w_res.get("code") or "")
-                    c_code = _clean_code_snippet(c_res.get("code") or "")
+                    w_res = api_session.get(f"http://edu.doingcoding.com/api/submission?id={w_item['id']}", timeout=3).json().get("data", {})
+                    c_res = api_session.get(f"http://edu.doingcoding.com/api/submission?id={c_item['id']}", timeout=3).json().get("data", {})
+                    w_code = _clean_code_snippet(w_res.get("code") or "", max_chars=2500)
+                    c_code = _clean_code_snippet(c_res.get("code") or "", max_chars=2500)
                     p_title = title_map.get(str(prob)) or title_map.get(str(prob).lower()) or str(prob)
-                    lang = correct_item.get("language") or wrong_item.get("language") or ""
+                    lang = c_item.get("language") or w_item.get("language") or ""
                     if w_code or c_code:
                         debugging_snippets.append({
                             "problem_code": prob,
                             "problem_title": p_title,
                             "language": lang,
                             "type": "debugging_pair",
+                            "wrong_count": w_count,
                             "wrong_code": w_code,
                             "correct_code": c_code,
                         })
@@ -1127,7 +1166,7 @@ def get_student_today_summary(
             if latest_ac and latest_ac.get("id"):
                 try:
                     ac_res = api_session.get(f"http://edu.doingcoding.com/api/submission?id={latest_ac['id']}", timeout=3).json().get("data", {})
-                    ac_code = _clean_code_snippet(ac_res.get("code") or "", max_chars=200)
+                    ac_code = _clean_code_snippet(ac_res.get("code") or "", max_chars=2500)
                     prob = latest_ac.get("problem") or ""
                     p_title = title_map.get(str(prob)) or title_map.get(str(prob).lower()) or str(prob)
                     lang = latest_ac.get("language") or ""
@@ -1137,6 +1176,7 @@ def get_student_today_summary(
                             "problem_title": p_title,
                             "language": lang,
                             "type": "single_ac",
+                            "wrong_count": 0,
                             "wrong_code": "",
                             "correct_code": ac_code,
                         })
